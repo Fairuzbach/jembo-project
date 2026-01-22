@@ -80,7 +80,7 @@
         };
         window.gaGanttData = @json($tasks ?? ['data' => [], 'links' => []]);
 
-        console.log('Gantt Data Loaded:', window.gaGanttData);
+        // console.log('Gantt Data Loaded:', window.gaGanttData);
     </script>
     @vite(['resources/js/app.js'])
     {{-- KONTEN UTAMA --}}

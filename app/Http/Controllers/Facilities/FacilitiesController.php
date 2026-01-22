@@ -170,10 +170,14 @@ class FacilitiesController extends Controller
         $stats = [
             'total' => WorkOrderFacilities::count(),
             'completed' => WorkOrderFacilities::where('status', 'completed')->count(),
-            'pending' => WorkOrderFacilities::where('status', 'waiting_approval')->count(),
+            'pending' => WorkOrderFacilities::where('status', 'pending')->count(),
             'in_progress' => WorkOrderFacilities::where('status', 'in_progress')->count(),
 
         ];
+
+        $ganttData = $this->facilityService->getGanttChartData();
+
+
 
         return view('Division.Facilities.dashboard', compact('stats'));
     }

@@ -149,7 +149,7 @@
             openDetail(id) {
                 // Cari tiket berdasarkan ID
                 this.ticket = this.ticketsData.find(t => t.id == id);
-                console.log('Tiket Object:', this.ticket);
+                // console.log('Tiket Object:', this.ticket);
                 this.showDetailModal = true;
             },
 

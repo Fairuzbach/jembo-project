@@ -50,10 +50,12 @@
                         <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
                             {{ __('User Management') }}
                         </x-nav-link>
+                    @endcan
+                    @if ($user->role === 'ga.admin')
                         <x-nav-link :href="route('ga.dashboard')" :active="request()->routeIs('ga.dashboard')">
                             {{ __('Admin Dashboard') }}
                         </x-nav-link>
-                    @endcan
+                    @endif
 
                     {{-- Link Tambahan Khusus Module (Opsional) --}}
                     @if (request()->routeIs('fh.*'))

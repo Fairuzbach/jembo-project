@@ -121,7 +121,7 @@ document.addEventListener('alpine:init', () => {
         },
         
       openEditModal(data) {
-    console.log("CEK DATA DARI BACKEND:", data);
+    // console.log("CEK DATA DARI BACKEND:", data);
 
     this.editForm.id = data.id;
     this.editForm.ticket_num = data.ticket_num;

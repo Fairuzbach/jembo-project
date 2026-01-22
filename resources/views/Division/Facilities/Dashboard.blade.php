@@ -443,16 +443,16 @@
         document.addEventListener('DOMContentLoaded', function() {
             Chart.register(ChartDataLabels);
             // Debug: Log data dari server
-            console.log('Chart Data:', {
-                catLabels: @json($chartCatLabels ?? []),
-                catValues: @json($chartCatValues ?? []),
-                statusLabels: @json($chartStatusLabels ?? []),
-                statusValues: @json($chartStatusValues ?? []),
-                plantLabels: @json($chartPlantLabels ?? []),
-                plantValues: @json($chartPlantValues ?? []),
-                techLabels: @json($chartTechLabels ?? []),
-                techValues: @json($chartTechValues ?? [])
-            });
+            // console.log('Chart Data:', {
+            //     catLabels: @json($chartCatLabels ?? []),
+            //     catValues: @json($chartCatValues ?? []),
+            //     statusLabels: @json($chartStatusLabels ?? []),
+            //     statusValues: @json($chartStatusValues ?? []),
+            //     plantLabels: @json($chartPlantLabels ?? []),
+            //     plantValues: @json($chartPlantValues ?? []),
+            //     techLabels: @json($chartTechLabels ?? []),
+            //     techValues: @json($chartTechValues ?? [])
+            // });
 
             // 1. Category Chart (Bar - Navy)
             if (@json($chartCatLabels ?? []).length > 0) {

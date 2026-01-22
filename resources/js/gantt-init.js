@@ -321,7 +321,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         divisionName = parentTask.text;
                     }
                 } catch (e) {
-                    console.log("Could not get parent", e);
+                    // console.log("Could not get parent", e);
                 }
             }
         }
@@ -421,7 +421,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // Data sudah di-inject via Blade ke window variable
     const tasks = window.gaGanttData || { data: [], links: [] };
 
-    console.log("Loading Gantt Data:", tasks);
+    // console.log("Loading Gantt Data:", tasks);
 
     if (tasks.data && tasks.data.length > 0) {
         gantt.parse(tasks);
