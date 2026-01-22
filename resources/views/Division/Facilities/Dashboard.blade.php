@@ -4,21 +4,23 @@
     <x-slot name="header">
         <div class="flex justify-between items-center -my-2">
             <h2 class="font-bold text-2xl text-[#1E3A5F] leading-tight uppercase tracking-wider flex items-center gap-4">
-                <span class="w-4 h-8 bg-[#22C55E] inline-block shadow-sm"></span>
-                {{ __('Facilities Analytics') }}
+                <span
+                    class="w-1 h-10 bg-gradient-to-b from-[#22C55E] to-emerald-400 inline-block shadow-lg rounded-full"></span>
+                {{ __('Facilities Dashboard') }}
             </h2>
 
-            <div class="flex items-center gap-3">
-                <form method="GET" action="{{ route('fh.dashboard') }}" class="flex items-center gap-2">
-                    <label class="text-xs text-slate-400">Month</label>
+            <div class="flex items-center gap-4">
+                <form method="GET" action="{{ route('fh.dashboard') }}" class="flex items-center gap-3">
+                    <label class="text-xs text-slate-500 font-bold uppercase">Month:</label>
                     <input type="month" name="month" value="{{ $selectedMonth ?? '' }}"
-                        class="rounded-md border-slate-200 px-2 py-1">
-                    <button type="submit" class="px-3 py-1 bg-[#1E3A5F] text-white rounded-sm text-sm">Filter</button>
+                        class="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition shadow-sm hover:shadow-md">
+                    <button type="submit"
+                        class="px-5 py-2.5 bg-gradient-to-br from-slate-600 to-slate-700 text-white rounded-xl text-sm font-bold shadow-md hover:shadow-lg hover:from-slate-700 hover:to-slate-800 transition-all duration-300 hover:scale-105 active:scale-95">Filter</button>
                 </form>
 
                 <div class="relative">
                     <button onclick="toggleExportMenu()"
-                        class="bg-gradient-to-r from-[#3B82F6] to-[#1E40AF] text-white px-6 py-2.5 rounded-lg font-bold text-sm uppercase shadow-md hover:shadow-lg hover:from-[#2563EB] hover:to-[#1e3a8a] transition-all duration-300 flex items-center gap-2 border border-blue-400">
+                        class="bg-gradient-to-br from-[#3B82F6] via-blue-500 to-[#1E40AF] text-white px-6 py-2.5 rounded-xl font-bold text-sm uppercase shadow-lg hover:shadow-xl hover:from-[#2563EB] hover:to-[#1e3a8a] transition-all duration-300 flex items-center gap-2 border border-blue-400/50 hover:scale-105 active:scale-95">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
@@ -26,19 +28,20 @@
                         Export
                     </button>
                     <div id="exportMenu"
-                        class="hidden absolute right-0 top-full mt-3 w-56 bg-white rounded-xl shadow-2xl z-50 border border-gray-100 overflow-hidden">
-                        <div class="px-4 py-3 bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200">
-                            <p class="text-xs font-bold text-blue-900 uppercase tracking-wider">Export Options</p>
+                        class="hidden absolute right-0 top-full mt-3 w-60 bg-white rounded-2xl shadow-2xl z-50 border border-slate-100 overflow-hidden transform transition-all duration-200">
+                        <div
+                            class="px-5 py-4 bg-gradient-to-r from-blue-50 via-blue-50 to-blue-100 border-b border-blue-200/50">
+                            <p class="text-xs font-bold text-blue-900 uppercase tracking-widest">Export Options</p>
                         </div>
                         <button onclick="exportToPDF(); toggleExportMenu();"
-                            class="w-full text-left px-4 py-4 text-gray-800 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 transition-all duration-200 flex items-center gap-4 border-b border-gray-100 last:border-0 group">
+                            class="w-full text-left px-5 py-4 text-gray-800 hover:bg-gradient-to-r hover:from-red-50 hover:to-orange-50 transition-all duration-200 flex items-center gap-4 border-b border-slate-100 last:border-0 group active:bg-red-100">
                             <div
-                                class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center group-hover:bg-red-200 transition-colors">
-                                <span class="text-lg">📄</span>
+                                class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center group-hover:bg-red-200 transition-all shadow-sm">
+                                <span class="text-xl">📄</span>
                             </div>
                             <div>
                                 <p class="font-semibold text-gray-900 text-sm">Export as PDF</p>
-                                <p class="text-xs text-gray-500">Download dashboard as PDF</p>
+                                <p class="text-xs text-gray-500">Download analytics dashboard</p>
                             </div>
                         </button>
                     </div>
@@ -48,12 +51,88 @@
     </x-slot>
 
     <style>
-        tbody tr:hover>td:last-child>div {
-            opacity: 1 !important;
+        /* Enhanced Input Styling */
+        input[type="text"],
+        input[type="email"],
+        input[type="date"],
+        input[type="month"],
+        select {
+            @apply transition-all duration-200 shadow-sm;
         }
 
+        input:focus,
+        select:focus {
+            @apply shadow-md outline-none;
+        }
+
+        /* Smooth table scrolling */
         .gantt-table-container {
             position: relative;
+        }
+
+        /* Enhanced button transitions */
+        button {
+            @apply transition-all duration-200;
+        }
+
+        /* Counter card animation on load */
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .counter-card {
+            animation: slideUp 0.6s ease-out backwards;
+        }
+
+        .counter-card:nth-child(1) {
+            animation-delay: 0.1s;
+        }
+
+        .counter-card:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .counter-card:nth-child(3) {
+            animation-delay: 0.3s;
+        }
+
+        .counter-card:nth-child(4) {
+            animation-delay: 0.4s;
+        }
+
+        .counter-card:nth-child(5) {
+            animation-delay: 0.5s;
+        }
+
+        /* Smooth scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(226, 232, 240, 0.3);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.5);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(148, 163, 184, 0.8);
+        }
+
+        tbody tr:hover>td:last-child>div {
+            opacity: 1 !important;
         }
     </style>
 
@@ -71,28 +150,38 @@
 
             {{-- 1. COUNTERS --}}
             <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
-                <div class="bg-white p-6 rounded-sm shadow-sm border-l-4 border-[#1E3A5F]">
-                    <p class="text-xs font-bold text-slate-500 uppercase">Total</p>
-                    <p class="text-4xl font-bold text-[#1E3A5F]">{{ $countTotal }}</p>
+                <div
+                    class="counter-card bg-white p-7 rounded-2xl shadow-md border border-slate-100 hover:shadow-lg hover:border-blue-200 transition-all duration-300">
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">Total</p>
+                    <p class="text-4xl font-bold text-[#1E3A5F] mt-2">{{ $countTotal }}</p>
+                    <div class="mt-3 h-1 bg-gradient-to-r from-slate-400 to-slate-500 rounded-full"></div>
                 </div>
-                <div class="bg-white p-6 rounded-sm shadow-sm border-l-4 border-gray-400">
-                    <p class="text-xs font-bold text-slate-500 uppercase">Pending</p>
-                    <p class="text-4xl font-bold text-gray-600">{{ $countPending }}</p>
+                <div
+                    class="counter-card bg-white p-7 rounded-2xl shadow-md border border-slate-100 hover:shadow-lg hover:border-amber-200 transition-all duration-300">
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">Pending</p>
+                    <p class="text-4xl font-bold text-amber-600 mt-2">{{ $countPending }}</p>
+                    <div class="mt-3 h-1 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full"></div>
                 </div>
-                <div class="bg-white p-6 rounded-sm shadow-sm border-l-4 border-blue-600">
-                    <p class="text-xs font-bold text-slate-500 uppercase">In Progress</p>
-                    <p class="text-4xl font-bold text-blue-700">{{ $countProgress }}</p>
+                <div
+                    class="counter-card bg-white p-7 rounded-2xl shadow-md border border-slate-100 hover:shadow-lg hover:border-blue-400 transition-all duration-300">
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">In Progress</p>
+                    <p class="text-4xl font-bold text-blue-600 mt-2">{{ $countProgress }}</p>
+                    <div class="mt-3 h-1 bg-gradient-to-r from-blue-400 to-cyan-500 rounded-full"></div>
                 </div>
-                <div class="bg-white p-6 rounded-sm shadow-sm border-l-4 border-[#22C55E]">
-                    <p class="text-xs font-bold text-slate-500 uppercase">Completed</p>
-                    <p class="text-4xl font-bold text-[#22C55E]">{{ $countDone }}</p>
+                <div
+                    class="counter-card bg-white p-7 rounded-2xl shadow-md border border-slate-100 hover:shadow-lg hover:border-emerald-200 transition-all duration-300">
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">Completed</p>
+                    <p class="text-4xl font-bold text-[#22C55E] mt-2">{{ $countDone }}</p>
+                    <div class="mt-3 h-1 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full"></div>
                 </div>
 
                 {{-- Completion % for selected period --}}
-                <div class="bg-white p-6 rounded-sm shadow-sm border-l-4 border-indigo-500">
-                    <p class="text-xs font-bold text-slate-500 uppercase">Completion (Selected)</p>
-                    <p class="text-4xl font-bold text-indigo-600">{{ $completionPct }}%</p>
-                    <p class="text-xs text-slate-400 mt-1">period: {{ $selectedMonth ?? 'All' }}</p>
+                <div
+                    class="counter-card bg-white p-7 rounded-2xl shadow-md border border-slate-100 hover:shadow-lg hover:border-indigo-200 transition-all duration-300">
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">Completion (Selected)</p>
+                    <p class="text-4xl font-bold text-indigo-600 mt-2">{{ $completionPct }}%</p>
+                    <p class="text-xs text-slate-400 mt-3">period: <span
+                            class="font-semibold">{{ $selectedMonth ?? 'All' }}</span></p>
                 </div>
             </div>
 
@@ -101,14 +190,16 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
 
                 {{-- Chart Category --}}
-                <div class="bg-white p-6 rounded-sm shadow-sm border-t-4 border-[#1E3A5F]">
-                    <h4 class="text-sm font-bold text-[#1E3A5F] uppercase mb-4">Request by Category</h4>
+                <div
+                    class="bg-white p-7 rounded-2xl shadow-md border border-slate-100 hover:shadow-lg transition-all duration-300 overflow-hidden">
+                    <h4 class="text-sm font-bold text-[#1E3A5F] uppercase mb-5 tracking-wider">Request by Category</h4>
                     <div class="h-64"><canvas id="catChart"></canvas></div>
                 </div>
 
                 {{-- Chart Status --}}
-                <div class="bg-white p-6 rounded-sm shadow-sm border-t-4 border-[#1E3A5F]">
-                    <h4 class="text-sm font-bold text-[#1E3A5F] uppercase mb-4">Workload Status</h4>
+                <div
+                    class="bg-white p-7 rounded-2xl shadow-md border border-slate-100 hover:shadow-lg transition-all duration-300 overflow-hidden">
+                    <h4 class="text-sm font-bold text-[#1E3A5F] uppercase mb-5 tracking-wider">Workload Status</h4>
                     <div class="h-64"><canvas id="statusChart"></canvas></div>
                 </div>
             </div>
@@ -116,19 +207,21 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
 
                 {{-- Chart Plant --}}
-                <div class="bg-white p-6 rounded-sm shadow-sm border-t-4 border-[#1E3A5F]">
-                    <h4 class="text-sm font-bold text-[#1E3A5F] uppercase mb-4">Requests by Plant</h4>
+                <div
+                    class="bg-white p-7 rounded-2xl shadow-md border border-slate-100 hover:shadow-lg transition-all duration-300 overflow-hidden">
+                    <h4 class="text-sm font-bold text-[#1E3A5F] uppercase mb-5 tracking-wider">Requests by Plant</h4>
                     <div class="h-64"><canvas id="plantChart"></canvas></div>
                 </div>
 
                 {{-- Chart Technician PIC --}}
-                <div class="bg-white p-6 rounded-sm shadow-sm border-t-4 border-purple-500">
-                    <h4 class="text-sm font-bold text-purple-600 uppercase mb-4">Technician Assignments (PIC)</h4>
+                <div
+                    class="bg-white p-7 rounded-2xl shadow-md border border-slate-100 hover:shadow-lg transition-all duration-300 overflow-hidden">
+                    <h4 class="text-sm font-bold text-purple-600 uppercase mb-5 tracking-wider">Technician Assignments
+                        (PIC)</h4>
                     <div class="h-64"><canvas id="techChart"></canvas></div>
                 </div>
             </div>
 
-            {{-- 3. GANTT CHART --}}
             {{-- 3. GANTT CHART --}}
             <div class="bg-white p-6 rounded-sm shadow-sm border-t-4 border-[#22C55E] mb-8">
                 <h4 class="text-sm font-bold text-[#1E3A5F] uppercase mb-4">Work Timeline (Gantt Chart)</h4>
@@ -166,7 +259,7 @@
 
                         // 4. Hitung Posisi Persentase Hari Ini
                         $todayPercent = 0;
-                        // Tidak perlu cek range lagi karena range sudah dipaksa mencakup today
+
                         $todayPercent = (($today - $minDate) / ($maxDate - $minDate)) * 100;
                     @endphp
 

@@ -8,12 +8,12 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>@yield('browser_title', config('app.name', 'Laravel'))</title>
-    <link rel="icon" href="{{ asset('logo.png') }}" type="image/png">
+    <link rel="icon" href="{{ asset('logo.webp') }}" type="image/webp">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     {{-- Alpine.js (Pastikan terload jika belum ada di app.js) --}}
 </head>
 

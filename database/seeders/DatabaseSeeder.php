@@ -385,16 +385,19 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($engineers as $name) {
-            $role = ($name === 'ANDY APRIADI' || $name === 'DANU MAMLUKAT') ? 'admin' : 'user';
+            $role = ($name === 'ANDY APRIADI' || $name === 'DANU MAMLUKAT') ? 'eng.admin' : 'user';
             $usernameKey = Str::lower(str_replace(' ', '.', $name));
+            $nik = str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
 
             User::create([
+                'nik' => $nik,
                 'name' => ucwords(Str::lower($name)),
-                'username' => $usernameKey,
                 'email' => $usernameKey . '@jembo.com',
                 'password' => Hash::make('welcomejembo'),
                 'role' => $role,
                 'divisi' => 'Engineering',
+                'jabatan' => 'Engineer',
+                'is_active' => true
             ]);
         }
 

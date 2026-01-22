@@ -71,7 +71,7 @@
         handleExportClick() {
             if (this.selectedTickets.length > 0) {
                 const ids = this.selectedTickets.join(',');
-                window.location.href = `{{ route('work-orders.export') }}?ticket_ids=${ids}`;
+                window.location.href = `{{ route('eng.export') }}?ticket_ids=${ids}`;
                 setTimeout(() => {
                     this.selectedTickets = [];
                     localStorage.removeItem('selected_wo_ids');
@@ -352,7 +352,7 @@ transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-am
                     {{-- Header Tabel & Search --}}
                     <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                         <div class="w-full md:w-2/3">
-                            <form action="{{ route('engineering.wo.index') }}" method="GET"
+                            <form action="{{ route('eng.index') }}" method="GET"
                                 class="flex flex-col md:flex-row gap-3">
                                 <div class="relative w-full">
                                     <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -388,7 +388,7 @@ transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-am
                                     </select>
                                 </div>
                                 @if (request('search') || request('improvement_status'))
-                                    <a href="{{ route('engineering.wo.index') }}"
+                                    <a href="{{ route('eng.index') }}"
                                         class="p-2.5 text-sm font-medium text-slate-900 bg-white rounded-lg border border-slate-200 hover:bg-slate-100 hover:text-red-700 focus:z-10 focus:ring-2 focus:ring-indigo-700 focus:text-indigo-700 flex items-center justify-center gap-2 px-4 whitespace-nowrap">Reset</a>
                                 @endif
                             </form>
@@ -557,7 +557,7 @@ transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-am
                                 </svg></button>
                         </div>
 
-                        <form x-ref="createForm" action="{{ route('work-orders.store') }}" method="POST"
+                        <form x-ref="createForm" action="{{ route('eng.store') }}" method="POST"
                             enctype="multipart/form-data">
                             @csrf
                             <div class="px-4 py-5 sm:p-6 space-y-6">
@@ -1074,7 +1074,7 @@ transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-am
                             <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">Export
                                 Data Laporan</h3>
                         </div>
-                        <form action="{{ route('work-orders.export') }}" method="GET">
+                        <form action="{{ route('eng.export') }}" method="GET">
                             <div class="px-6 py-6 space-y-4">
                                 <div class="grid grid-cols-2 gap-4">
                                     <div><label class="block text-sm font-medium text-slate-700 mb-1">Dari

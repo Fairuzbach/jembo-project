@@ -20,10 +20,15 @@
         "vite": "^7.0.7"
     },
     "dependencies": {
+        "@alpinejs/collapse": "^3.15.4",
+        "chart.js": "^4.5.1",
+        "chartjs-plugin-datalabels": "^2.2.0",
         "clsx": "^2.1.1",
+        "dhtmlx-gantt": "^9.1.1",
         "framer-motion": "^12.23.25",
         "react": "^19.2.1",
         "react-dom": "^19.2.1",
+        "sweetalert2": "^11.26.17",
         "tailwind-merge": "^3.4.0"
     }
 }

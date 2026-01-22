@@ -1,0 +1,141 @@
+/**
+ * File: gantt-layout-fix.css
+ * Fix untuk layout badge dan text yang terpotong
+ */
+
+/* Fix cell overflow untuk badge */
+.gantt_cell {
+    overflow: visible !important;
+    position: relative !important;
+}
+
+.gantt_tree_content {
+    overflow: visible !important;
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+/* Fix untuk cell text (Divisi/Ticket column) */
+.gantt_cell[data-column-name="text"] {
+    padding: 8px 12px !important;
+    overflow: visible !important;
+}
+
+.gantt_cell[data-column-name="text"] .gantt_tree_content {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+/* Badge styling - tidak terpotong */
+.gantt_cell[data-column-name="text"] span[style*="linear-gradient"] {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    z-index: 10 !important;
+}
+
+/* Fix row height agar badge tidak terpotong */
+.gantt_row {
+    min-height: 42px !important;
+}
+
+.gantt_grid_data .gantt_row {
+    height: 42px !important;
+    line-height: 42px !important;
+}
+
+.gantt_task_row {
+    height: 42px !important;
+}
+
+/* Divisi row khusus */
+.gantt_row.divisi-row {
+    background: linear-gradient(to right, #fef3c7, #fefce8) !important;
+    font-weight: 700 !important;
+    min-height: 46px !important;
+    height: 46px !important;
+}
+
+.gantt_row.divisi-row:hover {
+    background: linear-gradient(to right, #fde68a, #fed7aa) !important;
+}
+
+/* Fix untuk icon expand/collapse */
+.gantt_tree_icon {
+    flex-shrink: 0 !important;
+    margin-right: 6px !important;
+    cursor: pointer !important;
+    width: 20px !important;
+    height: 20px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 4px !important;
+    transition: all 0.2s ease !important;
+    position: relative !important;
+    z-index: 10 !important;
+}
+
+.gantt_tree_icon:hover {
+    background-color: rgba(0, 0, 0, 0.08) !important;
+    transform: scale(1.1);
+}
+
+.gantt_tree_icon:active {
+    transform: scale(0.95);
+}
+
+/* Pastikan icon terlihat jelas untuk project/divisi */
+.gantt_row.divisi-row .gantt_tree_icon {
+    font-size: 14px !important;
+    font-weight: bold !important;
+    color: #475569 !important;
+}
+
+.gantt_row.divisi-row .gantt_tree_icon:hover {
+    background-color: rgba(0, 0, 0, 0.12) !important;
+    color: #1e293b !important;
+}
+
+/* Ensure text tidak overflow di grid */
+.gantt_grid_data .gantt_cell {
+    white-space: normal !important;
+    line-height: 1.4 !important;
+    vertical-align: middle !important;
+}
+
+/* Fix width kolom */
+.gantt_grid_scale .gantt_grid_head_cell[data-column-name="text"] {
+    min-width: 320px !important;
+}
+
+.gantt_grid_data .gantt_cell[data-column-name="text"] {
+    min-width: 320px !important;
+}
+
+.gantt_grid_scale .gantt_grid_head_cell[data-column-name="start_date"] {
+    min-width: 100px !important;
+}
+
+.gantt_grid_scale .gantt_grid_head_cell[data-column-name="duration"] {
+    min-width: 70px !important;
+}
+
+.gantt_grid_scale .gantt_grid_head_cell[data-column-name="progress"] {
+    min-width: 90px !important;
+}
+
+/* Fix untuk progress column alignment */
+.gantt_cell[data-column-name="progress"] {
+    text-align: center !important;
+    padding: 8px 4px !important;
+}
+
+/* Responsive adjustment */
+@media (max-width: 1024px) {
+    .gantt_cell[data-column-name="text"] {
+        min-width: 250px !important;
+    }
+}

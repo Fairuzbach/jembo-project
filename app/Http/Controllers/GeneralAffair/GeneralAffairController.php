@@ -4,448 +4,360 @@ namespace App\Http\Controllers\GeneralAffair;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-// --- IMPORT LIBRARY EXCEL ---
-use Maatwebsite\Excel\Facades\Excel;
-use App\Exports\WorkOrderExport;
-// ----------------------------
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+
+// --- MODELS ---
+use App\Models\User;
+use App\Models\Engineering\Plant;
 use App\Models\GeneralAffair\WorkOrderGeneralAffair;
 use App\Models\GeneralAffair\WorkOrderGaHistory;
-use Illuminate\Support\Facades\Auth;
-use Carbon\Carbon;
-use App\Models\Engineering\Plant;
+use App\Models\GeneralAffair\Category;
+use App\Http\Requests\GA\StoreWorkOrderRequest;
+use App\Http\Requests\GA\ProcessTicketRequest;
+use App\Http\Requests\GA\UpdateStatusRequest;
+use App\Services\GeneralAffair\WorkOrderService;
+use App\Services\GeneralAffair\DashboardService;
+
+// --- EXPORT ---
+use App\Exports\WorkOrderExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class GeneralAffairController extends Controller
 {
-    // --- 1. HELPER QUERY (Untuk Filter) ---
-    private function buildQuery(Request $request)
+    // Constructor injection 
+    public function __construct(
+        protected WorkOrderService $gaService,
+        protected DashboardService $dashboardService
+    ) {}
+
+    // =========================================================================
+    // 1. HELPER & AJAX
+    // =========================================================================
+
+    public function checkEmployee(Request $request)
     {
-        $query = WorkOrderGeneralAffair::query();
-        $user = Auth::user();
+        $employee = \App\Models\User::where('nik', $request->nik)->first();
 
-        // Jika bukan Admin GA, hanya lihat tiket sendiri
-        if ($user->role !== 'ga.admin') {
-            $query->where('requester_id', $user->id);
+        if ($employee) {
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'name' => $employee->name,
+                    'department' => $employee->divisi
+                ]
+            ], 200);
+        } else {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'NIK tidak ditemukan'
+            ], 200);
         }
-
-        // Filter Search
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('ticket_num', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%")
-                    ->orWhere('department', 'like', "%{$search}%")
-                    ->orWhere('plant', 'like', "%{$search}%")
-                    ->orWhere('category', 'like', "%{$search}%")
-                    ->orWhere('processed_by_name', 'like', "%{$search}%");
-            });
-        }
-
-        // Filter Status & Kategori
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-        if ($request->filled('category')) {
-            $query->where('category', $request->category);
-        }
-        if ($request->filled('parameter')) {
-            $query->where('parameter_permintaan', $request->parameter);
-        }
-
-        // Filter Tanggal
-        if ($request->filled('start_date')) {
-            $query->whereDate('created_at', '>=', $request->start_date);
-        }
-        if ($request->filled('end_date')) {
-            $query->whereDate('created_at', '<=', $request->end_date);
-        }
-
-        return $query->with('user')->latest();
     }
 
-    // --- 2. HALAMAN UTAMA (INDEX) - YANG TADI HILANG ---
+    // =========================================================================
+    // 2. MAIN PAGES (INDEX & DASHBOARD)
+    // =========================================================================
+
     public function index(Request $request)
     {
-        $query = $this->buildQuery($request);
-        $workOrders = $query->with(['user', 'histories.user'])->paginate(10)->withQueryString();
+        $workOrders = $this->gaService->getWorkOrders(
+            $request,
+            Auth::user()
+        );
+
+        $stats = $this->gaService->getIndexStats(Auth::user());
+
+        // Filter plant agar list tidak terlalu panjang (Sesuai kode asli Anda)
+        $plants = Plant::whereNotIn('name', ['QC', 'FO', 'PE', 'QR', 'SS', 'MT', 'FH', 'RM', 'Plant F'])->get();
         $pageIds = $workOrders->pluck('id')->toArray();
-        $plants = Plant::whereNotIn('name', ['QC', 'GA', 'FO', 'PE', 'QR', 'SS', 'MT', 'FH'])->get();
+        $categoriesDB = Category::where('status', 'active')->get();
 
-        // Counter Sederhana untuk Index
-        $user = Auth::user();
-        $statsQuery = WorkOrderGeneralAffair::query();
-        if ($user->role !== 'ga.admin') {
-            $statsQuery->where('requester_id', $user->id);
-        }
 
-        $countTotal = (clone $statsQuery)->count();
-        $countPending = (clone $statsQuery)->where('status', 'pending')->count();
-        $countInProgress = (clone $statsQuery)->where('status', 'in_progress')->count();
-        $countCompleted = (clone $statsQuery)->where('status', 'completed')->count();
-
-        return view('Division.GeneralAffair.GeneralAffair', compact(
-            'workOrders',
-            'plants',
-            'pageIds',
-            'countTotal',
-            'countPending',
-            'countInProgress',
-            'countCompleted'
+        return view('Division.GeneralAffair.GeneralAffair', array_merge(
+            [
+                'workOrders' => $workOrders,
+                'plants' => $plants,
+                'pageIds' => $pageIds,
+                'parameters' => config('workorder.parameters'),
+                'categories' => config('workorder.categories'),
+                'categoriesDB' => $categoriesDB
+            ],
+            $stats
         ));
     }
 
-    // --- 3. HALAMAN DASHBOARD (STATISTIK) ---
     public function dashboard(Request $request)
     {
-        if (Auth::user()->role !== 'ga.admin') {
-            abort(403, 'Akses Ditolak.');
+        $data = $this->dashboardService->getDashboardData($request);
+        return view('Division.GeneralAffair.Dashboard', $data);
+    }
+
+    // =========================================================================
+    // 3. CRUD ACTIONS (STORE, UPDATE, APPROVE, REJECT)
+    // =========================================================================
+
+    public function store(StoreWorkOrderRequest $request): RedirectResponse
+    {
+        try {
+            $result = $this->gaService->createWorkOrder(
+                $request->validated(),
+                $request->file('photo')
+            );
+
+            return redirect()->back()->with('success', $result['message']);
+        } catch (\Exception $e) {
+            \Log::error('Gagal Store GA: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal menyimpan: ' . $e->getMessage());
         }
+    }
 
-        // Ambil 10 Tiket Terakhir (exclude cancelled)
-        $query = WorkOrderGeneralAffair::where('status', '!=', 'cancelled');
-        if ($request->filled('start_date') && $request->filled('end_date')) {
-            $query->whereDate('created_at', '>=', $request->start_date)
-                ->whereDate('created_at', '<=', $request->end_date)->latest();
-        } else {
-            $query->latest()->take(30);
-        }
-        $workOrders = $query->get();
+    public function getDepartmentsByPlant($plant_id)
+    {
+        try {
+            $plant = Plant::find($plant_id);
+            if (!$plant) return response()->json([]);
 
-        $statsQuery = WorkOrderGeneralAffair::query();
+            $name = trim($plant->name);
+            $specificDept = '';
 
-        if ($request->filled('start_date') && $request->filled('end_date')) {
-            $statsQuery->whereDate('created_at', '>=', $request->start_date)
-                ->whereDate('created_at', '<=', $request->end_date);
-        }
-
-        // Counter Utama
-        $countTotal = (clone $statsQuery)->count();
-        $countPending = (clone $statsQuery)->where('status', 'pending')->count();
-        $countInProgress = (clone $statsQuery)->where('status', 'in_progress')->count();
-        $countCompleted = (clone $statsQuery)->where('status', 'completed')->count();
-
-        // Chart 1: LOKASI
-        $locData = (clone $statsQuery)
-            ->selectRaw("plant as location, count(*) as total")
-            ->whereNotNull('plant')
-            ->groupBy('plant')
-            ->orderByDesc('total')
-            ->get();
-        $chartLocLabels = $locData->pluck('location')->toArray();
-        $chartLocValues = $locData->pluck('total')->toArray();
-
-        // Chart 2: DEPARTMENT
-        $deptData = (clone $statsQuery)
-            ->selectRaw("department, count(*) as total")
-            ->whereNotNull('department')
-            ->groupBy('department')
-            ->orderByDesc('total')
-            ->get();
-        $chartDeptLabels = $deptData->pluck('department')->toArray();
-        $chartDeptValues = $deptData->pluck('total')->toArray();
-
-        // Chart 3: PARAMETER
-        $paramData = (clone $statsQuery)
-            ->selectRaw("parameter_permintaan, count(*) as total")
-            ->whereNotNull('parameter_permintaan')
-            ->groupBy('parameter_permintaan')
-            ->get();
-        $chartParamLabels = $paramData->pluck('parameter_permintaan')->toArray();
-        $chartParamValues = $paramData->pluck('total')->toArray();
-
-        // Chart 4: BOBOT
-        $bobotData = (clone $statsQuery)
-            ->selectRaw('category, count(*) as total')
-            ->groupBy('category')
-            ->pluck('total', 'category')->toArray();
-
-        $chartBobotLabels = ['Berat (High)', 'Sedang (Medium)', 'Ringan (Low)'];
-        $chartBobotValues = [
-            $bobotData['BERAT'] ?? 0,
-            $bobotData['SEDANG'] ?? 0,
-            $bobotData['RINGAN'] ?? 0
-        ];
-        // 1. Ambil Bulan Filter (Default: Bulan Ini)
-        $filterMonth = $request->input('filter_month', date('Y-m')); // Format YYYY-MM
-        $year = substr($filterMonth, 0, 4);
-        $month = substr($filterMonth, 5, 2);
-
-        // 2. Query Khusus Persentase
-        // Logika: Ambil tiket yang TARGET-nya di bulan ini. 
-        // Jika target kosong, ambil yang DIBUAT di bulan ini.
-        $perfQuery = WorkOrderGeneralAffair::where('status', '!=', 'cancelled')
-            ->where(function ($q) use ($year, $month) {
-                // Kondisi A: Punya Target Date di bulan terpilih
-                $q->whereYear('target_completion_date', $year)
-                    ->whereMonth('target_completion_date', $month)
-                    // Kondisi B: Target NULL, tapi Created At di bulan terpilih
-                    ->orWhere(function ($sub) use ($year, $month) {
-                        $sub->whereNull('target_completion_date')
-                            ->whereYear('created_at', $year)
-                            ->whereMonth('created_at', $month);
-                    });
-            });
-
-        $perfTotal = $perfQuery->count();
-        $perfCompleted = (clone $perfQuery)->where('status', 'completed')->count();
-
-        // Hitung Persentase (Hindari division by zero)
-        $perfPercentage = $perfTotal > 0 ? round(($perfCompleted / $perfTotal) * 100) : 0;
-
-        // Chart 5: GANTT CHART
-        $ganttLabels = [];
-        $ganttData = [];
-        $ganttColors = [];
-        $ganttRawData = [];
-
-        foreach ($workOrders as $wo) {
-            $deptCode = $wo->department ?? '-';
-            $ganttLabels[] = "[" . $deptCode . "] " . $wo->ticket_num;
-
-            // Format Tanggal
-            $start = $wo->created_at ? Carbon::parse($wo->created_at)->format('Y-m-d') : date('Y-m-d');
-
-            if ($wo->status == 'completed' && $wo->actual_completion_date) {
-                $endRaw = $wo->actual_completion_date;
-            } else {
-                $endRaw = $wo->target_completion_date ?? date('Y-m-d');
-            }
-            $end = Carbon::parse($endRaw)->format('Y-m-d');
-
-            // VALIDASI VISUALISASI GRAFIK
-            if ($end < $start) {
-                $end = $start; // Cegah error tanggal minus
-            }
-            if ($end == $start) {
-                // TRIK: Jika mulai & selesai di hari yang sama, tambah 1 hari agar grafik terlihat (muncul balok pendek)
-                $end = Carbon::parse($end)->addDay()->format('Y-m-d');
+            switch ($name) {
+                case 'Plant A':
+                case 'Plant C':
+                case 'Plant F':
+                case 'MC Cable':
+                case 'Autowire':
+                    $specificDept = 'Low Voltage';
+                    break;
+                case 'Plant B':
+                case 'Plant D':
+                    $specificDept = 'Medium Voltage';
+                    break;
+                case 'Plant E':
+                case 'FO':
+                    $specificDept = 'FO';
+                    break;
+                case 'RM 1':
+                case 'RM 2':
+                case 'RM 3':
+                case 'RM 5':
+                case 'RM Office':
+                    $specificDept = 'SC';
+                    break;
+                case 'QC FO':
+                case 'QC LAB':
+                case 'QC LV':
+                case 'QC MV':
+                case 'QR':
+                    $specificDept = 'QR';
+                    break;
+                case 'Konstruksi':
+                    $specificDept = 'FH';
+                    break;
+                case 'Workshop Electric':
+                case 'MT':
+                    $specificDept = 'MT';
+                    break;
+                case 'Gudang Jadi':
+                case 'SS':
+                    $specificDept = 'SS';
+                    break;
+                case 'Plant Tools':
+                case 'PE':
+                    $specificDept = 'PE';
+                    break;
+                case 'Planning':
+                    $specificDept = 'Planning';
+                    break;
+                case 'IT':
+                    $specificDept = 'IT';
+                    break;
+                case 'GA':
+                    $specificDept = 'GA';
+                    break;
+                case 'FA':
+                    $specificDept = 'FA';
+                    break;
+                case 'Marketing':
+                    $specificDept = 'Marketing';
+                    break;
+                case 'HC':
+                    $specificDept = 'HC';
+                    break;
+                case 'Sales 1':
+                    $specificDept = 'Sales 1';
+                    break;
+                case 'Sales 2':
+                    $specificDept = 'Sales 2';
+                    break;
+                default:
+                    $specificDept = 'General';
+                    break;
             }
 
-            $ganttData[] = [$start, $end];
-
-            // LOGIKA WARNA (ABU-ABU JIKA SELESAI)
-            if ($wo->status == 'completed') {
-                $ganttColors[] = '#94a3b8'; // Abu-abu
-            } else {
-                $ganttColors[] = match ($wo->category) {
-                    'BERAT' => '#ef4444',
-                    'SEDANG' => '#f59e0b',
-                    default => '#22c55e',
-                };
-            }
-
-            // Data Pelengkap untuk Tooltip
-            $ganttRawData[] = [
-                'dept' => $wo->department ?? 'General',
-                'loc' => $wo->plant ?? '-',
-                'status' => $wo->status // <--- Pastikan ini ada agar ceklis muncul
+            $departments = [
+                $specificDept,
+                'FA',
+                'FH',
+                'FO',
+                'GA',
+                'HC',
+                'IT',
+                'Low Voltage',
+                'MT',
+                'Marketing',
+                'Medium Voltage',
+                'PE',
+                'Planning',
+                'QR',
+                'Sales 1',
+                'Sales 2',
+                'SC',
+                'SS',
             ];
-        }
 
-        return view('Division.GeneralAffair.Dashboard', compact(
-            'countTotal',
-            'countPending',
-            'countInProgress',
-            'countCompleted',
-            'chartLocLabels',
-            'chartLocValues',
-            'chartDeptLabels',
-            'chartDeptValues',
-            'chartParamLabels',
-            'chartParamValues',
-            'chartBobotLabels',
-            'chartBobotValues',
-            'ganttLabels',
-            'ganttData',
-            'ganttColors',
-            'ganttRawData',
-            'workOrders',
-            'perfTotal',
-            'perfCompleted',
-            'perfPercentage',
-            'filterMonth'
-        ));
+            return response()->json(array_values(array_unique($departments)));
+        } catch (\Exception $e) {
+            \Log::error('Error getDepartmentsByPlant: ' . $e->getMessage());
+            return response()->json(['General'], 200);
+        }
     }
 
-    // --- 4. FORM CREATE ---
-    public function create()
+    // --- UTAMA: ACTION APPROVE/REJECT OLEH ADMIN GA ---
+    public function processTicket(ProcessTicketRequest $request, $id)
     {
-        $plants = Plant::whereNotIn('name', ['QC', 'GA', 'FO', 'PE', 'QR', 'SS', 'MT', 'FH'])->get();
-        $workOrders = WorkOrderGeneralAffair::with('user')->latest()->paginate(10);
-        return view('general-affair.index', compact('workOrders', 'plants'));
+        try {
+            // Panggil Service (Return berupa Array sekarang)
+            $result = $this->gaService->processTicket(
+                $id,
+                $request->action,
+                $request->reason
+            );
+
+            // 1. Siapkan Redirect dengan pesan Sukses
+            $redirect = redirect()->back()->with('success', $result['message']);
+
+            // 2. Cek apakah ada request untuk menampilkan Alert Peringatan
+            // (Ini yang memicu popup "Segera Kerjakan" di view)
+            if (!empty($result['alert'])) {
+                $redirect->with('alert-action', $result['alert']);
+            }
+
+            return $redirect;
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal memproses tiket: ' . $e->getMessage());
+        }
     }
 
-    // --- 5. STORE DATA ---
-    public function store(Request $request)
+    // --- ACTION APPROVE OLEH ADMIN DIVISI LAIN (TECHNICAL) ---
+    public function approveByTechnical(Request $request, $id)
     {
-        $request->validate([
-            // Validasi Input Nama Baru
-            'manual_requester_name' => 'required|string|max:255',
+        $action = ($request->action === 'decline') ? 'reject' : 'approve';
 
-            'plant_id' => 'required',
-            'department' => 'required',
-            'description' => 'required',
-            'category' => 'required',
-            'parameter_permintaan' => 'required',
-            'photo' => 'nullable|image|max:5120'
-        ]);
+        try {
+            $result = $this->gaService->processTicket(
+                $id,
+                $action,
+                $request->reason
+            );
 
-        $plantData = Plant::find($request->plant_id);
-        $plantName = $plantData ? $plantData->name : 'Unknown Plant';
-
-        $photoPath = null;
-        if ($request->hasFile('photo')) {
-            $photoPath = $request->file('photo')->store('wo_ga', 'public');
+            // Kita ambil message dari array result
+            return redirect()->back()->with('success', $result['message']);
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal: ' . $e->getMessage());
         }
-
-        // Generate Nomor Tiket
-        $dateCode = date('Ymd');
-        $prefix = 'woGA-' . $dateCode . '-';
-        $lastTicket = WorkOrderGeneralAffair::where('ticket_num', 'like', $prefix . '%')->orderBy('id', 'desc')->first();
-        $newSequence  = $lastTicket ? ((int) substr($lastTicket->ticket_num, -3) + 1) : 1;
-        $ticketNum = $prefix . sprintf('%03d', $newSequence);
-
-        // --- SIMPAN DATA ---
-        $ticket = WorkOrderGeneralAffair::create([
-            'ticket_num' => $ticketNum,
-
-            // 1. Requester ID tetap ambil dari akun yang login (untuk trace akun mana yang pakai)
-            'requester_id' => Auth::id(),
-
-            // 2. Requester Name DIUBAH: Ambil dari Input Manual
-            'requester_name' => $request->manual_requester_name,
-
-            'plant' => $plantName,
-            'department' => $request->department,
-            'description' => $request->description,
-            'category' => $request->category,
-            'parameter_permintaan' => $request->parameter_permintaan,
-            'status' => 'pending',
-            'status_permintaan' => $request->status_permintaan,
-            'photo_path' => $photoPath,
-        ]);
-
-        WorkOrderGaHistory::create([
-            'work_order_id' => $ticket->id,
-            'user_id' => Auth::id(),
-            'action' => 'Created',
-            // Update deskripsi history agar mencatat nama inputan juga
-            'description' => 'Tiket dibuat atas nama: ' . $request->manual_requester_name
-        ]);
-
-        return redirect()->route('ga.index')->with('success', 'Permintaan berhasil dibuat!');
     }
 
-    // --- 6. UPDATE STATUS ---
-    public function updateStatus(Request $request, $id)
+    // --- UPDATE STATUS PROGRESS (OLEH GA ADMIN) ---
+    public function updateStatus(UpdateStatusRequest $request, $id)
     {
-        if (!in_array(auth()->user()->role, ['ga.admin'])) {
-            abort(403, 'Anda tidak memiliki akses.');
+        try {
+            $this->gaService->updateStatus(
+                $id,
+                $request->validated(),
+                $request->file('completion_photo')
+            );
+            return redirect()->back()->with('success', 'Status berhasil diperbarui.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Terjadi Kesalahan: ' . $e->getMessage());
         }
-        $user = auth()->user();
-        $ticket = WorkOrderGeneralAffair::findOrFail($id);
-        $oldStatus = $ticket->status;
-
-        $request->validate([
-            'admin_name' => 'required|string|max:255'
-        ]);
-
-        if ($ticket->status == 'pending') {
-            if ($request->action == 'decline') {
-                $ticket->status = 'cancelled';
-                $ticket->processed_by = $user->id;
-                $ticket->processed_by_name = $request->admin_name;
-                $ticket->save();
-
-                WorkOrderGaHistory::create([
-                    'work_order_id' => $ticket->id,
-                    'user_id' => $user->id,
-                    'action' => 'Declined',
-                    'description' => 'Permintaan ditolak oleh ' . $request->admin_name . '.',
-                ]);
-
-                return redirect()->route('ga.index')->with('error', 'Permintaan telah di tolak.');
-            }
-            if ($request->action == 'accept') {
-                $request->validate([
-                    'category' => 'required',
-                    'target_date' => 'required|date',
-                ]);
-                $ticket->status = 'in_progress';
-                $ticket->category = $request->category;
-                $ticket->target_completion_date = $request->target_date;
-                $ticket->processed_by = $user->id;
-                $ticket->processed_by_name = $request->admin_name;
-                $ticket->save();
-
-                WorkOrderGaHistory::create([
-                    'work_order_id' => $ticket->id,
-                    'user_id' => $user->id,
-                    'action' => 'Accepted',
-                    'description' => "Permintaan diterima. Target: {$request->target_date}. Kategori: {$request->category}.",
-                ]);
-                return redirect()->route('ga.index')->with('success', 'Permintaan berhasil diterima dan akan di proses.');
-            }
-        }
-
-        $request->validate([
-            'status' => 'required',
-            'completion_photo' => 'nullable|image|max:5120'
-        ]);
-
-        $ticket->status = $request->status;
-
-        if ($request->filled('department')) {
-            $ticket->department = $request->department;
-        }
-
-        if ($request->status === 'completed') {
-            $ticket->actual_completion_date = now()->toDateString();
-            if ($request->hasFile('completion_photo')) {
-                $photoPath = $request->file('completion_photo')->store('wo_ga_completed', 'public');
-                $ticket->photo_completed_path = $photoPath;
-            }
-        } elseif ($request->filled('target_date')) {
-            $ticket->target_completion_date = $request->target_date;
-        }
-
-        $ticket->processed_by = $user->id;
-        $ticket->processed_by_name = $request->admin_name;
-        $ticket->save();
-
-        WorkOrderGaHistory::create([
-            'work_order_id' => $ticket->id,
-            'user_id' => $user->id,
-            'action' => 'Status Updated',
-            'description' => 'Status diubah dari ' . $oldStatus . ' menjadi ' . $request->status . '.',
-        ]);
-
-        return redirect()->route('ga.index')->with('success', 'Status tiket berhasil diperbarui!');
     }
 
-    // --- 7. EXPORT EXCEL ---
+    // =========================================================================
+    // 4. EXPORT
+    // =========================================================================
+
     public function export(Request $request)
     {
-        // 1. LOGIKA QUERY
-        if ($request->filled('selected_ids') && $request->selected_ids != '') {
-            $idsRaw = is_array($request->selected_ids) ? end($request->selected_ids) : $request->selected_ids;
-            $ids = explode(',', $idsRaw);
+        $user = Auth::user();
+        $query = WorkOrderGeneralAffair::query();
 
-            $query = WorkOrderGeneralAffair::with('user')
-                ->whereIn('id', $ids)
-                ->latest();
-        } else {
-            // Gunakan logika filter dari index
-            $query = $this->buildQuery($request);
-            $query->with('user');
+        // LOGIKA HAK AKSES (Access Control)
+        $roleMap = [
+            'eng.admin' => ['Engineering', 'engineering', 'ENGINEERING', 'PE'],
+            'fh.admin'  => ['Facility', 'FH', 'FACILITY'],
+            'mt.admin'  => ['Maintenance', 'maintenance', 'MT'],
+            'lv.admin'  => ['Low Voltage', 'LOW VOLTAGE', 'low voltage', 'LV', 'lv'],
+            'mv.admin'  => ['Medium Voltage', 'medium voltage', 'MV', 'mv'],
+            'qr.admin'  => ['QR', 'qr'],
+            'sc.admin'  => ['SC', 'sc'],
+            'fo.admin'  => ['FO', 'fo'],
+            'ss.admin'  => ['SS', 'ss'],
+            'fa.admin'  => ['FA', 'fa'],
+            'it.admin'  => ['IT', 'it'],
+            'hc.admin'  => ['HC', 'hc'],
+            'sales1.admin' => ['Sales 1', 'sales 1'],
+            'sales2.admin' => ['Sales 2', 'sales 2'],
+            'marketing.admin' => ['Marketing', 'marketing'],
+        ];
+
+        if ($user) {
+            if ($user->role === User::ROLE_GA_ADMIN || $user->role === 'admin_ga') {
+                $query->where(function ($q) {
+                    $q->whereIn('status', ['pending', 'approved', 'in_progress', 'completed', 'OPEN']);
+                    $q->orWhere(function ($sub) {
+                        $sub->where('status', 'waiting_approval')
+                            ->whereIn('department', ['GA', 'General Affair']);
+                    });
+                });
+            } elseif (array_key_exists($user->role, $roleMap)) {
+                $allowedDepts = $roleMap[$user->role];
+                $query->where(function ($q) use ($user, $allowedDepts) {
+                    $q->whereIn('department', $allowedDepts)
+                        ->orWhere('requester_id', $user->id);
+                });
+            } else {
+                $query->where('requester_id', $user->id);
+            }
         }
 
-        // 2. EKSEKUSI DATA
-        $data = $query->get();
+        // LOGIKA FILTER
+        if ($request->filled('selected_ids')) {
+            $ids = explode(',', $request->selected_ids);
+            $query->whereIn('id', $ids);
+        } else {
+            $query->when($request->search, function ($q) use ($request) {
+                $q->where(function ($sub) use ($request) {
+                    $sub->where('ticket_num', 'LIKE', "%{$request->search}%")
+                        ->orWhere('requester_name', 'LIKE', "%{$request->search}%")
+                        ->orWhere('description', 'LIKE', "%{$request->search}%");
+                });
+            });
 
-        // 3. GENERATE NAMA FILE
-        $filename = 'Laporan-GA-' . date('d-m-Y-H-i') . '.xlsx';
+            $query->when($request->status && $request->status !== 'all', fn($q) => $q->where('status', $request->status));
+            $query->when($request->category && $request->category !== 'all', fn($q) => $q->where('category', $request->category));
+            $query->when($request->parameter && $request->parameter !== 'all', fn($q) => $q->where('parameter_permintaan', $request->parameter));
+            $query->when($request->plant_id && $request->plant_id !== 'all', fn($q) => $q->where('plant', $request->plant_id));
 
-        // 4. DOWNLOAD EXCEL
-        return Excel::download(new WorkOrderExport($data), $filename);
+            if ($request->filled('start_date') && $request->filled('end_date')) {
+                $query->whereDate('created_at', '>=', $request->start_date)
+                    ->whereDate('created_at', '<=', $request->end_date);
+            }
+        }
+
+        $query->orderBy('created_at', 'desc');
+
+        return Excel::download(new WorkOrderExport($query), 'Laporan-GA-' . date('d-m-Y-H-i') . '.xlsx');
     }
 }
