@@ -26,9 +26,21 @@ class AuthenticatedSessionController extends Controller
     {
         $request->authenticate();
 
-        $request->session()->regenerate();
+        $intendedUrl = $request->session()->get('url.intended', '');
+        $isDashboard = str_contains($intendedUrl, '/dashboard');
 
-        return redirect()->intended(route('landing', absolute: false));
+
+        if (!$intendedUrl || $isDashboard) {
+            auth()->guard('web')->logout();
+
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('login')->with('error', 'HARAP MASUKKAN KODE DEPARTMENT DI URL (Contoh: /wo-fh, /wo-eng, atau /wo-ga).');
+        }
+
+        $request->session()->regenerate();
+        return redirect()->intended();
     }
 
     /**

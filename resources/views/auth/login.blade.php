@@ -34,7 +34,12 @@
         </div>
 
         <x-auth-session-status class="mb-4" :status="session('status')" />
-
+        @if (session('error'))
+            <div class="alert alert-danger"
+                style="color: red; background-color: #fdd; padding: 10px; margin-bottom: 15px; border-radius: 5px;">
+                <strong>Perhatian!</strong> {{ session('error') }}
+            </div>
+        @endif
         <form method="POST" action="{{ route('login') }}" @submit="loading = true" class="space-y-6">
             @csrf
 
