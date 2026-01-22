@@ -11,6 +11,14 @@ class DashboardService
 {
     public function getDashboardData($request)
     {
+        $user = auth()->user();
+
+        $isOrangGa = $user->divisi === 'General Affair';
+        $isAdminGa = $user->role === 'ga.admin';
+
+        if (!$isOrangGa && !$isAdminGa) {
+            abort(403, 'Unauthorized access to General Affair dashboard.');
+        }
         // 1. Base Query
         $query = WorkOrderGeneralAffair::query()
             ->whereIn('status', ['in_progress', 'completed', 'approved']);
