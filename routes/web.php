@@ -109,8 +109,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/process/{id}', [GeneralAffairController::class, 'processTicket'])->name('process');
         Route::post('/{id}/approve-technical', [GeneralAffairController::class, 'approveByTechnical'])->name('approve-technical');
         Route::put('/update-status/{id}', [GeneralAffairController::class, 'updateStatus'])->name('update-status');
+        Route::get('/get-departments/{plant_id}', [GeneralAffairController::class, 'getDepartmentsByPlant'])->name('get.departments');
     });
-    Route::get('/get-departments/{plant_id}', [GeneralAffairController::class, 'getDepartmentsByPlant'])->name('get.departments');
 
 
     // --- E. MODULE ENGINEERING (ENG) ---

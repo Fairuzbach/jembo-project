@@ -75,8 +75,15 @@
                 
                         this.isLoadingDept = true;
                         try {
-                            const response = await axios.get('/get-departments/' + plantId);
-                            this.departments = response.data;
+                            // PERBAIKAN: Gunakan 'window.axios' bukan 'axios' saja
+                            const response = await fetch('/ga/get-departments/' + plantId);
+                
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                
+                            // Fetch perlu convert ke JSON manual
+                            this.departments = await response.json();
                 
                             if (!keepSelected) {
                                 this.formData.department = '';
