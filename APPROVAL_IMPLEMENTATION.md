@@ -49,7 +49,7 @@ GA Admin approve → Status: Pending (siap dikerjakan)
 - Update `getDashboardData()` untuk membedakan antara `pending` dan approval statuses
 - Menambahkan `countWaitingApprovalSpv` dan `countWaitingApprovalGA` ke return data
 
-### 4. **resources/views/Components/index/stats-card.blade.php**
+### 4. **resources/views/components/index/stats-card.blade.php**
 
 - Mengubah props untuk menerima `countWaitingApprovalSpv` dan `countWaitingApprovalGA`
 - Memperbarui card array untuk menampilkan:
@@ -67,7 +67,7 @@ GA Admin approve → Status: Pending (siap dikerjakan)
     - `waiting_approval_spv`
     - `waiting_approval_ga`
 
-### 6. **resources/views/Components/index/table-data.blade.php**
+### 6. **resources/views/components/index/table-data.blade.php**
 
 - Update kondisi untuk menampilkan action buttons:
     - Dari `in_array($item->status, ['waiting_spv', 'waiting_approval'])`

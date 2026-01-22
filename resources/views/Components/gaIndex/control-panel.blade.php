@@ -45,34 +45,7 @@
                 </button>
 
 
-                @can('user.manage')
-                    @php
-                        // Cek apakah user sedang berada di halaman user management
-                        // Sesuaikan 'users.*' atau 'admin.users.*' dengan nama route Anda
-                        $isActive = request()->routeIs('users.*') || request()->routeIs('admin.users.*');
 
-                        $classes = $isActive
-                            ? 'bg-indigo-50 text-indigo-700 border-r-4 border-indigo-600' // Style Aktif
-                            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'; // Style Inaktif
-                    @endphp
-
-                    <a href="{{ route('users.index') }}"
-                        class="flex items-center gap-3 px-6 py-3 text-sm font-medium transition-all duration-200 {{ $classes }}">
-
-                        {{-- Icon Users --}}
-                        <svg class="w-5 h-5 {{ $isActive ? 'text-indigo-600' : 'text-slate-400 group-hover:text-slate-500' }}"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-
-                        <span>User & Role Management</span>
-
-                        @if ($isActive)
-                            <span class="ml-auto w-2 h-2 rounded-full bg-indigo-600"></span>
-                        @endif
-                    </a>
-                @endcan
                 {{-- Export Button (General - Tanpa Centang) --}}
                 {{-- Ini akan mengexport semua data sesuai filter saat ini --}}
 
@@ -88,17 +61,7 @@
                         {{-- Dashboard button --}}
                     </button>
                 @endif
-                @if (Auth::user()->role === 'ga.admin')
-                    <a href="{{ route('ga.dashboard') }}"
-                        class="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-5 py-2.5 rounded-sm font-black uppercase tracking-wider shadow-md hover:from-blue-600 hover:to-blue-700 hover:shadow-lg transition-all transform active:scale-95 border-2 border-blue-700/30">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6">
-                            </path>
-                        </svg>
-                        <span class="hidden sm:inline">Dashboard</span>
-                    </a>
-                @endif
+
                 {{-- Create Button --}}
                 <button @click="showCreateModal = true" type="button"
                     class="flex items-center gap-2 bg-yellow-400 text-slate-900 px-5 py-2.5 rounded-sm font-black uppercase tracking-wider shadow-md hover:bg-yellow-300 hover:shadow-lg transition-all transform active:scale-95">
@@ -149,8 +112,7 @@
                                 </path>
                             </svg>
                         </div>
-                        <input type="hidden" name="start_date" id="start_date"
-                            value="{{ request('start_date') }}">
+                        <input type="hidden" name="start_date" id="start_date" value="{{ request('start_date') }}">
                         <input type="hidden" name="end_date" id="end_date" value="{{ request('end_date') }}">
                     </div>
                 </div>
@@ -159,8 +121,7 @@
                 <a href="{{ route('ga.index') }}"
                     class="text-xs font-bold text-red-500 hover:text-red-700 flex items-center gap-1 uppercase tracking-wide transition-colors">
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M6 18L18 6M6 6l12 12">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
                         </path>
                     </svg> Reset Filter
                 </a>

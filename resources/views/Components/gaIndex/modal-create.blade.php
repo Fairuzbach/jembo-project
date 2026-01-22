@@ -206,8 +206,8 @@
                                     <div class="relative">
                                         <input type="text" name="requester_nik" x-model="formData.nik"
                                             @keydown.enter.prevent="checkNik()" @blur="checkNik()"
-                                            class="w-full border-2 border-slate-300 focus:border-slate-900 rounded-sm text-sm font-bold h-11 placeholder-slate-300 px-3"
-                                            placeholder="Ketik NIK..." required>
+                                            class="w-full border-2 border-slate-300 focus:border-slate-900 rounded-sm text-sm font-bold h-11 placeholder-slate-300 px-3 cursor-not-allowed"
+                                            placeholder="Ketik NIK..." required readonly>
                                         <div x-show="isChecking" class="absolute right-3 top-3" style="display: none;">
                                             <svg class="animate-spin h-5 w-5 text-slate-900" viewBox="0 0 24 24">
                                                 <circle class="opacity-25" cx="12" cy="12" r="10"

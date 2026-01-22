@@ -50,6 +50,9 @@
                         <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
                             {{ __('User Management') }}
                         </x-nav-link>
+                        <x-nav-link :href="route('ga.dashboard')" :active="request()->routeIs('ga.dashboard')">
+                            {{ __('Admin Dashboard') }}
+                        </x-nav-link>
                     @endcan
 
                     {{-- Link Tambahan Khusus Module (Opsional) --}}
@@ -115,11 +118,12 @@
                 {{ __('Home') }}
             </x-responsive-nav-link>
             @can('user.manage')
-                <div class="mt-3 space-y-1">
-                    <x-responsive-nav-link :href="route('users.index')">
-                        {{ __('User Management') }}
-                    </x-responsive-nav-link>
-                </div>
+                <x-responsive-nav-link :href="route('users.index')">
+                    {{ __('User Management') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link x-responsive-nav-link :href="route('ga.dashboard')">
+                    {{ __('Admin Dashboard') }}
+                </x-responsive-nav-link>
             @endcan
         </div>
 
