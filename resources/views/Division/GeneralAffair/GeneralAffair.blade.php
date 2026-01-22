@@ -47,7 +47,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    @vite(['resources/css/general-affair.css', 'resources/js/general-affair.js'])
+    @vite(['resources/js/app.js'])
     <script>
         window.gaConfig = {
             pageIds: @json($pageIds ?? []),

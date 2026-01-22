@@ -82,7 +82,7 @@
 
         console.log('Gantt Data Loaded:', window.gaGanttData);
     </script>
-    @vite(['resources/css/dashboard.css', 'resources/js/dashboard.js'])
+    @vite(['resources/js/app.js'])
     {{-- KONTEN UTAMA --}}
     <div class="py-12 bg-slate-50">
 
