@@ -9,35 +9,13 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Mail\FacilityNotification;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class FacilityService
 {
-    private function getApprovalMatrix($plantName)
-    {
-        // Normalisasi nama plant
-        $p = strtolower($plantName);
-
-        if (str_contains($p, 'plant a')) {
-            return ['spv' => 'spv.lv', 'manager' => 'manager.lv'];
-        }
-        if (str_contains($p, 'plant b')) {
-            return ['spv' => 'spv.mv', 'manager' => 'manager.mv'];
-        }
-        if (str_contains($p, 'plant c')) {
-            return ['spv' => 'spv.lv', 'manager' => 'manager.lv']; // Asumsi sama dgn A sesuai prompt
-        }
-        if (str_contains($p, 'plant d')) {
-            return ['spv' => 'spv.mv', 'manager' => 'manager.mv']; // Asumsi sama dgn B
-        }
-        if (str_contains($p, 'plant e')) {
-            return ['spv' => 'spv.fo', 'manager' => 'manager.fo'];
-        }
-
-        // Default Fallback
-        return ['spv' => 'super.admin', 'manager' => 'super.admin'];
-    }
     /**
      * LOGIC 1: CREATE TICKET
      */
@@ -45,6 +23,7 @@ class FacilityService
     {
         return DB::transaction(function () use ($data, $file) {
             $user = auth()->user();
+
             // A. Handle File Upload
             $photoPath = $file ? $file->store('wo_facilities', 'public') : null;
 
@@ -54,13 +33,13 @@ class FacilityService
 
             $lastTicket = WorkOrderFacilities::where('ticket_num', 'like', $prefix . '%')
                 ->orderBy('id', 'desc')
-                ->lockForUpdate() // Cegah nomor ganda saat request bersamaan
+                ->lockForUpdate()
                 ->first();
 
             $newSeq = $lastTicket ? ((int)substr($lastTicket->ticket_num, -3) + 1) : 1;
             $ticketNum = $prefix . sprintf('%03d', $newSeq);
 
-            // C. Logika Mesin (Baru vs Lama)
+            // C. Logika Mesin
             $machineId = null;
             $machineName = null;
 
@@ -68,7 +47,7 @@ class FacilityService
                 $newMachine = Machine::create([
                     'plant_id' => $data['plant_id'],
                     'name' => $data['new_machine_name'],
-                    'code' => 'NEW-' . strtoupper(\Illuminate\Support\Str::random(5)),
+                    'code' => 'NEW-' . strtoupper(Str::random(5)),
                 ]);
                 $machineId = $newMachine->id;
                 $machineName = $newMachine->name;
@@ -80,7 +59,7 @@ class FacilityService
                 }
             }
 
-            // D. Ambil Nama Plant (Query Ringan)
+            // D. Ambil Nama Plant
             $plantName = Plant::where('id', $data['plant_id'])->value('name') ?? '-';
 
             // E. Simpan WO
@@ -101,10 +80,14 @@ class FacilityService
                 'photo_path' => $photoPath,
                 'status' => 'waiting_approval'
             ]);
-            // Notif ke SPV Plant Terkait (Todo: Implementasi kirim email ke role SPV spesifik)
-            $this->sendNotifications($ticket, $user, $ticket->status, $ticket->plant);
-            // F. Kirim Email ke Admin FH
-            $this->sendNotification($ticket, 'new_ticket');
+
+            // F. Notifikasi Terpusat
+            // 1. Info ke SPV Plant (Approval)
+            $this->notifyApprovers($ticket, $plantName);
+            // 2. Info ke Admin FH (New Ticket)
+            $this->notifyAdmins($ticket, 'new_ticket');
+            // 3. Info ke User (Created)
+            $this->safeMail($user->email, new FacilityNotification($ticket, 'created_info'));
 
             return [
                 'success' => true,
@@ -113,54 +96,46 @@ class FacilityService
             ];
         });
     }
-    // Pastikan use ini ada di paling atas
 
-
+    /**
+     * LOGIC: APPROVE TICKET
+     */
     public function approveTicket($id)
     {
         $ticket = WorkOrderFacilities::find($id);
         if (!$ticket) return ['success' => false, 'message' => 'Tiket tidak ditemukan.'];
 
         $user = auth()->user();
-
-        // Normalisasi
         $cleanRole   = strtolower(trim($user->role ?? ''));
         $userLevel   = strtolower(trim($user->job_level ?? ''));
-        $userDivisi  = trim($user->divisi ?? ''); // Case Sensitive untuk akurasi
+        $userDivisi  = trim($user->divisi ?? '');
         $ticketPlant = trim($ticket->plant ?? '');
 
-        // --- BYPASS ADMIN FACILITY ---
+        // Bypass Logic
         $facilityRoles = ['super.admin', 'fh.admin', 'fh.manager', 'fh.spv'];
         $isFacilityAdmin = in_array($cleanRole, $facilityRoles) || $user->divisi === 'Facility';
-
-        // --- LEVEL BOSS YANG DIIZINKAN ---
         $bossLevels = ['supervisor', 'manager', 'director'];
 
-        // 1. STATE: WAITING APPROVAL
+        // 1. STATE: WAITING APPROVAL (Approval Level Plant)
         if ($ticket->status == 'waiting_approval') {
 
             if ($isFacilityAdmin) {
                 // Admin Bypass
                 $ticket->update(['status' => 'waiting_facility_approval', 'updated_at' => now()]);
-                $this->sendEmailNotification($ticket, 'plant_approved');
+                $this->notifyRequester($ticket, 'status_update');
+                // Info ke Admin Facility bahwa ada tiket masuk fase pengerjaan
+                $this->notifyAdmins($ticket, 'fh_new');
                 return ['success' => true, 'message' => 'Disetujui Admin (Bypass).'];
             } else {
-                // NORMAL FLOW (Hierarki User)
-
-                // A. Cek Level Jabatan (Harus SPV ke atas)
+                // Logic Wewenang Hierarki
                 if (!in_array($userLevel, $bossLevels) && !str_contains($cleanRole, 'admin')) {
-                    return ['success' => false, 'message' => 'Anda tidak memiliki level jabatan untuk melakukan approval.'];
+                    return ['success' => false, 'message' => 'Anda tidak memiliki level jabatan untuk approval.'];
                 }
 
-                // B. Cek Wewenang Wilayah (SMART MAPPING)
                 $allowedKeywords = $this->getPlantAliases($ticketPlant);
-                // Contoh Hasil: ['CCV', 'Manager MV']
-
                 $isAuthorized = false;
 
                 foreach ($allowedKeywords as $keyword) {
-                    // Cek apakah Divisi User mengandung keyword yang diizinkan
-                    // Gunakan stripos (case-insensitive search)
                     if (stripos($userDivisi, $keyword) !== false) {
                         $isAuthorized = true;
                         break;
@@ -169,22 +144,20 @@ class FacilityService
 
                 if ($isAuthorized) {
                     $ticket->update(['status' => 'waiting_facility_approval', 'updated_at' => now()]);
-                    $this->sendEmailNotification($ticket, 'plant_approved');
+                    $this->notifyRequester($ticket, 'status_update');
+                    $this->notifyAdmins($ticket, 'fh_new'); // Info ke Facility team
                     return ['success' => true, 'message' => 'Disetujui. Menunggu verifikasi Facility.'];
                 } else {
-                    return [
-                        'success' => false,
-                        'message' => "Gagal. Divisi Anda ($userDivisi) tidak memiliki wewenang approval untuk area ini."
-                    ];
+                    return ['success' => false, 'message' => "Gagal. Divisi Anda ($userDivisi) tidak memiliki wewenang approval area ini."];
                 }
             }
         }
 
-        // 2. STATE: WAITING FACILITY
+        // 2. STATE: WAITING FACILITY (Approval Admin/Manager FH)
         elseif ($ticket->status == 'waiting_facility_approval') {
             if ($isFacilityAdmin) {
                 $ticket->update(['status' => 'pending', 'updated_at' => now()]);
-                $this->sendEmailNotification($ticket, 'facility_approved');
+                $this->notifyRequester($ticket, 'status_update');
                 return ['success' => true, 'message' => 'Tiket Disetujui Sepenuhnya (Pending).'];
             } else {
                 return ['success' => false, 'message' => 'Hanya Admin Facility yang bisa approve di tahap ini!'];
@@ -193,6 +166,7 @@ class FacilityService
 
         return ['success' => false, 'message' => 'Status tiket tidak valid.'];
     }
+
     public function rejectTicket($id, $reason)
     {
         $ticket = WorkOrderFacilities::findOrFail($id);
@@ -201,33 +175,22 @@ class FacilityService
             'rejection_reason' => $reason . ' (Rejected by ' . Auth::user()->name . ')'
         ]);
 
-        // Notif ke Requester bahwa ditolak
-        $this->sendNotification($ticket, 'status_update');
-
+        $this->notifyRequester($ticket, 'status_update');
         return ['success' => true, 'message' => 'Ticket Rejected.'];
     }
-    /**
-     * LOGIC 2: UPDATE STATUS
-     */
+
     public function updateStatus($id, array $data)
     {
         $wo = WorkOrderFacilities::findOrFail($id);
-
-        // A. Update Status
         $wo->status = $data['status'];
 
-        // B. Update Teknisi (Sync Array)
         if (isset($data['facility_tech_ids'])) {
             $ids = $data['facility_tech_ids'];
             if (!is_array($ids)) $ids = explode(',', (string)$ids);
-
-            // Filter hanya angka valid
             $ids = array_filter($ids, fn($val) => is_numeric($val) && $val > 0);
-
             $wo->technicians()->sync($ids);
         }
 
-        // C. Update Tanggal
         if (!empty($data['start_date'])) {
             $wo->start_date = $data['start_date'];
         }
@@ -238,28 +201,24 @@ class FacilityService
             $wo->actual_completion_date = null;
         }
 
-        // D. Catat Pemroses
         if (!$wo->processed_by) {
             $wo->processed_by = Auth::id();
             $wo->processed_by_name = Auth::user()->name;
         }
 
         $wo->save();
-
-        // E. Kirim Email ke Requester
-        $this->sendNotification($wo, 'status_update');
+        $this->notifyRequester($wo, 'status_update');
 
         return $wo;
     }
 
     /**
-     * LOGIC 3: GET DASHBOARD STATS (ANTI N+1)
+     * LOGIC: GET DASHBOARD STATS (Optimized)
      */
     public function getDashboardStats($request)
     {
         $query = WorkOrderFacilities::where('status', '!=', 'cancelled');
 
-        // Filter Bulan/Tanggal
         if ($request->filled('month')) {
             try {
                 $start = Carbon::createFromFormat('Y-m', $request->month)->startOfMonth()->format('Y-m-d');
@@ -269,28 +228,26 @@ class FacilityService
             }
         }
 
-        // [ANTI N+1] Eager Loading di sini KUNCI-nya!
-        // Ambil technicians, machine, dan user SEKALIGUS.
-        $workOrders = $query->with(['technicians', 'machine', 'user'])
-            ->latest()
-            ->get();
+        // Eager Loading relations untuk mencegah N+1
+        $workOrders = $query->with(['technicians', 'machine', 'user'])->latest()->get();
 
-        // Siapkan Data Return
         $stats = [
-            'workOrders' => $workOrders,
-            'countTotal' => $workOrders->count(),
-            'countPending' => $workOrders->where('status', 'pending')->count(),
+            'workOrders'    => $workOrders,
+            'countTotal'    => $workOrders->count(),
+            'countPending'  => $workOrders->where('status', 'pending')->count(),
             'countProgress' => $workOrders->where('status', 'in_progress')->count(),
-            'countDone' => $workOrders->where('status', 'completed')->count(),
+            'countDone'     => $workOrders->where('status', 'completed')->count(),
 
-            // Chart Helpers
-            'chartCatLabels' => $workOrders->groupBy('category')->keys(),
-            'chartCatValues' => $workOrders->groupBy('category')->map->count()->values(),
+            // Charts
+            'chartCatLabels'    => $workOrders->groupBy('category')->keys(),
+            'chartCatValues'    => $workOrders->groupBy('category')->map->count()->values(),
             'chartStatusLabels' => $workOrders->groupBy('status')->keys(),
             'chartStatusValues' => $workOrders->groupBy('status')->map->count()->values(),
+            'chartPlantLabels'  => $workOrders->groupBy('plant')->keys(),
+            'chartPlantValues'  => $workOrders->groupBy('plant')->map->count()->values(),
         ];
 
-        // Hitung Teknisi (Aman karena technicians sudah di-load)
+        // Hitung Teknisi (In-Memory Processing)
         $techData = [];
         foreach ($workOrders as $wo) {
             foreach ($wo->technicians as $tech) {
@@ -301,160 +258,151 @@ class FacilityService
         $stats['chartTechLabels'] = collect($techData)->keys();
         $stats['chartTechValues'] = collect($techData)->values();
 
-        // Gantt Chart Data
-        $ganttData = [];
-        foreach ($workOrders as $wo) {
-            $start = $wo->created_at ? $wo->created_at->format('Y-m-d') : date('Y-m-d');
-            $end = ($wo->status == 'completed' && $wo->actual_completion_date)
-                ? $wo->actual_completion_date
-                : ($wo->target_completion_date ?? date('Y-m-d'));
-
-            if ($end < $start) $end = $start;
-
-            $ganttData[] = [
-                'ticket' => $wo->ticket_num,
-                'status' => $wo->status,
-                'start' => $start,
-                'end' => $end,
-                'plant' => $wo->plant ?? '-',
-                'machine_name' => $wo->machine_name ?? '-',
-                'category' => $wo->category ?? '-'
-            ];
-        }
-        $stats['ganttData'] = $ganttData;
+        // Gantt Data (Reuse logic via method to avoid duplication)
+        // Kita panggil method getGanttChartData secara internal tapi pass data yg sudah di-load
+        // agar tidak query ulang
+        $stats['ganttData'] = $this->formatGanttData($workOrders)['data'];
 
         return $stats;
     }
 
     /**
-     * PRIVATE: SEND EMAIL
+     * LOGIC: GANTT CHART DATA (Requested Method)
+     * method ini dipanggil oleh FacilitiesController
      */
-    private function sendNotification($ticket, $type)
+    public function getGanttChartData()
     {
-        try {
-            $recipients = [];
+        // Limit 100 terakhir agar tidak berat
+        $tickets = WorkOrderFacilities::with(['technicians'])
+            ->latest()
+            ->limit(100)
+            ->get();
 
-            if ($type === 'new_ticket') {
-                // Ke Admin Facility
-                $recipients = User::where('role', 'fh.admin')->pluck('email')->toArray();
-            } elseif ($type === 'status_update') {
-                // Ke Requester
-                $requester = User::find($ticket->requester_id);
-                if ($requester && $requester->email) {
-                    $recipients[] = $requester->email;
-                }
-            }
-
-            if (!empty($recipients)) {
-                Mail::to($recipients)->send(new FacilityNotification($ticket, $type));
-            }
-        } catch (\Exception $e) {
-            // Log error tapi jangan hentikan aplikasi
-            \Illuminate\Support\Facades\Log::error("Gagal kirim email Facility: " . $e->getMessage());
-        }
+        return $this->formatGanttData($tickets);
     }
+
+    /**
+     * Helper Formatter Gantt (Clean Code)
+     */
+    private function formatGanttData($collection)
+    {
+        $ganttData = [];
+        foreach ($collection as $wo) {
+            $start = $wo->created_at ? $wo->created_at->format('Y-m-d') : date('Y-m-d');
+            $end = ($wo->status == 'completed' && $wo->actual_completion_date)
+                ? Carbon::parse($wo->actual_completion_date)->format('Y-m-d')
+                : ($wo->target_completion_date ?? date('Y-m-d'));
+
+            if ($end < $start) $end = $start;
+
+            $ganttData[] = [
+                // --- STANDAR DHTMLX (Untuk Grafik) ---
+                'id' => $wo->id,
+                'text' => $wo->ticket_num . ' - ' . Str::limit($wo->description, 20),
+                'start_date' => $start,
+                'duration' => Carbon::parse($start)->diffInDays(Carbon::parse($end)) + 1,
+                'progress' => ($wo->status == 'completed') ? 1 : (($wo->status == 'in_progress') ? 0.5 : 0),
+                'color' => $this->getStatusColor($wo->status),
+                'open' => true,
+
+                // --- COMPATIBILITY KEYS (Agar View Blade Tidak Error) ---
+                'start' => $start,         // <--- INI YANG DICARI VIEW ANDA
+                'end' => $end,             // <--- INI JUGA MUNGKIN DICARI
+                'ticket' => $wo->ticket_num,
+                'machine_name' => $wo->machine_name ?? '-',
+                'category' => $wo->category ?? '-',
+                'plant' => $wo->plant ?? '-',
+                'status' => $wo->status,
+            ];
+        }
+
+        return ['data' => $ganttData, 'links' => []];
+    }
+
+    private function getStatusColor($status)
+    {
+        return match ($status) {
+            'completed' => '#10b981', // Green
+            'in_progress' => '#3b82f6', // Blue
+            'pending' => '#f59e0b', // Orange
+            'rejected' => '#ef4444', // Red
+            default => '#6b7280' // Gray
+        };
+    }
+
+    /**
+     * --- NOTIFICATION HELPERS (Cleaned Up) ---
+     */
+
     private function safeMail(?string $to, $mailable): void
     {
         if (empty($to)) return;
-
         try {
-            \Illuminate\Support\Facades\Mail::to($to)->send($mailable);
-            \Illuminate\Support\Facades\Log::info("Facility Email sent to: $to");
+            Mail::to($to)->send($mailable);
+            Log::info("Facility Email sent to: $to");
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Mail Error (Facility): ' . $e->getMessage());
+            Log::error('Mail Error (Facility): ' . $e->getMessage());
         }
     }
 
-    /**
-     * Logic Notifikasi Awal (Saat Tiket Created)
-     * Adaptasi dari GA: sendNotifications
-     */
-    private function sendNotifications($ticket, $user, string $statusAwal, string $targetPlant): void
+    private function notifyRequester($ticket, $type)
     {
-        // A. Email ke Pelapor
-        if ($user->email) {
-            $this->safeMail($user->email, new \App\Mail\FacilityNotification($ticket, 'created_info'));
-        }
-
-        // B. Email ke Approver (Manager/SPV)
-        if ($statusAwal === 'waiting_approval') {
-
-            // Ambil Keyword Mapping (Contoh: Plant A Autowire -> ['Autowire', 'Manager LV'])
-            $targetAliases = $this->getPlantAliases($targetPlant);
-
-            // Cari Boss yang:
-            // 1. Levelnya SPV/Manager/Director
-            // 2. Divisinya mengandung salah satu Keyword
-            $approvers = \App\Models\User::where(function ($q) {
-                $q->whereIn('job_level', ['supervisor', 'manager', 'director'])
-                    ->orWhere('role', 'LIKE', '%admin%');
-            })
-                ->where(function ($q) use ($targetAliases) {
-                    foreach ($targetAliases as $alias) {
-                        $q->orWhere('divisi', 'LIKE', '%' . $alias . '%');
-                    }
-                })
-                ->get();
-
-            // Kirim Email
-            foreach ($approvers as $approver) {
-                $this->safeMail($approver->email, new \App\Mail\FacilityNotification($ticket, 'need_approval'));
-            }
-        }
-    }
-    private function sendEmailNotification($ticket, $type)
-    {
-        // A. Email ke Requester (Status Update)
-        $requester = \App\Models\User::find($ticket->requester_id);
+        $requester = User::find($ticket->requester_id);
         if ($requester && $requester->email) {
-            $this->safeMail($requester->email, new \App\Mail\FacilityNotification($ticket, 'status_update'));
-        }
-
-        // B. Jika Tiket Disetujui Manager -> Info ke Facility Admin
-        if ($type === 'plant_approved') {
-            $fhAdminEmails = \App\Models\User::whereIn('role', ['fh.admin', 'super.admin'])
-                ->orWhere('divisi', 'Facility')
-                ->pluck('email');
-
-            foreach ($fhAdminEmails as $email) {
-                $this->safeMail($email, new \App\Mail\FacilityNotification($ticket, 'fh_new'));
-            }
-        }
-
-        // C. Jika Tiket Selesai / Pending Facility
-        if ($type === 'facility_approved') {
-            // (Opsional) Bisa tambah logic lain disini
+            $this->safeMail($requester->email, new FacilityNotification($ticket, $type));
         }
     }
+
+    private function notifyAdmins($ticket, $type)
+    {
+        // Cari email Admin/Manager FH
+        $recipients = User::whereIn('role', ['fh.admin', 'fh.manager', 'super.admin'])
+            ->orWhere('divisi', 'Facility')
+            ->pluck('email')
+            ->unique(); // Mencegah duplikat
+
+        foreach ($recipients as $email) {
+            $this->safeMail($email, new FacilityNotification($ticket, $type));
+        }
+    }
+
+    private function notifyApprovers($ticket, $plantName)
+    {
+        $targetAliases = $this->getPlantAliases($plantName);
+
+        // Cari User dengan Jabatan Boss DAN Divisi sesuai mapping
+        $approvers = User::whereIn('job_level', ['supervisor', 'manager', 'director'])
+            ->where(function ($q) use ($targetAliases) {
+                foreach ($targetAliases as $alias) {
+                    $q->orWhere('divisi', 'LIKE', '%' . $alias . '%');
+                }
+            })
+            ->get();
+
+        foreach ($approvers as $approver) {
+            $this->safeMail($approver->email, new FacilityNotification($ticket, 'need_approval'));
+        }
+    }
+
     /**
-     * SMART MAPPING: Logika Hierarki Jembo Cable (LV/MV & CCV/Autowire)
-     */
-    /**
-     * SMART MAPPING: Logika Hierarki Jembo Cable (LV/MV & CCV/Autowire)
-     * Menerjemahkan Input Tiket -> Kata Kunci Jabatan Approver
+     * SMART MAPPING: Logika Hierarki Jembo Cable
      */
     private function getPlantAliases(string $plantName): array
     {
         $cleanName = strtoupper(trim($plantName));
 
-        // KASUS SPESIALIS (Autowire & CCV)
         if (str_contains($cleanName, 'AUTOWIRE') || str_contains($cleanName, 'AUTO WIRE')) {
             return ['Autowire', 'Manager LV', 'Low Voltage'];
         }
         if (str_contains($cleanName, 'CCV')) {
             return ['CCV', 'Manager MV', 'Medium Voltage'];
         }
-
-        // KASUS LOW VOLTAGE (Plant A & C)
         if (str_contains($cleanName, 'PLANT A')) return ['LV A', 'Manager LV', 'Plant A'];
         if (str_contains($cleanName, 'PLANT C')) return ['LV C', 'Manager LV', 'Plant C'];
-
-        // KASUS MEDIUM VOLTAGE (Plant B & D)
         if (str_contains($cleanName, 'PLANT B')) return ['MV B', 'Manager MV', 'Plant B'];
         if (str_contains($cleanName, 'PLANT D')) return ['MV D', 'Manager MV', 'Plant D'];
+        if (str_contains($cleanName, 'PLANT E')) return ['FO', 'Manager FO', 'Plant E', 'Fiber Optic'];
 
-        if (str_containts($cleanName, 'PLANT E')) return ['FO', 'Manager FO', 'Plant E', 'Fiber Optic Manager'];
-        // Default
         return [$plantName];
     }
 }

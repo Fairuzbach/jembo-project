@@ -36,7 +36,7 @@ class WorkOrderService
                 $statusAwal = 'pending';
             } else {
                 // Regular user or other admin → needs SPV/Dept Head approval first
-                $statusAwal = 'waiting_approval_spv';
+                $statusAwal = 'waiting_approval';
             }
 
             $fixName = $employee?->name ?? $data['requester_name'] ?? $user->name;
@@ -133,6 +133,28 @@ class WorkOrderService
         $updateData = [];
         $emailType = null; // Penanda jenis email yang akan dikirim
 
+        $isGaAdmin = in_array($cleanRole, ['ga.admin', 'super.ga.admin']);
+
+        if ($ticket->status === 'waiting_approval' && $action === 'approve' && $isGaAdmin) {
+            $ticket->status  = 'waiting_approval_ga';
+            $ticket->approved_ga_at = now();
+            // $ticket->manager_note = 'Auto Approve by GA Admin(Bypass)';
+            $ticket->save();
+
+            WorkOrderGaHistory::create([
+                'work_order_id' => $ticket->id,
+                'user_id'       => $user->id,
+                'action'        => 'bypass_approve',
+                'description'   => 'GA Admin melakukan bypass approval manager.',
+            ]);
+
+            return [
+                'status' => 'success',
+                'message' => 'Tiket berhasil di-bypass (Approve) oleh Admin.',
+                'alert' => 'Segera tentukan PIC untuk tiket ini.' // Alert untuk frontend
+            ];
+        }
+
         if ($action == 'reject') {
             $newStatus = 'rejected';
             $desc = "Ditolak. Alasan: $reason";
@@ -141,7 +163,7 @@ class WorkOrderService
             $adminRoles = ['ga.admin', 'admin_ga', 'ga_admin'];
             $isGAAdmin = in_array($cleanRole, $adminRoles);
 
-            if ($ticket->status === 'waiting_approval_spv') {
+            if ($ticket->status === 'waiting_approval') {
                 // TAHAP 1: Approval dari Supervisor/Manager
                 if ($isGAAdmin) {
                     // GA Bypass
@@ -186,7 +208,7 @@ class WorkOrderService
                     $updateData['approved_ga_at'] = now();
                     $emailType = 'ga_approved';
                 } else {
-                    $newStatus = 'waiting_ga_approval'; // Sesuaikan dengan ENUM database Anda (pakai 'waiting_approval_ga' jika itu yg benar)
+                    $newStatus = 'waiting_approval_ga'; // Sesuaikan dengan ENUM database Anda (pakai 'waiting_approval_ga' jika itu yg benar)
                     $desc = "Disetujui oleh Admin Divisi.";
                     $emailType = 'manager_approved';
                 }
@@ -299,11 +321,11 @@ class WorkOrderService
             // Pending = Tiket yang sudah di-approve GA tapi belum dikerjakan
             'countPending'            => (clone $baseQuery)->where('status', 'pending')->count(),
             // Waiting Approval SPV = Menunggu approval Supervisor/Dept Head
-            'countWaitingApprovalSpv' => (clone $baseQuery)->where('status', 'waiting_approval_spv')->count(),
+            'countWaitingApprovalSpv' => (clone $baseQuery)->where('status', 'waiting_approval')->count(),
             // Waiting Approval GA = Menunggu approval General Affairs Admin
             'countWaitingApprovalGA'  => (clone $baseQuery)->where('status', 'waiting_approval_ga')->count(),
             // Total semua approval yang menunggu (untuk compatibility dengan stats-card)
-            'countWaitingApproval'    => (clone $baseQuery)->whereIn('status', ['waiting_approval_spv', 'waiting_approval_ga'])->count(),
+            'countWaitingApproval'    => (clone $baseQuery)->whereIn('status', ['waiting_approval', 'waiting_approval_ga'])->count(),
             'countInProgress'         => (clone $baseQuery)->where('status', 'in_progress')->count(),
             'countCompleted'          => (clone $baseQuery)->where('status', 'completed')->count(),
             'countRejected'           => (clone $baseQuery)->where('status', 'rejected')->count(),
@@ -317,7 +339,7 @@ class WorkOrderService
         if (!$user) return;
 
         // 1. LOGIKA ADMIN GA (Melihat semua tiket untuk GA)
-        if ($user->role === User::ROLE_GA_ADMIN || $user->role === 'admin_ga') {
+        if ($user->role === User::ROLE_GA_ADMIN || $user->role === 'ga.admin') {
             $query->where(function ($q) {
                 // Admin GA melihat tiket dengan berbagai status
                 $q->whereIn('status', [
@@ -327,13 +349,13 @@ class WorkOrderService
                     'completed',
                     'OPEN',
                     'waiting_approval_ga',
-                    'waiting_approval_spv',
+                    'waiting_approval',
                     'rejected'
                 ]);
 
                 // ATAU tiket yang TUJUANNYA ke departemen GA (meski status masih waiting)
                 $q->orWhere(function ($sub) {
-                    $sub->whereIn('status', ['waiting_approval_spv', 'waiting_approval_ga'])
+                    $sub->whereIn('status', ['waiting_approval', 'waiting_approval_ga'])
                         ->whereIn('department', ['GA', 'General Affair']);
                 });
             });
@@ -358,7 +380,7 @@ class WorkOrderService
                     $q->where('requester_department', $user->divisi)
                         ->orWhere(function ($sub) use ($user) {
                             // Jika status waiting_approval_spv dan department sama, SPV bisa lihat
-                            $sub->where('status', 'waiting_approval_spv')
+                            $sub->where('status', 'waiting_approval')
                                 ->where('department', $user->divisi);
                         });
                 });
@@ -445,7 +467,7 @@ class WorkOrderService
         }
 
         // 2. Email ke Approver (Jika butuh approval)
-        if ($statusAwal === 'waiting_approval_spv') {
+        if ($statusAwal === 'waiting_approval') {
             // Cari Supervisor/Manager divisi target untuk approval tahap 1
             $approvers = $this->getApproversForDeptLevel($targetDept, 'manager');
 

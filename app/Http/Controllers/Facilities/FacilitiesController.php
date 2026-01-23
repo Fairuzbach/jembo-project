@@ -39,7 +39,7 @@ class FacilitiesController extends Controller
             ($user->role === 'super.admin');
 
         if ($isFacilityOrAdmin) {
-            // Tidak ada filter, tampilkan semua
+            $query->where('status', '!=', 'waiting_approval');
         }
 
         // B. KELOMPOK BOSS LOKAL (Manager / SPV / Admin Unit)
@@ -159,27 +159,16 @@ class FacilitiesController extends Controller
         ));
     }
 
-    public function dashboard()
+    public function dashboard(\Illuminate\Http\Request $request)
     {
-        // Hanya Admin yang boleh akses dashboard analitik
-        if (!in_array(Auth::user()->role, ['fh.admin', 'super.admin'])) {
-            return redirect()->route('fh.index')->with('error', 'Unauthorized access');
+        if (!in_array(Auth::user()->role, ['fh.admin'])) {
+            return redirect()->route('fh.index')->with('error', 'Unauthorized Access');
         }
 
-        // Contoh data dashboard (bisa dikembangkan di Service)
-        $stats = [
-            'total' => WorkOrderFacilities::count(),
-            'completed' => WorkOrderFacilities::where('status', 'completed')->count(),
-            'pending' => WorkOrderFacilities::where('status', 'pending')->count(),
-            'in_progress' => WorkOrderFacilities::where('status', 'in_progress')->count(),
-
-        ];
-
-        $ganttData = $this->facilityService->getGanttChartData();
+        $data = $this->facilityService->getDashboardStats($request);
 
 
-
-        return view('Division.Facilities.dashboard', compact('stats'));
+        return view('Division.Facilities.dashboard', $data);
     }
 
     public function store(StoreFacilityRequest $request)
