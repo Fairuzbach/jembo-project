@@ -90,7 +90,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/export', [FacilitiesController::class, 'index'])->name('export');
 
         // Status Actions
-        Route::post('/{id}/update-status', [FacilitiesController::class, 'updateStatus'])->name('updateStatus');
+        Route::put('/{id}/update-status', [FacilitiesController::class, 'updateStatus'])->name('updateStatus');
         Route::post('/{id}/approve', [FacilitiesController::class, 'approve'])->name('approve');
         Route::post('/{id}/reject', [FacilitiesController::class, 'reject'])->name('reject');
     });
