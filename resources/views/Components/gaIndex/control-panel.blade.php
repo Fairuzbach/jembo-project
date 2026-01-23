@@ -77,7 +77,7 @@
         {{-- Collapsible Filter Panel --}}
         <div x-show="showFilters" x-collapse class="bg-slate-50 px-5 pb-5 pt-2 border-t border-slate-200">
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                @foreach (['status' => ['pending', 'in_progress', 'completed', 'cancelled', 'waiting_spv', 'waiting_ga_approval', 'rejected'], 'category' => ['BERAT', 'SEDANG', 'RINGAN'], 'parameter' => ['KEBERSIHAN', 'PEMELIHARAAN', 'PERBAIKAN', 'PEMBUATAN BARU', 'PERIZINAN', 'RESERVASI']] as $key => $opts)
+                @foreach (['status' => ['pending', 'in_progress', 'completed', 'cancelled', 'waiting_approval', 'waiting_approval_ga', 'rejected'], 'category' => ['BERAT', 'SEDANG', 'RINGAN'], 'parameter' => ['KEBERSIHAN', 'PEMELIHARAAN', 'PERBAIKAN', 'PEMBUATAN BARU', 'PERIZINAN', 'RESERVASI']] as $key => $opts)
                     <div>
                         <label
                             class="text-[10px] font-black text-slate-500 uppercase block mb-1 tracking-wider">{{ ucfirst($key) }}</label>
@@ -85,10 +85,6 @@
                             class="w-full text-xs font-bold border-slate-300 focus:border-yellow-400 focus:ring-0 rounded-sm bg-white h-10 uppercase cursor-pointer hover:bg-slate-50 transition-colors">
                             <option value="">SEMUA {{ strtoupper($key) }}</option>
                             @foreach ($opts as $opt)
-                                {{-- GA Admin jangan lihat waiting_approval_spv di filter --}}
-                                @if (auth()->user()->role === 'ga.admin' && $opt === 'waiting_approval_spv')
-                                    @continue
-                                @endif
                                 <option value="{{ $opt }}" {{ request($key) == $opt ? 'selected' : '' }}>
                                     {{ str_replace('_', ' ', strtoupper($opt)) }}</option>
                             @endforeach

@@ -37,7 +37,7 @@ class WorkOrderGeneralAffairFactory extends Factory
     public function waitingSpv()
     {
         return $this->state(fn(array $attributes) => [
-            'status' => 'waiting_spv',
+            'status' => 'waiting_approval',
         ]);
     }
 

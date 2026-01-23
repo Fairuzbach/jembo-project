@@ -40,10 +40,6 @@
 
             <tbody class="bg-white divide-y divide-slate-100">
                 @forelse ($workOrders as $index => $item)
-                    {{-- Jangan tampilkan waiting_approval_spv untuk GA Admin --}}
-                    @if (auth()->user()->role === 'ga.admin' && $item->status === 'waiting_approval_spv')
-                        @continue
-                    @endif
                     <tr
                         class="hover:bg-yellow-50/50 transition-colors duration-150 group {{ $index % 2 == 0 ? 'bg-white' : 'bg-slate-50/30' }}">
 
@@ -148,16 +144,16 @@
                                     'completed' => 'bg-emerald-100 text-emerald-800 border-emerald-200',
                                     'pending' => 'bg-orange-100 text-orange-800 border-orange-200',
                                     'in_progress' => 'bg-blue-100 text-blue-800 border-blue-200',
-                                    'waiting_spv',
-                                    'waiting_ga_approval'
+                                    'waiting_approval',
+                                    'waiting_approval_ga'
                                         => 'bg-yellow-100 text-yellow-800 border-yellow-200',
                                     'cancelled', 'rejected' => 'bg-rose-100 text-rose-800 border-rose-200',
                                     default => 'bg-slate-100 text-slate-800',
                                 };
 
                                 $statusLabel = match ($item->status) {
-                                    'waiting_spv' => 'WAITING DEPT APPROVAL',
-                                    'waiting_ga_approval' => 'WAITING GA APPROVAL',
+                                    'waiting_approval' => 'WAITING DEPT APPROVAL',
+                                    'waiting_approval_ga' => 'WAITING GA APPROVAL',
                                     'pending' => 'PENDING (ANTRIAN)',
                                     default => str_replace('_', ' ', $item->status),
                                 };
@@ -190,96 +186,122 @@
                                 {{-- ================================================= --}}
                                 @php
                                     $user = auth()->user();
+                                    $currRole = strtolower($user->role ?? '');
+                                    $currDivisi = strtolower($user->divisi ?? '');
+                                    $ticketDept = strtolower($item->department ?? '');
+                                    $ticketStatus = $item->status;
 
-                                    // --- A. Cek Hak Akses Edit ---
+                                    // --- A. CEK HAK AKSES EDIT ---
                                     $canEdit = false;
-                                    if (in_array($user->role, ['ga.admin', 'admin'])) {
-                                        $canEdit = in_array($item->status, [
-                                            'pending',
-                                            'in_progress',
-                                            'completed',
-                                            'waiting_ga_approval',
-                                            'waiting_approval_spv',
-                                        ]);
-                                    } else {
-                                        $canEdit = in_array($item->status, [
-                                            'in_progress',
-                                            'completed',
-                                            'waiting_ga_approval',
-                                        ]);
+
+                                    // 1. Admin GA (Super User)
+                                    if (in_array($currRole, ['ga.admin', 'super.ga.admin'])) {
+                                        // Admin bisa edit selama belum final (Rejected/Cancelled)
+                                        $canEdit = in_array($ticketStatus, ['pending']);
+                                    }
+                                    // 2. User Biasa (Pemohon)
+                                    elseif ($item->requester_id == $user->id) {
+                                        // Hanya boleh edit jika masih Pending atau diminta revisi
+                                        // (Jangan kasih edit kalau sudah In Progress/Completed!)
+                                        $canEdit = in_array($ticketStatus, ['waiting_approval']);
                                     }
 
-                                    // --- B. Cek Hak Akses Approval Teknis ---
+                                    // --- B. CEK HAK AKSES APPROVAL TEKNIS (Boss Lokal) ---
                                     $isTechnicalApprover = false;
 
-                                    // 1. Logika MANAGER (Tetap: Harus 1 Divisi)
-                                    if ($user->role === 'MANAGER') {
-                                        if (($user->divisi ?? '') === $item->department) {
-                                            $isTechnicalApprover = true;
+                                    // Hanya cek ini jika statusnya memang butuh approval atasan
+                                    if ($ticketStatus == 'waiting_approval') {
+                                        // 1. Logika MANAGER / SPV (Harus Satu Divisi)
+                                        if (str_contains($currRole, 'manager') || str_contains($currRole, 'spv')) {
+                                            // Cek kesamaan divisi (case-insensitive)
+                                            if (trim($currDivisi) == trim($ticketDept)) {
+                                                $isTechnicalApprover = true;
+                                            }
                                         }
-                                    }
-                                    // 2. Logika ADMIN (Mapping Spesifik sesuai Request)
-                                    else {
-                                        $deptName = strtolower($item->department);
 
-                                        // Tentukan Role Admin yang BERHAK meng-approve departemen ini
-                                        $targetRole = match (true) {
-                                            // Facility
-                                            str_contains($deptName, 'facility') || $deptName == 'fh' => 'fh.admin',
-                                            // General Affair (Jika orang GA bikin tiket sendiri)
-                                            str_contains($deptName, 'general') || $deptName == 'ga' => 'ga.admin',
-                                            // IT
-                                            str_contains($deptName, 'it') || str_contains($deptName, 'information')
-                                                => 'it.admin',
-                                            // Maintenance
-                                            str_contains($deptName, 'maintenance') || $deptName == 'mt' => 'mt.admin',
-                                            // Marketing
-                                            str_contains($deptName, 'marketing') => 'mkt.admin',
-                                            // LV (Plant A, Plant C, Low Voltage)
-                                            str_contains($deptName, 'plant a') ||
-                                                str_contains($deptName, 'plant c') ||
-                                                str_contains($deptName, 'low') ||
-                                                $deptName == 'lv'
-                                                => 'lv.admin',
-                                            // MV (Plant B, Plant D, Medium Voltage)
-                                            str_contains($deptName, 'plant b') ||
-                                                str_contains($deptName, 'plant d') ||
-                                                str_contains($deptName, 'medium') ||
-                                                $deptName == 'mv'
-                                                => 'mv.admin',
-                                            // FO (Plant E, Fiber Optic)
-                                            str_contains($deptName, 'plant e') ||
-                                                str_contains($deptName, 'fiber') ||
-                                                $deptName == 'fo'
-                                                => 'fo.admin',
-                                            // QR / Quality
-                                            str_contains($deptName, 'quality') || $deptName == 'qr' || $deptName == 'qc'
-                                                => 'qr.admin',
-                                            // Sales 1
-                                            str_contains($deptName, 'sales 1') => 'sales1.admin',
-                                            // Sales 2
-                                            str_contains($deptName, 'sales 2') => 'sales2.admin',
-                                            // SC / Support
-                                            str_contains($deptName, 'sc') ||
-                                                str_contains($deptName, 'support') ||
-                                                $deptName == 'rm'
-                                                => 'sc.admin',
-                                            // SS / Gudang
-                                            str_contains($deptName, 'ss') || str_contains($deptName, 'gudang')
-                                                => 'ss.admin',
-                                            // Engineering
-                                            str_contains($deptName, 'engineering') || $deptName == 'pe' => 'eng.admin',
-                                            // Human Capital (HC)
-                                            str_contains($deptName, 'human') || $deptName == 'hc' => 'hc.admin',
-                                            // Finance (FA)
-                                            str_contains($deptName, 'finance') || $deptName == 'fa' => 'fa.admin',
+                                        // 2. Logika ADMIN UNIT (Mapping Manual)
+                                        else {
+                                            $targetRole = match (true) {
+                                                // Facility
+                                                str_contains($ticketDept, 'facility') || $ticketDept == 'fh'
+                                                    => 'fh.admin',
+                                                // General Affair
+                                                str_contains($ticketDept, 'general') || $ticketDept == 'ga'
+                                                    => 'ga.admin',
+                                                // IT
+                                                str_contains($ticketDept, 'it') ||
+                                                    str_contains($ticketDept, 'information')
+                                                    => 'it.admin',
+                                                // Maintenance
+                                                str_contains($ticketDept, 'maintenance') || $ticketDept == 'mt'
+                                                    => 'mt.admin',
+                                                // Marketing
+                                                str_contains($ticketDept, 'marketing') => 'mkt.admin',
+                                                // Produksi / Plant (LV, MV, FO)
+                                                str_contains($ticketDept, 'plant a') ||
+                                                    str_contains($ticketDept, 'plant c') ||
+                                                    str_contains($ticketDept, 'low') ||
+                                                    $ticketDept == 'lv'
+                                                    => 'lv.admin',
+                                                str_contains($ticketDept, 'plant b') ||
+                                                    str_contains($ticketDept, 'plant d') ||
+                                                    str_contains($ticketDept, 'medium') ||
+                                                    $ticketDept == 'mv'
+                                                    => 'mv.admin',
+                                                str_contains($ticketDept, 'plant e') ||
+                                                    str_contains($ticketDept, 'fiber') ||
+                                                    $ticketDept == 'fo'
+                                                    => 'fo.admin',
+                                                // Quality
+                                                str_contains($ticketDept, 'quality') ||
+                                                    $ticketDept == 'qr' ||
+                                                    $ticketDept == 'qc'
+                                                    => 'qr.admin',
+                                                // Sales
+                                                str_contains($ticketDept, 'sales 1') => 'sales1.admin',
+                                                str_contains($ticketDept, 'sales 2') => 'sales2.admin',
+                                                // Supply Chain / Gudang
+                                                str_contains($ticketDept, 'sc') ||
+                                                    str_contains($ticketDept, 'support') ||
+                                                    $ticketDept == 'rm'
+                                                    => 'sc.admin',
+                                                str_contains($ticketDept, 'ss') || str_contains($ticketDept, 'gudang')
+                                                    => 'ss.admin',
+                                                // Engineering
+                                                str_contains($ticketDept, 'engineering') || $ticketDept == 'pe'
+                                                    => 'eng.admin',
+                                                // HC / FA
+                                                str_contains($ticketDept, 'human') || $ticketDept == 'hc' => 'hc.admin',
+                                                str_contains($ticketDept, 'finance') || $ticketDept == 'fa'
+                                                    => 'fa.admin',
+                                                // Default: Tidak ada yang cocok
+                                                default => null,
+                                            };
 
-                                            default => 'super.admin', // Fallback
-                                        };
+                                            // Jika user memiliki role target TERSEBUT atau Super Admin
+                                            if (
+                                                $targetRole &&
+                                                ($currRole === $targetRole || $currRole === 'super.admin')
+                                            ) {
+                                                $isTechnicalApprover = true;
+                                            }
+                                        }
+                                        $canApprove = false;
+                                        $isGaAdmin = in_array($currRole, ['ga.admin', 'super.ga.admin']);
+                                        if ($item->status == 'waiting_approval') {
+                                            $isBoss =
+                                                str_contains($currRole, 'manager') ||
+                                                str_contains($currRole, 'supervisor');
 
-                                        // Cek apakah user yang login punya role yang cocok
-                                        if ($user->role === $targetRole || $user->role === 'admin') {
-                                            $isTechnicalApprover = true;
+                                            $isSamePlant = str_contains($currDivisi, $ticketDept);
+
+                                            if ($isBoss && $isSamePlant) {
+                                                $canApprove = true;
+                                            }
+                                        } elseif ($item->status == 'waiting_approval_ga') {
+                                            if ($isGaAdmin || in_array($currRole, ['ga.admin', 'super.ga.admin'])) {
+                                                $canApprove = true;
+                                            }
                                         }
                                     }
                                 @endphp
@@ -299,51 +321,59 @@
                                     </button>
                                 @endif
 
-                                {{-- 3. Tombol Approval Teknis --}}
-                                @if ($item->status === 'waiting_approval_spv')
-                                    {{-- Kecualikan GA Admin (Kecuali jika dia memang atasan dept tersebut, tapi biasanya GA Admin tugasnya di tahap akhir) --}}
-                                    @if (auth()->user()->role !== 'ga.admin' || $targetRole === 'ga.admin')
-                                        @if ($isTechnicalApprover)
-                                            <form id="form-tech-{{ $item->id }}"
-                                                action="{{ route('ga.approve-technical', $item->id) }}" method="POST"
-                                                class="hidden">
-                                                @csrf
-                                                <input type="hidden" name="action"
-                                                    id="input-action-{{ $item->id }}">
-                                                <input type="hidden" name="reason"
-                                                    id="input-reason-{{ $item->id }}">
-                                            </form>
 
-                                            <div class="flex gap-2">
-                                                <button type="button"
-                                                    onclick="confirmTechnicalAction('{{ $item->id }}', 'approve')"
-                                                    class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1 px-3 rounded text-[10px]">Approve</button>
-                                                <button type="button"
-                                                    onclick="confirmTechnicalAction('{{ $item->id }}', 'decline')"
-                                                    class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-1 px-3 rounded text-[10px]">Reject</button>
-                                            </div>
-                                        @endif
-                                    @endif
+                                {{-- 3. Tombol Approval (Unified Logic) --}}
+                                @php
+                                    // LOGIKA TOMBOL APPROVAL YANG LEBIH BERSIH & BENAR
+                                    $showApproveButton = false;
 
-                                    {{-- 4. Tombol GA Approval --}}
-                                @elseif ($item->status === 'waiting_approval_ga')
-                                    {{-- Khusus GA Admin --}}
-                                    @if (auth()->user()->role === 'ga.admin' || auth()->user()->role === 'admin')
-                                        <form id="form-tech-{{ $item->id }}"
-                                            action="{{ route('ga.approve-technical', $item->id) }}" method="POST"
-                                            class="hidden">
-                                            @csrf <input type="hidden" name="action"
-                                                id="input-action-{{ $item->id }}">
-                                        </form>
-                                        <div class="flex gap-2">
-                                            <button type="button"
-                                                onclick="confirmTechnicalAction('{{ $item->id }}', 'approve')"
-                                                class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1 px-3 rounded text-[10px]">Approve</button>
-                                            <button type="button"
-                                                onclick="confirmTechnicalAction('{{ $item->id }}', 'decline')"
-                                                class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-1 px-3 rounded text-[10px]">Reject</button>
-                                        </div>
-                                    @endif
+                                    // A. TAHAP 1: WAITING APPROVAL DEPT (Bisa oleh Atasan Dept ATAU GA Admin Bypass)
+                                    if ($item->status === 'waiting_approval') {
+                                        // Muncul jika dia Atasan Teknis (IsTechnicalApprover sudah dihitung di atas)
+                                        // ATAU dia GA Admin (Bypass)
+                                        if (
+                                            $isTechnicalApprover ||
+                                            in_array($currRole, ['ga.admin', 'super.ga.admin'])
+                                        ) {
+                                            $showApproveButton = true;
+                                        }
+                                    }
+                                    // B. TAHAP 2: WAITING GA APPROVAL (Hanya Tim GA)
+                                    elseif ($item->status === 'waiting_approval_ga') {
+                                        if (in_array($currRole, ['ga.admin', 'super.ga.admin'])) {
+                                            $showApproveButton = true;
+                                        }
+                                    }
+                                @endphp
+
+                                @if ($showApproveButton)
+                                    <form id="form-tech-{{ $item->id }}"
+                                        action="{{ route('ga.approve-technical', $item->id) }}" method="POST"
+                                        class="hidden">
+                                        @csrf
+                                        <input type="hidden" name="action" id="input-action-{{ $item->id }}">
+                                        <input type="hidden" name="reason" id="input-reason-{{ $item->id }}">
+                                    </form>
+
+                                    <div class="flex gap-2">
+                                        {{-- Tombol Approve --}}
+                                        <button type="button"
+                                            onclick="confirmTechnicalAction('{{ $item->id }}', 'approve')"
+                                            class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1 px-3 rounded text-[10px] shadow-sm transition-all hover:scale-105 active:scale-95">
+                                            Approve
+                                            {{-- Label Bypass untuk Admin di Tahap 1 --}}
+                                            @if ($item->status == 'waiting_approval' && in_array($currRole, ['ga.admin', 'super.ga.admin']))
+                                                (Admin)
+                                            @endif
+                                        </button>
+
+                                        {{-- Tombol Reject --}}
+                                        <button type="button"
+                                            onclick="confirmTechnicalAction('{{ $item->id }}', 'decline')"
+                                            class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-1 px-3 rounded text-[10px] shadow-sm transition-all hover:scale-105 active:scale-95">
+                                            Reject
+                                        </button>
+                                    </div>
                                 @endif
 
                             </div>

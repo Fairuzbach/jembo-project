@@ -79,7 +79,7 @@
             <x-gaIndex.control-panel :filterOptions="[
                 'status' => [
                     'pending',
-                    'waiting_approval_spv',
+                    'waiting_approval',
                     'waiting_approval_ga',
                     'in_progress',
                     'completed',

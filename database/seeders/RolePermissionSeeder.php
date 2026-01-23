@@ -69,10 +69,11 @@ class RolePermissionSeeder extends Seeder
 
         // 3. Role GA Admin (Setara Super Admin)
         $roleGa = Role::firstOrCreate(['name' => 'ga.admin']);
-        $roleGa->givePermissionTo(Permission::all()); // Kasih SEMUA izin
+        $gaAdminRole = Permission::all()->where('name', '!=', 'user.manage');
+        $roleGa->givePermissionTo($gaAdminRole);
 
         // 4. Role Super Admin (Paling Tinggi)
-        $superAdmin = Role::firstOrCreate(['name' => 'Super Admin']);
+        $superAdmin = Role::firstOrCreate(['name' => 'super.ga.admin']);
         $superAdmin->givePermissionTo(Permission::all());
 
         // 5. Role User Biasa
@@ -82,10 +83,10 @@ class RolePermissionSeeder extends Seeder
         // 6. Buat Akun Default (Opsional, buat login pertama kali)
         $user = User::firstOrCreate([
             'email' => 'admin@jembo.com'
-        ],[
+        ], [
             'name'     => 'Administrator',
             'nik'      => '6666',
-           'divisi' => 'IT',
+            'divisi' => 'IT',
             'password' => bcrypt('password')
         ]);
 
