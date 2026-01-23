@@ -1,8 +1,42 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @import 'resources/css/general-affair.css';
 @import 'resources/css/dashboard.css';
-@import 'resources/gantt-tooltip-fix';
+@import 'resources/css/gantt-tooltip-fix.css';
 @import 'resources/css/gantt.css';
+
+/* --- DHTMLX GANTT CUSTOM STYLES --- */
+
+/* Completed: Green */
+.gantt-task-completed {
+    background-color: #10b981 !important;
+    border: 1px solid #059669 !important;
+}
+.gantt-task-completed .gantt_task_progress { background-color: #047857; }
+
+/* In Progress: Blue */
+.gantt-task-progress {
+    background-color: #3b82f6 !important;
+    border: 1px solid #2563eb !important;
+}
+.gantt-task-progress .gantt_task_progress { background-color: #1d4ed8; }
+
+/* Pending: Orange/Yellow */
+.gantt-task-pending {
+    background-color: #f59e0b !important;
+    border: 1px solid #d97706 !important;
+}
+
+/* Rejected: Red */
+.gantt-task-rejected {
+    background-color: #ef4444 !important;
+    border: 1px solid #dc2626 !important;
+}
+
+/* Rounded Corners for Bars */
+.gantt_task_line {
+    border-radius: 4px;
+}
