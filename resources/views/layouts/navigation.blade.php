@@ -60,6 +60,14 @@
                     {{-- Link Tambahan Khusus Module (Opsional) --}}
                     @if (request()->routeIs('fh.*'))
                         {{-- Menu Khusus FH bisa ditaruh disini --}}
+                        @if ($user->role === 'fh.admin')
+                            {{-- <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
+                            {{ __('User Management') }}
+                        </x-nav-link> --}}
+                            <x-nav-link :href="route('fh.dashboard')" :active="request()->routeIs('fh.dashboard')">
+                                {{ __('Admin Dashboard') }}
+                            </x-nav-link>
+                        @endif
                     @endif
                 </div>
             </div>

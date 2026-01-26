@@ -29,7 +29,7 @@ class DashboardService
         }
 
         // Ambil data (Eager Load)
-        $allTickets = $query->with(['user', 'plantInfo'])->orderBy('created_at', 'desc')->get();
+        $allTickets = $query->with(['user'])->orderBy('created_at', 'desc')->get();
 
         // 2. Prepare Chart Data (Gantt Chart)
         $chartData = $this->prepareGanttChart($allTickets);
@@ -79,7 +79,8 @@ class DashboardService
             'countWaitingApprovalSpv' => WorkOrderGeneralAffair::where('status', 'waiting_approval_spv')->count(),
             'countWaitingApprovalGA'  => WorkOrderGeneralAffair::where('status', 'waiting_approval_ga')->count(),
             'filterMonth'     => $request->input('filter_month', date('Y-m')),
-        ], $chartData, $groupedStats, $perfStats);
+            'tasks'           => $chartData,
+        ], $groupedStats, $perfStats);
     }
 
     private function prepareGanttChart($tickets)
@@ -169,14 +170,10 @@ class DashboardService
         }
 
         return [
-            'tasks' => [
-                'data' => $data,
-                'links' => $links
-            ]
+            'data' => $data,
+            'links' => $links
         ];
     }
-
-    // METHOD 'formatGanttData' DIHAPUS KARENA TIDAK DIGUNAKAN (DEAD CODE)
 
     private function prepareGroupedStats($tickets)
     {
@@ -193,8 +190,17 @@ class DashboardService
             'colors' => array_fill(0, $deptGroup->count(), '#eab308')
         ];
 
-        // 2. Lokasi
-        $locGroup = $tickets->groupBy(fn($i) => $i->plantInfo->name ?? 'Unknown');
+        // 2. Lokasi (Plant adalah string field, bukan relasi)
+        // Filter plant yang valid (tidak null/kosong) dan normalisasi nama
+        $locGroup = $tickets
+            ->filter(function ($ticket) {
+                // Hanya include tickets dengan plant yang valid
+                return !empty(trim($ticket->plant ?? ''));
+            })
+            ->groupBy(function ($ticket) {
+                // Normalisasi: trim whitespace dan capitalize
+                return trim($ticket->plant);
+            });
         $locData = $formatForTable($locGroup);
 
         // 3. Dept Table

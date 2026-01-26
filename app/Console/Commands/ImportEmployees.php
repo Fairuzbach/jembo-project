@@ -6,6 +6,7 @@ use Illuminate\Console\Command;
 use App\Models\User;
 use Spatie\SimpleExcel\SimpleExcelReader;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 class ImportEmployees extends Command
 {
@@ -100,7 +101,7 @@ class ImportEmployees extends Command
                     'ENGINEERING' => 'eng.admin',
                     'FACILITY' => 'fh.admin',
                     'MAINTENANCE' => 'mt.admin',
-                    'MARKETING' => 'mkt.admin',
+                    'MARKETING' => 'marketing.admin',
                     'PLANT A' => 'lv.admin',
                     'PLANT B' => 'mv.admin',
                     'PLANT C' => 'lv.admin',
@@ -115,9 +116,9 @@ class ImportEmployees extends Command
                     default          => 'user',         // Boss divisi lain (Sales/Plant) tetap user biasa
                 };
             }
-
+            Role::firstOrCreate(['name' => $roleOtomatis, 'guard_name' => 'web']);
             // D. SIMPAN KE DATABASE
-            User::updateOrCreate(
+            $user = User::updateOrCreate(
                 ['nik' => $nik],
                 [
                     'name'         => $row['Full Name'],
@@ -135,6 +136,7 @@ class ImportEmployees extends Command
             );
 
             $masuk++;
+            $user->syncRoles($roleOtomatis);
             $this->output->progressAdvance();
         });
 

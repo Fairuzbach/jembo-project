@@ -192,9 +192,63 @@
 
             {{-- 3. GANTT CHART --}}
             <div class="bg-white p-4 rounded shadow overflow-hidden">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-bold text-gray-700">Project Timeline</h3>
-                    <div class="text-xs text-gray-500 space-x-2">
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                        <h3 class="font-bold text-gray-700">Project Timeline</h3>
+
+                        {{-- Plant Filter Dropdown --}}
+                        <div class="flex gap-2 bg-slate-50 rounded-lg p-1 border border-slate-200 flex-wrap">
+                            <button type="button" onclick="filterByPlant('all')" id="plant-filter-all"
+                                class="plant-filter-btn px-3 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-sm">
+                                <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                </svg>
+                                Semua
+                            </button>
+                            @foreach ($chartPlantLabels ?? [] as $plant)
+                                <button type="button" onclick="filterByPlant('{{ $plant }}')"
+                                    id="plant-filter-{{ str_replace(' ', '-', strtolower($plant)) }}"
+                                    class="plant-filter-btn px-3 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 bg-white text-slate-700 border border-slate-200 hover:bg-slate-50">
+                                    {{ $plant }}
+                                </button>
+                            @endforeach
+                        </div>
+
+                        {{-- Zoom Controls --}}
+                        <div class="flex gap-2 bg-slate-50 rounded-lg p-1 border border-slate-200">
+                            <button type="button" onclick="changeZoom('day')" id="zoom-fh-day"
+                                class="zoom-btn-fh px-3 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 bg-white text-slate-700 border border-slate-200 hover:bg-slate-50">
+                                <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Hari
+                            </button>
+                            <button type="button" onclick="changeZoom('week')" id="zoom-fh-week"
+                                class="zoom-btn-fh px-3 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 bg-white text-slate-700 border border-slate-200 hover:bg-slate-50">
+                                <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                Minggu
+                            </button>
+                            <button type="button" onclick="changeZoom('month')" id="zoom-fh-month"
+                                class="zoom-btn-fh px-3 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-sm">
+                                <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                Bulan
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="text-xs text-gray-500 space-x-2 whitespace-nowrap">
                         <span class="inline-block w-3 h-3 bg-emerald-500 rounded-sm"></span> Done
                         <span class="inline-block w-3 h-3 bg-blue-500 rounded-sm"></span> Process
                         <span class="inline-block w-3 h-3 bg-yellow-500 rounded-sm"></span> Pending

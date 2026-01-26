@@ -231,6 +231,11 @@ class FacilityService
         // Eager Loading relations untuk mencegah N+1
         $workOrders = $query->with(['technicians', 'machine', 'user'])->latest()->get();
 
+        // Prepare Chart Data
+        $categoryGrouped = $workOrders->groupBy('category');
+        $statusGrouped = $workOrders->groupBy('status');
+        $plantGrouped = $workOrders->groupBy('plant');
+
         $stats = [
             'workOrders'    => $workOrders,
             'countTotal'    => $workOrders->count(),
@@ -238,13 +243,13 @@ class FacilityService
             'countProgress' => $workOrders->where('status', 'in_progress')->count(),
             'countDone'     => $workOrders->where('status', 'completed')->count(),
 
-            // Charts
-            'chartCatLabels'    => $workOrders->groupBy('category')->keys(),
-            'chartCatValues'    => $workOrders->groupBy('category')->map->count()->values(),
-            'chartStatusLabels' => $workOrders->groupBy('status')->keys(),
-            'chartStatusValues' => $workOrders->groupBy('status')->map->count()->values(),
-            'chartPlantLabels'  => $workOrders->groupBy('plant')->keys(),
-            'chartPlantValues'  => $workOrders->groupBy('plant')->map->count()->values(),
+            // Charts - Convert to arrays
+            'chartCatLabels'    => $categoryGrouped->keys()->values()->toArray(),
+            'chartCatValues'    => $categoryGrouped->map->count()->values()->toArray(),
+            'chartStatusLabels' => $statusGrouped->keys()->values()->toArray(),
+            'chartStatusValues' => $statusGrouped->map->count()->values()->toArray(),
+            'chartPlantLabels'  => $plantGrouped->keys()->values()->toArray(),
+            'chartPlantValues'  => $plantGrouped->map->count()->values()->toArray(),
         ];
 
         // Hitung Teknisi (In-Memory Processing)
@@ -255,13 +260,14 @@ class FacilityService
             }
         }
         arsort($techData);
-        $stats['chartTechLabels'] = collect($techData)->keys();
-        $stats['chartTechValues'] = collect($techData)->values();
+        $stats['chartTechLabels'] = array_keys($techData);
+        $stats['chartTechValues'] = array_values($techData);
 
         // Gantt Data (Reuse logic via method to avoid duplication)
         // Kita panggil method getGanttChartData secara internal tapi pass data yg sudah di-load
         // agar tidak query ulang
-        $stats['ganttData'] = $this->formatGanttData($workOrders)['data'];
+        $stats['ganttData'] = $this->formatGanttData($workOrders);
+        $stats['selectedMonth'] = $request->input('month', date('Y-m'));
 
         return $stats;
     }

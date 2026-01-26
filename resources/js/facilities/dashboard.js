@@ -1,5 +1,5 @@
 import { Chart } from 'chart.js';
-
+let activePlantFilter = 'all';
 document.addEventListener('DOMContentLoaded', function() {
     console.log("Dashboard JS Loaded"); // Debugging Log
 
@@ -117,6 +117,62 @@ function initDHTMLX(ganttData) {
 
     console.log("Memulai Render Gantt dengan Data:", ganttData);
 
+    // --- ZOOM CONFIGURATION ---
+    const zoomConfig = {
+        levels: [{
+                name: "day",
+                scale_height: 54,
+                min_column_width: 80,
+                scales: [{
+                        unit: "month",
+                        step: 1,
+                        format: "%F %Y"
+                    },
+                    {
+                        unit: "day",
+                        step: 1,
+                        format: "%d %M"
+                    }
+                ]
+            },
+            {
+                name: "week",
+                scale_height: 54,
+                min_column_width: 60,
+                scales: [{
+                        unit: "month",
+                        step: 1,
+                        format: "%F %Y"
+                    },
+                    {
+                        unit: "week",
+                        step: 1,
+                        format: "Week #%W"
+                    }
+                ]
+            },
+            {
+                name: "month",
+                scale_height: 54,
+                min_column_width: 120,
+                scales: [{
+                        unit: "year",
+                        step: 1,
+                        format: "%Y"
+                    },
+                    {
+                        unit: "month",
+                        step: 1,
+                        format: "%M"
+                    }
+                ]
+            }
+        ]
+    };
+
+    gantt.ext.zoom.init(zoomConfig);
+    gantt.ext.zoom.setLevel("month");
+
     // --- CONFIGURATION ---
     gantt.config.xml_date = "%Y-%m-%d"; // Format tanggal dari PHP (Y-m-d)
     gantt.config.readonly = true;
@@ -124,6 +180,9 @@ function initDHTMLX(ganttData) {
     
     // Fitur agar chart pas di layar
     gantt.config.fit_tasks = true; 
+    gantt.config.bar_height = 28;
+    gantt.config.row_height = 40;
+    gantt.config.scale_height = 54;
 
     // Kolom Tabel Kiri
     gantt.config.columns = [
@@ -152,10 +211,48 @@ function initDHTMLX(ganttData) {
     gantt.templates.tooltip_text = function(start, end, task){
         return `<b>Ticket:</b> ${task.text}<br/><b>Status:</b> ${task.status ? task.status.toUpperCase() : '-'}<br/><b>Plant:</b> ${task.plant || '-'}`;
     };
+    gantt.attachEvent("onBeforeTaskDisplay", function(id, task){
+        if(activePlantFilter === 'all'){
+            return true;
+        }
 
+        if(task.plant && task.plant.toLowerCase() === activePlantFilter.toLowerCase()){
+            return true;
+        }
+
+        return false;
+    });
     // --- INITIALIZE ---
     gantt.init("gantt_here");
+    
+    // Add CSS for better tooltip styling
+    const style = document.createElement('style');
+    style.textContent = `
+        .gantt_tooltip {
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%) !important;
+            color: #f3f4f6 !important;
+            border: 1px solid #374151 !important;
+            border-radius: 6px !important;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3) !important;
+            padding: 10px 12px !important;
+            font-size: 13px !important;
+        }
+        .gantt_tooltip b {
+            color: #fbbf24 !important;
+            font-weight: 700;
+        }
+    `;
+    document.head.appendChild(style);
     gantt.clearAll();
+
+    // --- TODAY MARKER ---
+    const today = new Date();
+    gantt.addMarker({
+        start_date: today,
+        css: "gantt_marker",
+        text: "TODAY",
+        title: "Today: " + gantt.date.date_to_str("%d %M %Y")(today)
+    });
 
     // --- PARSING DATA (FIXED LOGIC) ---
     
@@ -172,6 +269,56 @@ function initDHTMLX(ganttData) {
         console.warn("Format data Gantt tidak dikenali atau kosong.");
     }
 }
+
+// Global Plant Filter Function
+window.filterByPlant = function(plant) {
+    if (typeof gantt === 'undefined') return;
+    
+    // 1. Update Variabel Global
+    activePlantFilter = plant;
+    
+    // 2. Refresh Gantt (Ini akan memicu event onBeforeTaskDisplay di atas)
+    gantt.refreshData();
+    
+    // 3. Update Button Styles (Copy-paste styling Anda tadi sudah bagus)
+    document.querySelectorAll('.plant-filter-btn').forEach(btn => {
+        btn.classList.remove('bg-gradient-to-r', 'from-emerald-500', 'to-emerald-600', 'text-white', 'shadow-sm');
+        btn.classList.add('bg-white', 'text-slate-700', 'border', 'border-slate-200', 'hover:bg-slate-50');
+    });
+    
+    // Cari tombol aktif berdasarkan ID (Pastikan di HTML id buttonnya: plant-filter-namaPlant)
+    // Contoh ID: plant-filter-all, plant-filter-plant a
+    // Karena ID tidak boleh spasi, pastikan saat render blade ID-nya diganti spasi jadi dash/underscore jika perlu, 
+    // atau gunakan querySelector berdasarkan atribut data.
+    
+    // Asumsi ID aman (misal plant 'all', 'PlantA'):
+    const cleanId = plant.replace(/\s+/g, '_'); // Ganti spasi dengan _ jaga-jaga
+    const activeBtn = document.getElementById('plant-filter-' + cleanId) || document.getElementById('plant-filter-' + plant);
+    
+    if (activeBtn) {
+        activeBtn.classList.remove('bg-white', 'text-slate-700', 'border', 'border-slate-200', 'hover:bg-slate-50');
+        activeBtn.classList.add('bg-gradient-to-r', 'from-emerald-500', 'to-emerald-600', 'text-white', 'shadow-sm');
+    }
+};
+
+// Global Zoom Control Function
+window.changeZoom = function(level) {
+    if (window.gantt) {
+        gantt.ext.zoom.setLevel(level);
+        
+        // Update button states
+        document.querySelectorAll('.zoom-btn-fh').forEach(btn => {
+            btn.classList.remove('active', 'bg-gradient-to-r', 'from-blue-500', 'to-blue-600', 'text-white', 'shadow-sm');
+            btn.classList.add('bg-white', 'text-slate-700', 'border', 'border-slate-200', 'hover:bg-slate-50');
+        });
+
+        const activeBtn = document.getElementById('zoom-fh-' + level);
+        if (activeBtn) {
+            activeBtn.classList.remove('bg-white', 'text-slate-700', 'border', 'border-slate-200', 'hover:bg-slate-50');
+            activeBtn.classList.add('active', 'bg-gradient-to-r', 'from-blue-500', 'to-blue-600', 'text-white', 'shadow-sm');
+        }
+    }
+};
 
 // Global Export Function
 window.exportToPDF = async function() {

@@ -387,14 +387,21 @@ document.addEventListener("DOMContentLoaded", function() {
     
     // Prevent tooltip from hiding on mouse movement
     let tooltipTimeout;
-    gantt.attachEvent("onMouseMove", function(event) {
-        // Don't close tooltip when mouse is over it
-        const tooltip = document.querySelector('.gantt_tooltip');
-        if (tooltip && tooltip.contains(event.target)) {
-            clearTimeout(tooltipTimeout);
-            return true;
+    gantt.attachEvent("onMouseMove", function(id, e) {
+    // Safety check: pastikan e ada (kadang undefined di edge case tertentu)
+    if (!e) return;
+
+    // Don't close tooltip when mouse is over it
+    const tooltip = document.querySelector('.gantt_tooltip');
+    
+    // Gunakan 'e.target', BUKAN 'id.target'
+    if (tooltip && e.target && tooltip.contains(e.target)) {
+        if (typeof tooltipTimeout !== 'undefined') {
+             clearTimeout(tooltipTimeout);
         }
-    });
+        return true;
+    }
+});
 
     // Delay hide event to prevent flickering
     gantt.attachEvent("onMouseLeave", function(event) {
