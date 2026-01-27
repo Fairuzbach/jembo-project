@@ -13,73 +13,90 @@ class DashboardService
     {
         $user = auth()->user();
 
-        $isOrangGa = $user->divisi === 'General Affair';
-        $isAdminGa = $user->role === 'ga.admin';
+        // Cek Hak Akses
+        $isOrangGa = strtolower($user->divisi) === 'general affair';
+        $isAdminGa = in_array($user->role, ['ga.admin', 'super.ga.admin', 'super.admin']);
 
         if (!$isOrangGa && !$isAdminGa) {
             abort(403, 'Unauthorized access to General Affair dashboard.');
         }
-        // 1. Base Query
-        $query = WorkOrderGeneralAffair::query()
-            ->whereIn('status', ['in_progress', 'completed', 'approved']);
 
+        // =========================================================================
+        // 1. BASE QUERY (HANYA YANG SUDAH DI-APPROVE)
+        // =========================================================================
+        $query = WorkOrderGeneralAffair::query()
+            ->whereIn('status', [
+                'approved',     // Sudah disetujui GA (Siap dikerjakan)
+                'in_progress',  // Sedang dikerjakan
+                'completed'     // Selesai
+            ]);
+
+        // Terapkan Filter Tanggal
         if ($request->filled('start_date') && $request->filled('end_date')) {
             $query->whereDate('created_at', '>=', $request->start_date)
                 ->whereDate('created_at', '<=', $request->end_date);
         }
 
-        // Ambil data (Eager Load)
+        // Ambil Data Utama
         $allTickets = $query->with(['user'])->orderBy('created_at', 'desc')->get();
 
-        // 2. Prepare Chart Data (Gantt Chart)
+        // =========================================================================
+        // 2. PREPARE CHART & STATS
+        // =========================================================================
+
+        // Gantt Chart otomatis hanya akan menampilkan 3 status di atas
         $chartData = $this->prepareGanttChart($allTickets);
-
-        // 3. Grouping Stats
         $groupedStats = $this->prepareGroupedStats($allTickets);
-
-        // 4. Performance Stats
         $perfStats = $this->calculatePerformance($request->input('filter_month', date('Y-m')));
 
-        // Hitung Delayed: Hanya tiket yang OVERDUE DAN status IN_PROGRESS
-        // Logika: Jika overdue DAN in_progress → MASUKKAN ke overdue
-        // Jika belum overdue TETAPI in_progress → TIDAK overdue
-        $countDelayed = $allTickets
-            ->filter(function ($ticket) {
-                // Hanya hitung jika status in_progress
-                if ($ticket->status !== 'in_progress') {
-                    return false;
-                }
-                // Pastikan ada target_completion_date
-                if (!$ticket->target_completion_date) {
-                    return false;
-                }
-                // Cek apakah target_completion_date sudah lewat (overdue)
-                return Carbon::parse($ticket->target_completion_date)->isPast();
-            })
-            ->count();
+        // =========================================================================
+        // 3. HITUNG COUNTER
+        // =========================================================================
 
-        // Hitung Rejected (query terpisah karena tidak termasuk di base query)
-        $countRejected = WorkOrderGeneralAffair::query()
-            ->whereIn('status', ['rejected'])
-            ->when($request->filled('start_date') && $request->filled('end_date'), function ($q) use ($request) {
-                $q->whereDate('created_at', '>=', $request->start_date)
-                    ->whereDate('created_at', '<=', $request->end_date);
-            })
-            ->count();
+        $countTotal = $allTickets->count();
+        $countInProgress = $allTickets->where('status', 'in_progress')->count();
+        $countCompleted  = $allTickets->where('status', 'completed')->count();
+
+        // Note: Counter di bawah ini akan bernilai 0 karena statusnya tidak kita ambil di query utama.
+        // Jika Anda ingin tetap menampilkan jumlah antrian (pending) meskipun tabelnya difilter,
+        // Anda harus membuat query terpisah seperti countRejected di bawah.
+        $countPending = 0;
+        $countWaitingApproval = 0;
+        $countWaitingApprovalGA = 0;
+
+        // Hitung Delayed (Hanya untuk In Progress yang Overdue)
+        $countDelayed = $allTickets->filter(function ($ticket) {
+            return $ticket->status === 'in_progress'
+                && $ticket->target_completion_date
+                && Carbon::parse($ticket->target_completion_date)->isPast();
+        })->count();
+
+        // =========================================================================
+        // 4. HITUNG REJECTED (Opsional: Tetap ditampilkan atau disembunyikan?)
+        // =========================================================================
+        // Saya biarkan query terpisah agar Admin tahu ada berapa yang ditolak
+        $rejectedQuery = WorkOrderGeneralAffair::query()->where('status', 'rejected');
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $rejectedQuery->whereDate('created_at', '>=', $request->start_date)
+                ->whereDate('created_at', '<=', $request->end_date);
+        }
+        $countRejected = $rejectedQuery->count();
 
         return array_merge([
-            'workOrders'      => $allTickets,
-            'countTotal'      => $allTickets->count(),
-            'countInProgress' => $allTickets->where('status', 'in_progress')->count(),
-            'countCompleted'  => $allTickets->where('status', 'completed')->count(),
-            'countRejected'   => $countRejected,
-            'countDelayed'    => $countDelayed,
-            // Pending query terpisah karena statusnya beda dengan Base Query
-            'countPending'    => WorkOrderGeneralAffair::whereIn('status', ['pending'])->count(),
-            'countWaitingApprovalSpv' => WorkOrderGeneralAffair::where('status', 'waiting_approval_spv')->count(),
-            'countWaitingApprovalGA'  => WorkOrderGeneralAffair::where('status', 'waiting_approval_ga')->count(),
-            'filterMonth'     => $request->input('filter_month', date('Y-m')),
-            'tasks'           => $chartData,
+            'workOrders'              => $allTickets,
+            'countTotal'              => $countTotal,
+            'countInProgress'         => $countInProgress,
+            'countCompleted'          => $countCompleted,
+            'countRejected'           => $countRejected,
+            'countDelayed'            => $countDelayed,
+
+            // Counter Antrian (Akan 0)
+            'countPending'            => $countPending,
+            'countWaitingApproval'    => $countWaitingApproval,
+            'countWaitingApprovalGA'  => $countWaitingApprovalGA,
+
+            'filterMonth'             => $request->input('filter_month', date('Y-m')),
+            'tasks'                   => $chartData,
         ], $groupedStats, $perfStats);
     }
 

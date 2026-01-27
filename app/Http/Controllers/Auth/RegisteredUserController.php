@@ -33,7 +33,7 @@ class RegisteredUserController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:255', 'unique:' . User::class],
-            'divisi' => ['required', 'string', Rule::in(['Facility', 'Maintenance', 'Engineering', 'General Affair'])],
+            'divisi' => ['required', 'string', Rule::in(['Facility', 'Maintenance', 'PE', 'General Affair'])],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);

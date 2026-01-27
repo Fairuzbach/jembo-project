@@ -25,7 +25,7 @@ class ImportEmployees extends Command
         // 1. KAMUS MAPPING DIVISI
         $divisiMap = [
             'INFORMATION TECHNOLOGY'      => 'IT',
-            'PROCESS ENGINEERING'         => 'ENGINEERING',
+            'PROCESS ENGINEERING'         => 'PE',
             'QUALITY ASSURANCE & R D'     => 'QR',
             'SALES SUPPORT'               => 'SS',
             'COMMERCIAL & SUPPLY CHAIN'   => 'SC',
@@ -37,7 +37,7 @@ class ImportEmployees extends Command
             'PRESIDENT DIRECTOR',
             'GENERAL AFFAIR',
             'IT',
-            'ENGINEERING',
+            'PE',
             'FACILITY',
             'MAINTENANCE',
             'MARKETING',
