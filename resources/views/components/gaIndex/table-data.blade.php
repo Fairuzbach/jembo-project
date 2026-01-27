@@ -197,7 +197,7 @@
                                     // 1. Admin GA (Super User)
                                     if (in_array($currRole, ['ga.admin', 'super.ga.admin'])) {
                                         // Admin bisa edit selama belum final (Rejected/Cancelled)
-                                        $canEdit = in_array($ticketStatus, ['pending']);
+                                        $canEdit = in_array($ticketStatus, ['in_progress', 'pending']);
                                     }
                                     // 2. User Biasa (Pemohon)
                                     elseif ($item->requester_id == $user->id) {
