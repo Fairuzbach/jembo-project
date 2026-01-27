@@ -200,11 +200,11 @@
                                         $canEdit = in_array($ticketStatus, ['in_progress', 'pending']);
                                     }
                                     // 2. User Biasa (Pemohon)
-                                    elseif ($item->requester_id == $user->id) {
-                                        // Hanya boleh edit jika masih Pending atau diminta revisi
-                                        // (Jangan kasih edit kalau sudah In Progress/Completed!)
-                                        $canEdit = in_array($ticketStatus, ['waiting_approval']);
-                                    }
+                                    // elseif ($item->requester_id == $user->id) {
+                                    //     // Hanya boleh edit jika masih Pending atau diminta revisi
+                                    //     // (Jangan kasih edit kalau sudah In Progress/Completed!)
+                                    //     $canEdit = in_array($ticketStatus, ['waiting_approval']);
+                                    // }
 
                                     // --- B. CEK HAK AKSES APPROVAL TEKNIS (Boss Lokal) ---
                                     $isTechnicalApprover = false;
@@ -363,7 +363,7 @@
                                             Approve
                                             {{-- Label Bypass untuk Admin di Tahap 1 --}}
                                             @if ($item->status == 'waiting_approval' && in_array($currRole, ['ga.admin', 'super.ga.admin']))
-                                                (Admin)
+                                                (Bypass)
                                             @endif
                                         </button>
 
