@@ -389,9 +389,11 @@ class DatabaseSeeder extends Seeder
             'Gudang Jadi' => [],
             'HC' => [],
             'IT' => [],
+            'Konstruksi' => [],
             'Marketing' => [],
             'MT' => [],
             'PE' => [],
+            'Plant TOols' => [],
             'QC FO' => [],
             'QC Lab' => [],
             'QR' => [],
@@ -425,46 +427,46 @@ class DatabaseSeeder extends Seeder
             }
         }
 
-        // 2. DATA ENGINEER (MT) - Masuk ke USERS
-        $engineers = [
-            'ABDUL HALID ANDRIYANTO',
-            'ADI SUANDRI',
-            'ADITYA RAMADHAN',
-            'ANDY APRIADI',
-            'CHRISTIAN BAYU A S',
-            'DAFFA ABDUL AZIZ',
-            'DANU MAMLUKAT',
-            'DWI HASTUTI',
-            'EDY MURTOPO',
-            'HASIRI',
-            'JOKO PURNOMO',
-            'KHOIRUL MUNASYIKIN',
-            'MAIDAFITRI DEWI PRIATI',
-            'MULYANA',
-            'MUHAMMAD ANDRIAN',
-            'RAHMAT TAMMU',
-            'SUDRANTO PURBA',
-            'TEGUH MULYAWAN',
-            'TRI WAHYU HIDAYAT',
-            'YOSEP FAJAR BAYU KURNIAWAN',
-        ];
+        // // 2. DATA ENGINEER (MT) - Masuk ke USERS
+        // $engineers = [
+        //     'ABDUL HALID ANDRIYANTO',
+        //     'ADI SUANDRI',
+        //     'ADITYA RAMADHAN',
+        //     'ANDY APRIADI',
+        //     'CHRISTIAN BAYU A S',
+        //     'DAFFA ABDUL AZIZ',
+        //     'DANU MAMLUKAT',
+        //     'DWI HASTUTI',
+        //     'EDY MURTOPO',
+        //     'HASIRI',
+        //     'JOKO PURNOMO',
+        //     'KHOIRUL MUNASYIKIN',
+        //     'MAIDAFITRI DEWI PRIATI',
+        //     'MULYANA',
+        //     'MUHAMMAD ANDRIAN',
+        //     'RAHMAT TAMMU',
+        //     'SUDRANTO PURBA',
+        //     'TEGUH MULYAWAN',
+        //     'TRI WAHYU HIDAYAT',
+        //     'YOSEP FAJAR BAYU KURNIAWAN',
+        // ];
 
-        foreach ($engineers as $name) {
-            $role = ($name === 'ANDY APRIADI' || $name === 'DANU MAMLUKAT') ? 'eng.admin' : 'user';
-            $usernameKey = Str::lower(str_replace(' ', '.', $name));
-            $nik = str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
+        // foreach ($engineers as $name) {
+        //     $role = ($name === 'ANDY APRIADI' || $name === 'DANU MAMLUKAT') ? 'eng.admin' : 'user';
+        //     $usernameKey = Str::lower(str_replace(' ', '.', $name));
+        //     $nik = str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
 
-            User::create([
-                'nik' => $nik,
-                'name' => ucwords(Str::lower($name)),
-                'email' => $usernameKey . '@jembo.com',
-                'password' => Hash::make('welcomejembo'),
-                'role' => $role,
-                'divisi' => 'Engineering',
-                'jabatan' => 'Engineer',
-                'is_active' => true
-            ]);
-        }
+        //     User::create([
+        //         'nik' => $nik,
+        //         'name' => ucwords(Str::lower($name)),
+        //         'email' => $usernameKey . '@jembo.com',
+        //         'password' => Hash::make('welcomejembo'),
+        //         'role' => $role,
+        //         'divisi' => 'Engineering',
+        //         'jabatan' => 'Engineer',
+        //         'is_active' => true
+        //     ]);
+        // }
 
         // 3. DATA TEKNISI FACILITY (FH) - Masuk ke FACILITY_TECHS
         $facilityTechnicians = [

@@ -291,7 +291,7 @@ class WorkOrderService
                 } else {
                     // Normal Manager Approval
                     $newStatus = 'waiting_approval_ga';
-                    $desc = "Disetujui oleh *Manager ({$user->divisi})*. Menunggu General Affair.";
+                    $desc = "Disetujui oleh Manager ({$user->divisi}). Menunggu General Affair.";
                     $updateData['processed_by'] = $user->id;
                     $updateData['processed_by_name'] = $user->name;
                     $emailType = 'manager_approved'; // <--- Trigger notif ke GA Admin
@@ -300,7 +300,7 @@ class WorkOrderService
                 // TAHAP 2: Approval dari GA Admin
                 if ($isGAAdmin) {
                     $newStatus = 'pending';
-                    $desc = "Disetujui oleh *General Affair*. Masuk antrian pending.";
+                    $desc = "Disetujui oleh General Affair. Masuk antrian pending.";
                     $updateData['approved_ga_by'] = $user->id;
                     $updateData['approved_ga_at'] = now();
                     $alertData = [

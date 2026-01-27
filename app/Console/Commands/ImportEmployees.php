@@ -98,7 +98,7 @@ class ImportEmployees extends Command
                     'PRESIDENT DIRECTOR' => 'Super Admin',
                     'GENERAL AFFAIR' => 'ga.admin',
                     'IT' => 'it.admin',
-                    'ENGINEERING' => 'eng.admin',
+                    'PE' => 'eng.admin',
                     'FACILITY' => 'fh.admin',
                     'MAINTENANCE' => 'mt.admin',
                     'MARKETING' => 'marketing.admin',
