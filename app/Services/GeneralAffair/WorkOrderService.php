@@ -138,7 +138,7 @@ class WorkOrderService
         $requesterPhone = $requester ? ($requester->no_hp ?? $requester->phone) : null;
 
         // 2. Siapkan Link & Pesan
-        $ticketLink = url('/wo-ga/' . $ticket->id); // Sesuaikan URL
+        // $ticketLink = url('/wo-ga/' . $ticket->id); // Sesuaikan URL
         $waMessage = "";
 
         switch ($data['status']) {
@@ -151,7 +151,6 @@ class WorkOrderService
                     "📊 Status: *Sedang Dikerjakan*\n\n" .
                     "⚙️ Tim teknisi sedang menangani pekerjaan Anda.\n" .
                     "Kami akan memberikan update progress selanjutnya.\n\n" .
-                    "🔗 *Track Progress:*\n{$ticketLink}\n\n" .
                     "━━━━━━━━━━━━━━━━━━━━━━\n" .
                     "_Terima kasih atas kesabaran Anda_ ⏳";
                 break;
@@ -167,7 +166,6 @@ class WorkOrderService
                     "🎉 Pekerjaan telah selesai!\n\n" .
                     "📝 *Catatan Penyelesaian:*\n" .
                     "_{$note}_\n\n" .
-                    "🔗 *Detail Pekerjaan:*\n{$ticketLink}\n\n" .
                     "━━━━━━━━━━━━━━━━━━━━━━\n" .
                     "_Mohon cek hasil pekerjaan di link di atas_ 🔍\n" .
                     "_Terima kasih atas kerjasamanya!_ 🙏";
@@ -183,7 +181,6 @@ class WorkOrderService
                     "📊 Status: *Dibatalkan*\n\n" .
                     "📝 *Alasan Pembatalan:*\n" .
                     "_{$reason}_\n\n" .
-                    "🔗 *Detail Tiket:*\n{$ticketLink}\n\n" .
                     "━━━━━━━━━━━━━━━━━━━━━━\n" .
                     "_Untuk informasi lebih lanjut, silakan hubungi tim terkait_ 💬\n" .
                     "_Mohon maaf atas ketidaknyamanannya_ 🙏";
@@ -198,7 +195,6 @@ class WorkOrderService
                     "📊 Status: *Dalam Antrian*\n\n" .
                     "📌 Tiket Anda telah masuk dalam antrian pengerjaan.\n" .
                     "Tim teknisi akan segera menangani sesuai prioritas.\n\n" .
-                    "🔗 *Monitor Status:*\n{$ticketLink}\n\n" .
                     "━━━━━━━━━━━━━━━━━━━━━━\n" .
                     "_Anda akan menerima notifikasi saat pekerjaan dimulai_ 🔔";
                 break;
@@ -359,7 +355,7 @@ class WorkOrderService
             $msgRequester = "🎫 *WORK ORDER GENERAL AFFAIR*\n" .
                 "━━━━━━━━━━━━━━━━━━━━━━\n\n" .
                 "Halo *{$requester->name}* 👋\n\n" .
-                "✅ *APPROVED BY MANAGER*\n\n" .
+                "✅ *APPROVED BY MANAGER* ✅\n\n" .
                 "📋 Ticket: *#{$ticket->ticket_num}*\n" .
                 "📊 Status: *Menunggu Approval GA*\n\n" .
                 "⏳ Tiket Anda telah disetujui oleh Manager Divisi.\n" .
@@ -372,7 +368,7 @@ class WorkOrderService
             $msgRequester = "🎫 *WORK ORDER GENERAL AFFAIR*\n" .
                 "━━━━━━━━━━━━━━━━━━━━━━\n\n" .
                 "Halo *{$requester->name}* 👋\n\n" .
-                "✅ *APPROVED BY GA*\n\n" .
+                "✅ *APPROVED BY GA* ✅\n\n" .
                 "📋 Ticket: *#{$ticket->ticket_num}*\n" .
                 "📊 Status: *Pending (Siap Dikerjakan)*\n\n" .
                 "🔧 Tiket Anda telah disetujui!\n" .
@@ -385,7 +381,7 @@ class WorkOrderService
             $msgRequester = "🎫 *WORK ORDER GENERAL AFFAIR*\n" .
                 "━━━━━━━━━━━━━━━━━━━━━━\n\n" .
                 "Halo *{$requester->name}* 👋\n\n" .
-                "❌ *REJECTED*\n\n" .
+                "❌ *REJECTED* ❌\n\n" .
                 "📋 Ticket: *#{$ticket->ticket_num}*\n" .
                 "📊 Status: *Ditolak*\n\n" .
                 "📝 *Alasan Penolakan:*\n" .
@@ -431,14 +427,20 @@ class WorkOrderService
             }
 
             foreach ($gaAdmins as $admin) {
-                $msgAdmin = "*WORK ORDER GENERAL AFFAIR*\n" .
-                    "Halo Admin *{$admin->name}*,\n\n" .
-                    "🔔 *Task Baru Butuh Approval*\n" .
-                    "Tiket: *#{$ticket->ticket_num}*\n" .
-                    "Requester: {$requester->name}\n" .
-                    "Divisi: {$ticket->department}\n" .
-                    "Status: *Menunggu Approval GA*\n\n" .
-                    "🔗 *Link Approve:* $ticketLink";
+                $msgAdmin = "🎫 *WORK ORDER GENERAL AFFAIR*\n" .
+                    "━━━━━━━━━━━━━━━━━━━━━━\n\n" .
+                    "Halo Admin *{$admin->name}* 👋\n\n" .
+                    "🔔 *NEW APPROVAL REQUEST*\n\n" .
+                    "📋 *Detail Tiket:*\n" .
+                    "• Ticket: *#{$ticket->ticket_num}*\n" .
+                    "• Requester: {$requester->name}\n" .
+                    "• Divisi: {$ticket->department}\n" .
+                    "• Status: *Menunggu Approval GA*\n\n" .
+                    "📝 *Deskripsi Pekerjaan:*\n" .
+                    "_{$ticket->description}_\n\n" .
+                    "━━━━━━━━━━━━━━━━━━━━━━\n" .
+
+                    "_Mohon segera review dan approve tiket ini_ ✅";
 
                 try {
                     GaWhatsappService::send($admin->no_hp, $msgAdmin);
@@ -657,7 +659,8 @@ class WorkOrderService
             // --- CARI MANAGER ---
             // Langsung pakai $targetDept karena di DB sudah sama-sama "PE"
             // Pastikan parameter kedua 'MANAGER' (sesuai job_level di DB)
-            $approvers = $this->getApproversForDeptLevel($targetDept, 'MANAGER');
+            $targets = ['MANAGER', 'SUPERVISOR'];
+            $approvers = $this->getApproversForDeptLevel($targetDept, $targets);
 
             if ($approvers->isEmpty()) {
                 Log::warning("WO GA: Tidak ada Manager ditemukan untuk dept: $targetDept");
@@ -708,7 +711,7 @@ class WorkOrderService
         $roleMap = $this->getRoleMapping();
         $targetRole = null;
 
-        // 1. Cari Role berdasarkan Mapping
+        // 1. Cari Role Admin berdasarkan Mapping (Opsional, jika ada admin khusus divisi)
         foreach ($roleMap as $role => $departments) {
             if (in_array($targetDept, $departments)) {
                 $targetRole = $role;
@@ -716,7 +719,7 @@ class WorkOrderService
             }
         }
 
-        // 2. Ambil User dengan Role tersebut
+        // 2. Ambil User dengan Role Admin tersebut (Jika ada)
         if ($targetRole) {
             $approvers = User::where('role', $targetRole)->get();
             if ($approvers->isNotEmpty()) {
@@ -724,9 +727,10 @@ class WorkOrderService
             }
         }
 
-        // 3. Fallback: Cari Manager/SPV di Divisi tersebut jika Mapping tidak ketemu 
+        // 3. Fallback: Cari MANAGER & SUPERVISOR di Divisi tersebut
+        // [FIXED] Menggunakan kolom 'job_level' dan Array ['MANAGER', 'SUPERVISOR']
         return User::where('divisi', $targetDept)
-            ->whereIn('job', 'manager')
+            ->whereIn('job_level', ['MANAGER', 'SUPERVISOR']) // <-- Perbaikan disini
             ->get();
     }
 
