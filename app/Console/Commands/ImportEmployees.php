@@ -30,6 +30,7 @@ class ImportEmployees extends Command
             'SALES SUPPORT'               => 'SS',
             'COMMERCIAL & SUPPLY CHAIN'   => 'SC',
             'HUMAN CAPITAL'               => 'HC',
+            'FACILITY'                    => 'FH'
         ];
 
         // 2. DAFTAR TARGET DIVISI (Gunakan Singkatan)
@@ -38,7 +39,7 @@ class ImportEmployees extends Command
             'GENERAL AFFAIR',
             'IT',
             'PE',
-            'FACILITY',
+            'FH',
             'MAINTENANCE',
             'MARKETING',
             'PLANT A',
@@ -90,7 +91,7 @@ class ImportEmployees extends Command
 
             // Cek Kata Kunci Boss
             $isBoss = str_contains($jabatanUpper, 'MANAGER') ||
-                str_contains($jabatanUpper, 'DIRECTOR');
+                str_contains($jabatanUpper, 'DIRECTOR') || str_contains($jabatanUpper, 'SUPERVISOR');
 
             if ($isBoss) {
                 // Jika dia Boss, cek divisinya untuk menentukan role admin
@@ -99,7 +100,7 @@ class ImportEmployees extends Command
                     'GENERAL AFFAIR' => 'ga.admin',
                     'IT' => 'it.admin',
                     'PE' => 'eng.admin',
-                    'FACILITY' => 'fh.admin',
+                    'FH' => 'fh.admin',
                     'MAINTENANCE' => 'mt.admin',
                     'MARKETING' => 'marketing.admin',
                     'PLANT A' => 'lv.admin',
