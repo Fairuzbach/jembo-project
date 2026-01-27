@@ -3,6 +3,7 @@
 namespace App\Services\GeneralAffair;
 
 use App\Models\User;
+use App\Services\GeneralAffair\GaWhatsappService;
 use App\Models\GeneralAffair\WorkOrderGeneralAffair;
 use App\Models\GeneralAffair\WorkOrderGaHistory;
 use App\Models\GeneralAffair\Category;
@@ -90,12 +91,14 @@ class WorkOrderService
             'category' => $data['category']
         ];
 
+        // Logika Start Date
         if (!empty($data['start_date'])) {
             $updateData['actual_start_date'] = $data['start_date'];
         } else if ($data['status'] === 'in_progress' && is_null($ticket->actual_start_date)) {
             $updateData['actual_start_date'] = now();
         }
 
+        // Logika Completed
         if ($data['status'] === 'completed') {
             if ($completionPhoto) {
                 $updateData['photo_completion_path'] = $completionPhoto->store('wo_ga_completed', 'public');
@@ -105,6 +108,7 @@ class WorkOrderService
             $updateData['cancellation_note'] = null;
         }
 
+        // Logika Cancelled
         if ($data['status'] === 'cancelled') {
             $updateData['cancellation_note'] = $data['cancellation_note'] ?? null;
             $updateData['actual_completion_date'] = null;
@@ -112,33 +116,129 @@ class WorkOrderService
             $updateData['photo_completion_path'] = null;
         }
 
+        // Update Optional Fields
         if (!empty($data['department'])) $updateData['department'] = $data['department'];
         if (!empty($data['target_date'])) $updateData['target_completion_date'] = $data['target_date'];
 
+        // EKSEKUSI UPDATE
         $ticket->update($updateData);
 
+        // Kirim Email (Existing)
         $this->sendStatusChangeEmail($ticket, $data['status']);
+
+        // Log History
         $this->logHistory($ticket->id, 'Status Update', 'Status diubah menjadi: ' . ucfirst($data['status']));
+
+        // ==========================================================
+        // [BARU] LOGIKA NOTIFIKASI WHATSAPP STATUS UPDATE
+        // ==========================================================
+
+        // 1. Ambil Data Requester
+        $requester = \App\Models\User::where('nik', $ticket->requester_nik)->first();
+        $requesterPhone = $requester ? ($requester->no_hp ?? $requester->phone) : null;
+
+        // 2. Siapkan Link & Pesan
+        $ticketLink = url('/wo-ga/' . $ticket->id); // Sesuaikan URL
+        $waMessage = "";
+
+        switch ($data['status']) {
+            case 'in_progress':
+                $waMessage = "🎫 *WORK ORDER GENERAL AFFAIR*\n" .
+                    "━━━━━━━━━━━━━━━━━━━━━━\n\n" .
+                    "Halo *{$requester->name}* 👋\n\n" .
+                    "🛠️ *STATUS UPDATE: ON PROGRESS*\n\n" .
+                    "📋 Ticket: *#{$ticket->ticket_num}*\n" .
+                    "📊 Status: *Sedang Dikerjakan*\n\n" .
+                    "⚙️ Tim teknisi sedang menangani pekerjaan Anda.\n" .
+                    "Kami akan memberikan update progress selanjutnya.\n\n" .
+                    "🔗 *Track Progress:*\n{$ticketLink}\n\n" .
+                    "━━━━━━━━━━━━━━━━━━━━━━\n" .
+                    "_Terima kasih atas kesabaran Anda_ ⏳";
+                break;
+
+            case 'completed':
+                $note = $data['completion_note'] ?? '-';
+                $waMessage = "🎫 *WORK ORDER GENERAL AFFAIR*\n" .
+                    "━━━━━━━━━━━━━━━━━━━━━━\n\n" .
+                    "Halo *{$requester->name}* 👋\n\n" .
+                    "✅ *STATUS UPDATE: COMPLETED*\n\n" .
+                    "📋 Ticket: *#{$ticket->ticket_num}*\n" .
+                    "📊 Status: *Selesai Dikerjakan*\n\n" .
+                    "🎉 Pekerjaan telah selesai!\n\n" .
+                    "📝 *Catatan Penyelesaian:*\n" .
+                    "_{$note}_\n\n" .
+                    "🔗 *Detail Pekerjaan:*\n{$ticketLink}\n\n" .
+                    "━━━━━━━━━━━━━━━━━━━━━━\n" .
+                    "_Mohon cek hasil pekerjaan di link di atas_ 🔍\n" .
+                    "_Terima kasih atas kerjasamanya!_ 🙏";
+                break;
+
+            case 'cancelled':
+                $reason = $data['cancellation_note'] ?? '-';
+                $waMessage = "🎫 *WORK ORDER GENERAL AFFAIR*\n" .
+                    "━━━━━━━━━━━━━━━━━━━━━━\n\n" .
+                    "Halo *{$requester->name}* 👋\n\n" .
+                    "🚫 *STATUS UPDATE: CANCELLED*\n\n" .
+                    "📋 Ticket: *#{$ticket->ticket_num}*\n" .
+                    "📊 Status: *Dibatalkan*\n\n" .
+                    "📝 *Alasan Pembatalan:*\n" .
+                    "_{$reason}_\n\n" .
+                    "🔗 *Detail Tiket:*\n{$ticketLink}\n\n" .
+                    "━━━━━━━━━━━━━━━━━━━━━━\n" .
+                    "_Untuk informasi lebih lanjut, silakan hubungi tim terkait_ 💬\n" .
+                    "_Mohon maaf atas ketidaknyamanannya_ 🙏";
+                break;
+
+            case 'pending':
+                $waMessage = "🎫 *WORK ORDER GENERAL AFFAIR*\n" .
+                    "━━━━━━━━━━━━━━━━━━━━━━\n\n" .
+                    "Halo *{$requester->name}* 👋\n\n" .
+                    "⏳ *STATUS UPDATE: PENDING*\n\n" .
+                    "📋 Ticket: *#{$ticket->ticket_num}*\n" .
+                    "📊 Status: *Dalam Antrian*\n\n" .
+                    "📌 Tiket Anda telah masuk dalam antrian pengerjaan.\n" .
+                    "Tim teknisi akan segera menangani sesuai prioritas.\n\n" .
+                    "🔗 *Monitor Status:*\n{$ticketLink}\n\n" .
+                    "━━━━━━━━━━━━━━━━━━━━━━\n" .
+                    "_Anda akan menerima notifikasi saat pekerjaan dimulai_ 🔔";
+                break;
+        }
+
+        // 3. Eksekusi Kirim WA
+        if (!empty($waMessage) && !empty($requesterPhone)) {
+            try {
+                GaWhatsappService::send($requesterPhone, $waMessage);
+                \Log::info("WA Status Update ({$data['status']}) terkirim ke {$requester->name}");
+            } catch (\Exception $e) {
+                \Log::error("Gagal kirim WA Status Update: " . $e->getMessage());
+            }
+        }
     }
 
     public function processTicket($id, string $action, ?string $reason): array
     {
         $ticket = WorkOrderGeneralAffair::findOrFail($id);
-        $user = \Illuminate\Support\Facades\Auth::user();
+        $user = Auth::user();
+
+        // Ambil Data Requester untuk Notif (WA)
+        $requester = \App\Models\User::where('nik', $ticket->requester_nik)->first();
+        $requesterPhone = $requester ? ($requester->no_hp ?? $requester->phone) : null;
+
+        $ticketLink = url('/wo-ga');
 
         // 1. BERSIHKAN ROLE
         $cleanRole = strtolower(trim($user->role));
 
         $alertData = null;
         $updateData = [];
-        $emailType = null; // Penanda jenis email yang akan dikirim
+        $emailType = null; // Penanda jenis notif
 
         $isGaAdmin = in_array($cleanRole, ['ga.admin', 'super.ga.admin']);
 
+        // --- SKENARIO 1: GA ADMIN BYPASS ---
         if ($ticket->status === 'waiting_approval' && $action === 'approve' && $isGaAdmin) {
-            $ticket->status  = 'waiting_approval_ga';
+            $ticket->status       = 'waiting_approval_ga';
             $ticket->approved_ga_at = now();
-            // $ticket->manager_note = 'Auto Approve by GA Admin(Bypass)';
             $ticket->save();
 
             WorkOrderGaHistory::create([
@@ -148,43 +248,59 @@ class WorkOrderService
                 'description'   => 'GA Admin melakukan bypass approval manager.',
             ]);
 
+            // [WA Bypass - Requester Only]
+            if ($requesterPhone) {
+                $msg = "🎫 *WORK ORDER GENERAL AFFAIR*\n" .
+                    "━━━━━━━━━━━━━━━━━━━━━━\n\n" .
+                    "Halo *{$requester->name}* 👋\n\n" .
+                    "⚡ *FAST TRACK APPROVAL*\n\n" .
+                    "📋 Ticket: *#{$ticket->ticket_num}*\n" .
+                    "📊 Status: *Menunggu Verifikasi Akhir GA*\n\n" .
+                    "✅ Tiket Anda telah di-approve oleh GA Admin.\n" .
+                    "Proses verifikasi akhir sedang berlangsung.\n\n" .
+                    "━━━━━━━━━━━━━━━━━━━━━━\n" .
+                    "_Mohon menunggu proses selanjutnya_ ⏳";
+
+                GaWhatsappService::send($requesterPhone, $msg);
+            }
+
             return [
                 'status' => 'success',
-                'message' => 'Tiket berhasil di-bypass (Approve) oleh Admin.',
-                'alert' => 'Segera tentukan PIC untuk tiket ini.' // Alert untuk frontend
+                'message' => '✅ Tiket berhasil di-bypass (Approve) oleh Admin.',
+                'alert' => '⚠️ Segera tentukan PIC untuk tiket ini.'
             ];
         }
 
+        // --- SKENARIO 2: NORMAL FLOW ---
         if ($action == 'reject') {
             $newStatus = 'rejected';
             $desc = "Ditolak. Alasan: $reason";
-            $emailType = 'rejected'; // Tandai kirim email reject
+            $emailType = 'rejected';
         } else {
-            $adminRoles = ['ga.admin', 'admin_ga', 'ga_admin'];
+            $adminRoles = ['ga.admin', 'admin_ga', 'ga_admin', 'super.ga.admin'];
             $isGAAdmin = in_array($cleanRole, $adminRoles);
 
             if ($ticket->status === 'waiting_approval') {
                 // TAHAP 1: Approval dari Supervisor/Manager
                 if ($isGAAdmin) {
-                    // GA Bypass
                     $newStatus = 'pending';
-                    $desc = "Tiket diterima langsung oleh General Affair.";
+                    $desc = "Tiket diterima langsung oleh *General Affair*.";
                     $updateData['approved_ga_by'] = $user->id;
                     $updateData['approved_ga_at'] = now();
-                    $emailType = 'ga_approved'; // Langsung approved GA
+                    $emailType = 'ga_approved';
                 } else {
                     // Normal Manager Approval
                     $newStatus = 'waiting_approval_ga';
-                    $desc = "Disetujui oleh Manager ({$user->divisi}). Menunggu GA.";
+                    $desc = "Disetujui oleh *Manager ({$user->divisi})*. Menunggu General Affair.";
                     $updateData['processed_by'] = $user->id;
                     $updateData['processed_by_name'] = $user->name;
-                    $emailType = 'manager_approved'; // Approved Manager -> Notif ke GA
+                    $emailType = 'manager_approved'; // <--- Trigger notif ke GA Admin
                 }
             } elseif ($ticket->status === 'waiting_approval_ga') {
                 // TAHAP 2: Approval dari GA Admin
                 if ($isGAAdmin) {
                     $newStatus = 'pending';
-                    $desc = "Disetujui oleh General Affair. Masuk antrian pending.";
+                    $desc = "Disetujui oleh *General Affair*. Masuk antrian pending.";
                     $updateData['approved_ga_by'] = $user->id;
                     $updateData['approved_ga_at'] = now();
                     $alertData = [
@@ -192,7 +308,7 @@ class WorkOrderService
                         'message' => 'Tiket berhasil disetujui (Status: Pending).',
                         'instruction' => 'Tiket sekarang dapat dikerjakan oleh tim General Affair!'
                     ];
-                    $emailType = 'ga_approved'; // Approved GA -> Notif ke User
+                    $emailType = 'ga_approved';
                 } else {
                     return [
                         'status' => 'error',
@@ -200,15 +316,15 @@ class WorkOrderService
                     ];
                 }
             } else {
-                // Status Lain (Fallback)
+                // Fallback Status
                 if ($isGAAdmin) {
                     $newStatus = 'pending';
-                    $desc = "Tiket diterima GA.";
+                    $desc = "Tiket diterima General Affair.";
                     $updateData['approved_ga_by'] = $user->id;
                     $updateData['approved_ga_at'] = now();
                     $emailType = 'ga_approved';
                 } else {
-                    $newStatus = 'waiting_approval_ga'; // Sesuaikan dengan ENUM database Anda (pakai 'waiting_approval_ga' jika itu yg benar)
+                    $newStatus = 'waiting_approval_ga';
                     $desc = "Disetujui oleh Admin Divisi.";
                     $emailType = 'manager_approved';
                 }
@@ -227,49 +343,112 @@ class WorkOrderService
         $ticket->update($updateData);
         $this->logHistory($ticket->id, ucfirst($newStatus), $desc);
 
-        // dd([
-        //     'Check 1: Status Config Queue' => config('queue.default'), // Harus 'database'
-        //     'Check 2: Email Type' => $emailType, // Tidak boleh NULL
-        //     'Check 3: Status Tiket Sekarang' => $ticket->status,
-        //     'Check 4: Action' => $action
-        // ]);
-        // --- 4. KIRIM EMAIL NOTIFIKASI ---
-        // Ambil Email Requester
-        $requester = \App\Models\User::where('nik', $ticket->requester_nik)->first();
-        $requesterEmail = $requester ? $requester->email : null;
+        // ==========================================================
+        // 4. LOGIKA NOTIFIKASI WHATSAPP (MULTI-TARGET)
+        // ==========================================================
 
-        // List Email Admin GA
-        $gaAdminEmails = $this->getApproversForDeptLevel('General Affair', 'ga.admin');
+        Log::info("DEBUG WA: Memulai proses notifikasi untuk Tiket #{$ticket->ticket_num}");
+        Log::info("DEBUG WA: Status Action: {$action}, EmailType: {$emailType}");
 
-        if ($gaAdminEmails->isEmpty()) {
-            $gaAdminEmails = \App\Models\User::where('role', 'ga.admin')->pluck('email');
+        // A. SIAPKAN PESAN UNTUK REQUESTER
+        $msgRequester = "";
+
+        if ($emailType === 'manager_approved') {
+            Log::info("DEBUG WA: Masuk kondisi 'manager_approved'");
+
+            $msgRequester = "🎫 *WORK ORDER GENERAL AFFAIR*\n" .
+                "━━━━━━━━━━━━━━━━━━━━━━\n\n" .
+                "Halo *{$requester->name}* 👋\n\n" .
+                "✅ *APPROVED BY MANAGER*\n\n" .
+                "📋 Ticket: *#{$ticket->ticket_num}*\n" .
+                "📊 Status: *Menunggu Approval GA*\n\n" .
+                "⏳ Tiket Anda telah disetujui oleh Manager Divisi.\n" .
+                "Mohon menunggu verifikasi dari tim General Affair.\n\n" .
+                "━━━━━━━━━━━━━━━━━━━━━━\n" .
+                "_Terima kasih atas kesabaran Anda_ 🙏";
+        } elseif ($emailType === 'ga_approved') {
+            Log::info("DEBUG WA: Masuk kondisi 'ga_approved'");
+
+            $msgRequester = "🎫 *WORK ORDER GENERAL AFFAIR*\n" .
+                "━━━━━━━━━━━━━━━━━━━━━━\n\n" .
+                "Halo *{$requester->name}* 👋\n\n" .
+                "✅ *APPROVED BY GA*\n\n" .
+                "📋 Ticket: *#{$ticket->ticket_num}*\n" .
+                "📊 Status: *Pending (Siap Dikerjakan)*\n\n" .
+                "🔧 Tiket Anda telah disetujui!\n" .
+                "Tim teknisi akan segera menindaklanjuti pekerjaan Anda.\n\n" .
+                "━━━━━━━━━━━━━━━━━━━━━━\n" .
+                "_Mohon menunggu teknisi menghubungi Anda_ 📞";
+        } elseif ($emailType === 'rejected') {
+            Log::info("DEBUG WA: Masuk kondisi 'rejected'");
+
+            $msgRequester = "🎫 *WORK ORDER GENERAL AFFAIR*\n" .
+                "━━━━━━━━━━━━━━━━━━━━━━\n\n" .
+                "Halo *{$requester->name}* 👋\n\n" .
+                "❌ *REJECTED*\n\n" .
+                "📋 Ticket: *#{$ticket->ticket_num}*\n" .
+                "📊 Status: *Ditolak*\n\n" .
+                "📝 *Alasan Penolakan:*\n" .
+                "_{$reason}_\n\n" .
+                "💬 Silakan hubungi tim terkait untuk informasi lebih lanjut.\n\n" .
+                "━━━━━━━━━━━━━━━━━━━━━━\n" .
+                "_Mohon maaf atas ketidaknyamanannya_ 🙏";
+        } else {
+            Log::warning("DEBUG WA: Tidak masuk kondisi manapun. EmailType: " . ($emailType ?? 'NULL'));
         }
-        $gaAdminEmails = $gaAdminEmails->toArray();
 
-        // LOGIKA PENGIRIMAN
+        // B. EKSEKUSI KIRIM KE REQUESTER
+        if (!empty($msgRequester) && !empty($requesterPhone)) {
+            try {
+                GaWhatsappService::send($requesterPhone, $msgRequester);
+                Log::info("DEBUG WA: Sukses kirim ke Requester ({$requester->name})");
+            } catch (\Exception $e) {
+                Log::error("DEBUG WA: Gagal kirim ke Requester: " . $e->getMessage());
+            }
+        } else {
+            Log::warning("DEBUG WA: Skip kirim Requester. Msg kosong atau No HP kosong.");
+        }
+
+        // C. LOGIKA KIRIM KE GA ADMIN (Next Approver)
+        // Hanya jalan jika Manager baru saja Approve
         if ($emailType === 'manager_approved') {
 
-            if (count($gaAdminEmails) > 0) {
-                // KITA PAKSA KIRIM DISINI
-                \Illuminate\Support\Facades\Mail::to($gaAdminEmails)
-                    ->send(new \App\Mail\WorkOrderNotification($ticket, 'ga_new'));
+            Log::info("DEBUG WA: Mencari GA Admin untuk notifikasi approval...");
+
+            // Cek data GA Admin di Database
+            $gaAdmins = \App\Models\User::whereIn('role', ['ga.admin', 'super.ga.admin'])
+                ->whereNotNull('no_hp')
+                ->where('no_hp', '!=', '')
+                ->get();
+
+            Log::info("DEBUG WA: Ditemukan " . $gaAdmins->count() . " GA Admin.");
+
+            if ($gaAdmins->isEmpty()) {
+                Log::error("DEBUG WA: GAGAL! Tidak ada GA Admin yang memiliki No HP/Role yang sesuai.");
+                // Cek apakah ada admin meski tanpa no hp (untuk diagnosa)
+                $adminsTanpaHp = \App\Models\User::whereIn('role', ['ga.admin', 'super.ga.admin'])->count();
+                Log::info("DEBUG WA: Total GA Admin di DB (termasuk yg tanpa HP): " . $adminsTanpaHp);
             }
 
-            if ($requesterEmail) {
-                \Illuminate\Support\Facades\Mail::to($requesterEmail)
-                    ->send(new \App\Mail\WorkOrderNotification($ticket, 'status_update'));
-            }
-        } elseif ($emailType === 'ga_approved') {
-            if ($requesterEmail) {
-                \Illuminate\Support\Facades\Mail::to($requesterEmail)
-                    ->send(new \App\Mail\WorkOrderNotification($ticket, 'status_update'));
-            }
-        } elseif ($emailType === 'rejected') {
-            if ($requesterEmail) {
-                \Illuminate\Support\Facades\Mail::to($requesterEmail)
-                    ->send(new \App\Mail\WorkOrderNotification($ticket, 'rejected'));
+            foreach ($gaAdmins as $admin) {
+                $msgAdmin = "*WORK ORDER GENERAL AFFAIR*\n" .
+                    "Halo Admin *{$admin->name}*,\n\n" .
+                    "🔔 *Task Baru Butuh Approval*\n" .
+                    "Tiket: *#{$ticket->ticket_num}*\n" .
+                    "Requester: {$requester->name}\n" .
+                    "Divisi: {$ticket->department}\n" .
+                    "Status: *Menunggu Approval GA*\n\n" .
+                    "🔗 *Link Approve:* $ticketLink";
+
+                try {
+                    GaWhatsappService::send($admin->no_hp, $msgAdmin);
+                    Log::info("DEBUG WA: Sukses kirim ke GA Admin: {$admin->name}");
+                } catch (\Exception $e) {
+                    Log::error("DEBUG WA: Gagal kirim ke GA Admin {$admin->name}: " . $e->getMessage());
+                }
             }
         }
+        // [END] WHATSAPP LOGIC
 
         return [
             'status' => 'success',
@@ -458,25 +637,64 @@ class WorkOrderService
     /**
      * Mengatur Pengiriman Notifikasi
      */
+    /**
+     * Mengatur Pengiriman Notifikasi (Email & WhatsApp)
+     */
     private function sendNotifications($wo, $employee, $user, string $statusAwal, string $targetDept): void
     {
-        // 1. Email ke Pelapor
+        // 1. Email ke Pelapor (Tetap Pertahankan)
         $pelaporEmail = $employee?->email ?? $user->email;
         if ($pelaporEmail) {
             $this->safeMail($pelaporEmail, new WorkOrderNotification($wo, 'created_info'));
         }
 
-        // 2. Email ke Approver (Jika butuh approval)
+        // 2. Notifikasi ke Approver (Manager)
         if ($statusAwal === 'waiting_approval') {
-            // Cari Supervisor/Manager divisi target untuk approval tahap 1
-            $approvers = $this->getApproversForDeptLevel($targetDept, 'manager');
+
+            // Log untuk memastikan sistem mencari divisi yang benar
+            Log::info("Mencari Manager untuk Dept: $targetDept");
+
+            // --- CARI MANAGER ---
+            // Langsung pakai $targetDept karena di DB sudah sama-sama "PE"
+            // Pastikan parameter kedua 'MANAGER' (sesuai job_level di DB)
+            $approvers = $this->getApproversForDeptLevel($targetDept, 'MANAGER');
 
             if ($approvers->isEmpty()) {
                 Log::warning("WO GA: Tidak ada Manager ditemukan untuk dept: $targetDept");
             }
 
+            // --- LOOPING KIRIM NOTIF ---
+            // Buat Link Login/Approval untuk di WA
+            $link = url('/wo-ga' . $wo->id);
+
             foreach ($approvers as $approver) {
+
+                // A. Kirim Email (Existing)
                 $this->safeMail($approver->email, new WorkOrderNotification($wo, 'need_approval'));
+
+                // B. [BARU] Kirim WhatsApp ke Manager
+                // Bagian inilah yang sebelumnya HILANG, makanya WA tidak masuk.
+                if (!empty($approver->no_hp)) {
+                    $msg = "*WORK ORDER GENERAL AFFAIR*\n" .
+                        "Halo Manager *{$approver->name}*,\n\n" .
+                        "🔔 *Permintaan Approval Baru*\n" .
+                        "Nomor Tiket: *#{$wo->ticket_num}*\n" .
+                        "Requester: {$user->name} ({$user->divisi})\n" .
+                        "*Divisi*: {$wo->department}\n" .
+                        "*Kategori*: {$wo->category}\n" .
+                        "*Deskripsi*: {$wo->description}\n\n" .
+                        "Mohon segera ditinjau melalui link berikut:\n" .
+                        "$link";
+
+                    try {
+                        GaWhatsappService::send($approver->no_hp, $msg);
+                        Log::info("WA sent to Manager {$approver->name}");
+                    } catch (\Exception $e) {
+                        Log::error("Gagal kirim WA ke Manager {$approver->name}: " . $e->getMessage());
+                    }
+                } else {
+                    Log::warning("Manager {$approver->name} tidak punya Nomor HP, WA skip.");
+                }
             }
         }
     }
@@ -508,7 +726,7 @@ class WorkOrderService
 
         // 3. Fallback: Cari Manager/SPV di Divisi tersebut jika Mapping tidak ketemu 
         return User::where('divisi', $targetDept)
-            ->whereIn('role', 'manager')
+            ->whereIn('job', 'manager')
             ->get();
     }
 
@@ -563,31 +781,41 @@ class WorkOrderService
             'ga.admin'        => ['GA', 'General Affair']
         ];
     }
+    /**
+     * Mencari Approver berdasarkan Divisi dan Level Jabatan
+     * FIX: Menggunakan kolom 'job_level' untuk Manager
+     */
     private function getApproversForDeptLevel($departmentName, $targetRoles)
     {
-        // Pastikan targetRoles selalu berbentuk Array agar mudah diproses
+        // 1. Normalisasi Input (Jadikan Array & Huruf Besar)
         $roles = is_array($targetRoles) ? $targetRoles : [$targetRoles];
 
-        return \App\Models\User::where('is_active', 1)
-            ->where(function ($q) use ($roles, $departmentName) {
+        // Debugging (Opsional, bisa dihapus nanti)
+        Log::info("Mencari User...", ['divisi' => $departmentName, 'target' => $roles]);
 
-                // 1. LOGIKA MANAGER: Wajib cek Kesamaan Divisi
-                if (in_array('MANAGER', $roles)) {
-                    $q->orWhere(function ($sub) use ($departmentName) {
-                        $sub->where('role', 'MANAGER')
-                            ->where('divisi', $departmentName);
-                    });
+        return \App\Models\User::query()
+            ->where('is_active', 1) // Hanya user aktif
+            ->where(function ($query) use ($roles, $departmentName) {
+
+                foreach ($roles as $role) {
+                    // Normalize role string comparison
+                    $roleUpper = strtoupper($role);
+
+                    // A. LOGIKA CARI MANAGER
+                    // Jika target yang dicari adalah 'MANAGER'
+                    if ($roleUpper === 'MANAGER') {
+                        $query->orWhere(function ($sub) use ($departmentName) {
+                            $sub->where('divisi', $departmentName) // Wajib divisi sama
+                                ->where('job_level', 'MANAGER');   // Kolom yang benar
+                        });
+                    }
+
+                    // B. LOGIKA CARI ADMIN (Global Access)
+                    // Misal: ga.admin, super.ga.admin
+                    else {
+                        $query->orWhere('role', $role);
+                    }
                 }
-
-                // 2. LOGIKA ADMIN: Ambil semua role selain MANAGER
-                // (Misal: eng.admin, admin, ga.admin, dll)
-                // Admin dianggap punya hak akses lintas divisi (Global)
-                $adminRoles = array_diff($roles, ['MANAGER']);
-
-                if (!empty($adminRoles)) {
-                    $q->orWhereIn('role', $adminRoles);
-                }
-            })
-            ->pluck('email'); // Return Collection (jangan toArray)
+            })->get();
     }
 }
