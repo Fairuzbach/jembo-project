@@ -29,7 +29,7 @@ class WorkOrderService
             $user = Auth::user();
             $employee = User::where('nik', $data['requester_nik'])->first();
 
-            $isAdminGA = $user->divisi === 'General Affair' || $user->role === 'ga.admin';
+            $isAdminGA = $user->divisi === 'General Affair' || $user->role === 'ga.admin' || $user->role === 'super.ga.admin';
 
             // Determine initial status
             if ($isAdminGA) {
@@ -220,7 +220,7 @@ class WorkOrderService
         $requester = \App\Models\User::where('nik', $ticket->requester_nik)->first();
         $requesterPhone = $requester ? ($requester->no_hp ?? $requester->phone) : null;
 
-        $ticketLink = url('/wo-ga');
+        // $ticketLink = url('/wo-ga');
 
         // 1. BERSIHKAN ROLE
         $cleanRole = strtolower(trim($user->role));
@@ -406,7 +406,7 @@ class WorkOrderService
         }
 
         // C. LOGIKA KIRIM KE GA ADMIN (Next Approver)
-        // Hanya jalan jika Manager baru saja Approve
+
         if ($emailType === 'manager_approved') {
 
             Log::info("DEBUG WA: Mencari GA Admin untuk notifikasi approval...");
@@ -433,8 +433,8 @@ class WorkOrderService
                     "🔔 *NEW APPROVAL REQUEST*\n\n" .
                     "📋 *Detail Tiket:*\n" .
                     "• Ticket: *#{$ticket->ticket_num}*\n" .
-                    "• Requester: {$requester->name}\n" .
-                    "• Divisi: {$ticket->department}\n" .
+                    "• Requester: *{$requester->name}*\n" .
+                    "• Divisi: *{$ticket->department}*\n" .
                     "• Status: *Menunggu Approval GA*\n\n" .
                     "📝 *Deskripsi Pekerjaan:*\n" .
                     "_{$ticket->description}_\n\n" .
@@ -520,7 +520,7 @@ class WorkOrderService
         if (!$user) return;
 
         // 1. LOGIKA ADMIN GA (Melihat semua tiket untuk GA)
-        if ($user->role === User::ROLE_GA_ADMIN || $user->role === 'ga.admin') {
+        if ($user->role === User::ROLE_GA_ADMIN || $user->role === 'ga.admin' || $user->role === 'super.ga.admin') {
             $query->where(function ($q) {
                 // Admin GA melihat tiket dengan berbagai status
                 $q->whereIn('status', [
