@@ -6,6 +6,7 @@ use App\Models\Facilities\WorkOrderFacilities;
 use App\Models\Engineering\Machine;
 use App\Models\Engineering\Plant;
 use App\Models\User;
+use App\Services\GeneralAffair\GaWhatsappService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\DB;
@@ -23,26 +24,34 @@ class FacilityService
     {
         return DB::transaction(function () use ($data, $file) {
             $user = auth()->user();
+            $userLevel = strtoupper(trim($user->job_level ?? ''));
+
+            // 1. Cek Apakah Pembuat Tiket adalah Boss (SPV/Manager/Head)
+            $isBoss = str_contains($userLevel, 'SUPERVISOR') ||
+                str_contains($userLevel, 'SPV') ||
+                str_contains($userLevel, 'MANAGER') ||
+                str_contains($userLevel, 'HEAD') ||
+                str_contains($userLevel, 'MGR');
+
+            // 2. Tentukan Status Awal
+            // Jika Boss -> Langsung ke Tahap Verifikasi Facility (Bypass Approval)
+            // Jika Staff -> Masuk Waiting Approval dulu
+            $initialStatus = $isBoss ? 'waiting_facility_approval' : 'waiting_approval';
 
             // A. Handle File Upload
             $photoPath = $file ? $file->store('wo_facilities', 'public') : null;
 
-            // B. Generate Ticket Number (Atomic Lock)
+            // B. Generate Ticket Number
             $dateCode = date('Ymd');
             $prefix = 'FAC-' . $dateCode . '-';
-
             $lastTicket = WorkOrderFacilities::where('ticket_num', 'like', $prefix . '%')
-                ->orderBy('id', 'desc')
-                ->lockForUpdate()
-                ->first();
-
+                ->orderBy('id', 'desc')->lockForUpdate()->first();
             $newSeq = $lastTicket ? ((int)substr($lastTicket->ticket_num, -3) + 1) : 1;
             $ticketNum = $prefix . sprintf('%03d', $newSeq);
 
-            // C. Logika Mesin
+            // C. Logika Mesin (Tetap Sama)
             $machineId = null;
             $machineName = null;
-
             if ($data['category'] == 'Pemasangan Mesin' && !empty($data['new_machine_name'])) {
                 $newMachine = Machine::create([
                     'plant_id' => $data['plant_id'],
@@ -78,20 +87,38 @@ class FacilityService
                 'category' => $data['category'],
                 'target_completion_date' => $data['target_completion_date'] ?? null,
                 'photo_path' => $photoPath,
-                'status' => 'waiting_approval'
+
+                // [PENTING] Status sesuai level user
+                'status' => $initialStatus
             ]);
 
-            // F. Notifikasi Terpusat
-            // 1. Info ke SPV Plant (Approval)
-            $this->notifyApprovers($ticket, $plantName);
-            // 2. Info ke Admin FH (New Ticket)
-            $this->notifyAdmins($ticket, 'new_ticket');
-            // 3. Info ke User (Created)
+            // F. NOTIFIKASI (LOGIC BYPASS)
+
+            if ($isBoss) {
+                // KASUS 1: BOSS YANG BUAT
+                // Tidak perlu kirim ke Approver (diri sendiri/setara).
+                // Langsung Info ke Admin Facility bahwa ada tiket masuk minta verifikasi.
+                $this->notifyAdmins($ticket, 'fh_new'); // fh_new = Trigger WA "Perlu Verifikasi"
+
+                $message = 'Tiket berhasil dibuat (Auto-Approve). Menunggu Verifikasi Facility.';
+                \Log::info("✅ TICKET BYPASS: Created by Boss ({$user->name}) -> Skip Approval.");
+            } else {
+                // KASUS 2: STAFF BIASA YANG BUAT
+                // Kirim ke Approver (SPV/Manager)
+                $this->notifyApprovers($ticket, $plantName);
+
+                // Info ke Admin (Sekadar info ada tiket baru, belum butuh aksi)
+                $this->notifyAdmins($ticket, 'new_ticket');
+
+                $message = 'Tiket berhasil dibuat. Menunggu persetujuan Atasan.';
+            }
+
+            // Info ke Diri Sendiri (Email Confirm)
             $this->safeMail($user->email, new FacilityNotification($ticket, 'created_info'));
 
             return [
                 'success' => true,
-                'message' => 'Tiket berhasil dibuat. Menunggu persetujuan Atasan.',
+                'message' => $message,
                 'data' => $ticket
             ];
         });
@@ -106,62 +133,69 @@ class FacilityService
         if (!$ticket) return ['success' => false, 'message' => 'Tiket tidak ditemukan.'];
 
         $user = auth()->user();
-        $cleanRole   = strtolower(trim($user->role ?? ''));
-        $userLevel   = strtolower(trim($user->job_level ?? ''));
-        $userDivisi  = trim($user->divisi ?? '');
-        $ticketPlant = trim($ticket->plant ?? '');
 
-        // Bypass Logic
-        $facilityRoles = ['super.admin', 'fh.admin', 'fh.manager', 'fh.spv'];
-        $isFacilityAdmin = in_array($cleanRole, $facilityRoles) || $user->divisi === 'Facility';
-        $bossLevels = ['supervisor', 'manager', 'director'];
+        // Cek Admin (Facility / Super / MV Admin)
+        $isAdmin = in_array($user->role, ['fh.admin', 'super.admin', 'mv.admin']) || $user->divisi === 'Facility';
 
-        // 1. STATE: WAITING APPROVAL (Approval Level Plant)
-        if ($ticket->status == 'waiting_approval') {
+        // ------------------------------------------------------------------
+        // KASUS 1: TAHAP VERIFIKASI (Tiket sudah diapprove SPV -> Cek Admin)
+        // ------------------------------------------------------------------
+        if ($ticket->status == 'waiting_facility_approval') {
+            if ($isAdmin) {
+                // Admin memverifikasi tiket -> Status jadi PENDING (Siap dikerjakan)
+                $ticket->update(['status' => 'pending', 'updated_at' => now()]);
 
-            if ($isFacilityAdmin) {
-                // Admin Bypass
-                $ticket->update(['status' => 'waiting_facility_approval', 'updated_at' => now()]);
+                // Notif ke Requester bahwa tiket sudah diterima Facility
                 $this->notifyRequester($ticket, 'status_update');
-                // Info ke Admin Facility bahwa ada tiket masuk fase pengerjaan
-                $this->notifyAdmins($ticket, 'fh_new');
-                return ['success' => true, 'message' => 'Disetujui Admin (Bypass).'];
+
+                \Log::info("✅ FACILITY VERIFIED: {$user->name} verified ticket {$ticket->ticket_num}");
+
+                return ['success' => true, 'message' => 'Tiket Terverifikasi (Pending). Siap dikerjakan Teknisi.'];
             } else {
-                // Logic Wewenang Hierarki
-                if (!in_array($userLevel, $bossLevels) && !str_contains($cleanRole, 'admin')) {
-                    return ['success' => false, 'message' => 'Anda tidak memiliki level jabatan untuk approval.'];
-                }
-
-                $allowedKeywords = $this->getPlantAliases($ticketPlant);
-                $isAuthorized = false;
-
-                foreach ($allowedKeywords as $keyword) {
-                    if (stripos($userDivisi, $keyword) !== false) {
-                        $isAuthorized = true;
-                        break;
-                    }
-                }
-
-                if ($isAuthorized) {
-                    $ticket->update(['status' => 'waiting_facility_approval', 'updated_at' => now()]);
-                    $this->notifyRequester($ticket, 'status_update');
-                    $this->notifyAdmins($ticket, 'fh_new'); // Info ke Facility team
-                    return ['success' => true, 'message' => 'Disetujui. Menunggu verifikasi Facility.'];
-                } else {
-                    return ['success' => false, 'message' => "Gagal. Divisi Anda ($userDivisi) tidak memiliki wewenang approval area ini."];
-                }
+                return ['success' => false, 'message' => 'Hanya Admin Facility yang bisa memverifikasi di tahap ini.'];
             }
         }
 
-        // 2. STATE: WAITING FACILITY (Approval Admin/Manager FH)
-        elseif ($ticket->status == 'waiting_facility_approval') {
-            if ($isFacilityAdmin) {
-                $ticket->update(['status' => 'pending', 'updated_at' => now()]);
+        // ------------------------------------------------------------------
+        // KASUS 2: TAHAP APPROVAL MANAGER (Tiket Baru)
+        // ------------------------------------------------------------------
+        if ($ticket->status == 'waiting_approval') {
+
+            // A. BYPASS ADMIN
+            // Jika Admin yang approve di tahap awal, langsung lolos ke tahap verifikasi
+            if ($isAdmin) {
+                $ticket->update(['status' => 'waiting_facility_approval', 'updated_at' => now()]);
+
                 $this->notifyRequester($ticket, 'status_update');
-                return ['success' => true, 'message' => 'Tiket Disetujui Sepenuhnya (Pending).'];
-            } else {
-                return ['success' => false, 'message' => 'Hanya Admin Facility yang bisa approve di tahap ini!'];
+
+                // PENTING: Panggil notifyAdmins agar Admin lain/diri sendiri dapat notif WA
+                $this->notifyAdmins($ticket, 'fh_new');
+
+                \Log::info("✅ APPROVE BYPASS: {$user->name} approved ticket {$ticket->ticket_num}");
+
+                return ['success' => true, 'message' => 'Disetujui Admin (Bypass). Menunggu Verifikasi Akhir.'];
             }
+
+            // B. LOGIC MATRIX (SPV/MANAGER)
+            if ($this->checkApprovalMatrix($ticket->plant, $user)) {
+
+                // 1. Update Status
+                $ticket->update(['status' => 'waiting_facility_approval', 'updated_at' => now()]);
+
+                // 2. Notif ke Requester (Bahwa tiketnya sudah diapprove bosnya)
+                $this->notifyRequester($ticket, 'status_update');
+
+                // 3. [PENTING] Notif ke FACILITY ADMIN (Panggil function di atas)
+                $this->notifyAdmins($ticket, 'fh_new');
+
+                \Log::info("✅ APPROVE MATRIX: {$user->name} approved {$ticket->ticket_num}");
+
+                return ['success' => true, 'message' => 'Disetujui. Notifikasi telah dikirim ke Tim Facility.'];
+            }
+
+            // GAGAL
+            \Log::warning("⛔ APPROVE FAIL: {$user->name} (Div: {$user->divisi}) tried to approve {$ticket->plant}");
+            return ['success' => false, 'message' => "Gagal. Divisi Anda ({$user->divisi}) tidak sesuai dengan Matrix Approval area {$ticket->plant}."];
         }
 
         return ['success' => false, 'message' => 'Status tiket tidak valid.'];
@@ -170,12 +204,43 @@ class FacilityService
     public function rejectTicket($id, $reason)
     {
         $ticket = WorkOrderFacilities::findOrFail($id);
+
         $ticket->update([
             'status' => 'rejected',
-            'rejection_reason' => $reason . ' (Rejected by ' . Auth::user()->name . ')'
+            'rejection_reason' => $reason . ' (Rejected by ' . Auth::user()->name . ')',
+            'actual_completion_date' => null // Reset tanggal jika ada
         ]);
 
+        // 1. Notif Email
         $this->notifyRequester($ticket, 'status_update');
+
+        // 2. Notif WA (Manual Add)
+        $requester = User::find($ticket->requester_id);
+        if ($requester && $requester->no_hp) {
+            $link = url('/facility/' . $ticket->id);
+            $msg = "🔧 *WORK ORDER FACILITY*\n" .
+                "👋 Halo,\n\n" .
+                "━━━━━━━━━━━━━━━━━━━━━\n" .
+                "🚫 *TIKET DITOLAK*\n" .
+                "━━━━━━━━━━━━━━━━━━━━━\n\n" .
+                "📋 *Detail Penolakan*\n" .
+                "┣ Nomor: `{$ticket->ticket_num}`\n" .
+                "┗ Ditolak oleh: " . Auth::user()->name . "\n\n" .
+                "💬 *Alasan Penolakan:*\n" .
+                "_{$reason}_\n\n" .
+                "━━━━━━━━━━━━━━━━━━━━━\n" .
+                "ℹ️ Silakan ajukan tiket baru jika diperlukan\n" .
+                "━━━━━━━━━━━━━━━━━━━━━";
+            try {
+                GaWhatsappService::send($requester->no_hp, $msg);
+                \Log::info("✅ WA REJECT SENT to {$requester->name}");
+            } catch (\Exception $e) {
+                \Log::error("❌ WA REJECT FAILED: " . $e->getMessage());
+            }
+        }
+
+        \Log::info("🚫 TICKET REJECTED: {$ticket->ticket_num} by " . Auth::user()->name);
+
         return ['success' => true, 'message' => 'Ticket Rejected.'];
     }
 
@@ -184,29 +249,95 @@ class FacilityService
         $wo = WorkOrderFacilities::findOrFail($id);
         $wo->status = $data['status'];
 
+        // 1. Sync Teknisi
         if (isset($data['facility_tech_ids'])) {
             $ids = $data['facility_tech_ids'];
             if (!is_array($ids)) $ids = explode(',', (string)$ids);
+            // Filter ID valid
             $ids = array_filter($ids, fn($val) => is_numeric($val) && $val > 0);
             $wo->technicians()->sync($ids);
         }
 
+        // 2. Update Start Date
         if (!empty($data['start_date'])) {
             $wo->start_date = $data['start_date'];
         }
 
+        // 3. Update Completion Date
         if ($data['status'] == 'completed') {
             $wo->actual_completion_date = $wo->actual_completion_date ?? now();
         } elseif ($data['status'] != 'completed') {
             $wo->actual_completion_date = null;
         }
 
+        // 4. Set Processed By (Jika belum ada)
         if (!$wo->processed_by) {
             $wo->processed_by = Auth::id();
             $wo->processed_by_name = Auth::user()->name;
         }
 
         $wo->save();
+
+        // 5. Notifikasi WA ke Requester (DENGAN LOG)
+        $requester = User::find($wo->requester_id);
+
+        if ($requester && $requester->no_hp) {
+            $msg = "";
+            // $link = url('/facility/' . $wo->id); // Generate Link
+
+            switch ($data['status']) {
+                case 'in_progress':
+                    $msg = "🔧 *WORK ORDER FACILITY*\n\n" .
+                        "╔═══════════════════════╗\n" .
+                        "║   🛠 *STATUS UPDATE*   ║\n" .
+                        "╚═══════════════════════╝\n\n" .
+                        "📋 Tiket: *{$wo->ticket_num}*\n" .
+                        "📊 Status: *IN PROGRESS*\n\n" .
+                        "⏳ Teknisi sedang bekerja\n" .
+                        "Mohon menunggu...";
+                    break;
+
+                case 'completed':
+                    $msg = "🔧 *WORK ORDER FACILITY*\n\n" .
+                        "╔═══════════════════════╗\n" .
+                        "║   ✅ *COMPLETED*      ║\n" .
+                        "╚═══════════════════════╝\n\n" .
+                        "📋 Tiket: *{$wo->ticket_num}*\n\n" .
+                        "🎉 Pekerjaan selesai!\n\n" .
+                        "⭐ Beri rating sekarang:\n" .
+                        "🔗 $link";
+                    break;
+
+                case 'cancelled':
+                case 'rejected':
+                    $statusLabel = strtoupper($data['status']);
+                    $msg = "🔧 *WORK ORDER FACILITY*\n\n" .
+                        "╔═══════════════════════╗\n" .
+                        "║   🚫 *{$statusLabel}*      ║\n" .
+                        "╚═══════════════════════╝\n\n" .
+                        "📋 Tiket: *{$wo->ticket_num}*\n\n" .
+                        "ℹ️ Tiket dibatalkan/ditolak\n" .
+                        "💬 Hubungi admin jika perlu";
+                    break;
+            }
+
+            if ($msg) {
+                try {
+                    GaWhatsappService::send($requester->no_hp, $msg);
+
+                    // [LOG SUKSES]
+                    \Log::info("✅ WA STATUS SENT to Requester: {$requester->name} | Status: {$data['status']}");
+                } catch (\Exception $e) {
+                    // [LOG ERROR]
+                    \Log::error("❌ WA STATUS FAILED to Requester: {$requester->name} | Error: " . $e->getMessage());
+                }
+            }
+        } elseif ($requester) {
+            // [LOG SKIP]
+            \Log::warning("⚠️ WA SKIP: Requester {$requester->name} tidak memiliki No HP.");
+        }
+
+        // Email Notif (Bawaan lama)
         $this->notifyRequester($wo, 'status_update');
 
         return $wo;
@@ -361,32 +492,151 @@ class FacilityService
 
     private function notifyAdmins($ticket, $type)
     {
-        // Cari email Admin/Manager FH
-        $recipients = User::whereIn('role', ['fh.admin', 'fh.manager', 'super.admin'])
-            ->orWhere('divisi', 'Facility')
-            ->pluck('email')
-            ->unique(); // Mencegah duplikat
+        // 1. Cari User Admin/Manager FH
+        $recipients = User::where('is_active', 1)
+            ->where(function ($q) {
+                $q->whereIn('role', ['fh.admin', 'fh.manager', 'super.admin'])
+                    ->orWhere('divisi', 'Facility');
+            })
+            ->get();
 
-        foreach ($recipients as $email) {
-            $this->safeMail($email, new FacilityNotification($ticket, $type));
+        $link = url('/facility/' . $ticket->id);
+
+        foreach ($recipients as $admin) {
+
+            // A. Kirim Email
+            $this->safeMail($admin->email, new FacilityNotification($ticket, $type));
+
+            // B. Kirim WhatsApp dengan LOGGING LENGKAP
+            if ($admin->no_hp) {
+                $msg = "";
+
+                if ($type == 'fh_new') {
+                    $msg = "🔧 *WORK ORDER FACILITY*\n" .
+                        "👋 Halo Tim FH,\n\n" .
+                        "━━━━━━━━━━━━━━━━━━━━━\n" .
+                        "🔔 *TIKET PERLU VERIFIKASI*\n" .
+                        "━━━━━━━━━━━━━━━━━━━━━\n\n" .
+                        "📋 *Detail Tiket*\n" .
+                        "┣ Nomor: `{$ticket->ticket_num}`\n" .
+                        "┣ User: {$ticket->requester_name}\n" .
+                        "┣ Plant: {$ticket->plant}\n" .
+                        "┣ Status: ✅ Approved SPV/Manager\n\n" .
+                        "┣ Category: {$ticket->category}\n\n" .
+                        "┗ Mesin: {$ticket->machine_name}\n\n" .
+                        "🛠 *Deskirpsi:*\n" .
+                        "_{$ticket->description}_\n\n" .
+                        "━━━━━━━━━━━━━━━━━━━━━";
+                } elseif ($type == 'new_ticket') {
+                    $msg = "🔧 *WORK ORDER FACILITY*\n" .
+                        "👋 Halo,\n\n" .
+                        "━━━━━━━━━━━━━━━━━━━━━\n" .
+                        "🆕 *INFO TIKET BARU*\n" .
+                        "━━━━━━━━━━━━━━━━━━━━━\n\n" .
+                        "📋 *Detail Tiket*\n" .
+                        "┣ Nomor: `{$ticket->ticket_num}`\n" .
+                        "┣ Requester: {$ticket->requester_name}\n" .
+                        "┗ Status: ⏳ Menunggu Approval\n\n" .
+                        "━━━━━━━━━━━━━━━━━━━━━\n" .
+                        "ℹ️ Notifikasi ini bersifat informasi\n" .
+                        "━━━━━━━━━━━━━━━━━━━━━";
+                }
+
+                if ($msg) {
+                    try {
+                        GaWhatsappService::send($admin->no_hp, $msg);
+                        // [LOG SUKSES]
+                        \Log::info("✅ WA ADMIN SENT to: {$admin->name} | Type: $type");
+                    } catch (\Exception $e) {
+                        // [LOG ERROR - GAGAL KIRIM]
+                        \Log::error("❌ WA ADMIN FAILED to: {$admin->name} | Error: " . $e->getMessage());
+                    }
+                }
+            } else {
+                // [LOG WARNING - TIDAK ADA NOMOR HP]
+                // Ini penting agar Anda tahu kenapa admin tertentu tidak dapat WA
+                \Log::warning("⚠️ WA ADMIN SKIP: User '{$admin->name}' tidak memiliki No HP. (Type: $type)");
+            }
         }
     }
 
     private function notifyApprovers($ticket, $plantName)
     {
-        $targetAliases = $this->getPlantAliases($plantName);
+        $matrix = $this->getFacilityMatrix();
+        $config = $matrix[$plantName] ?? null;
 
-        // Cari User dengan Jabatan Boss DAN Divisi sesuai mapping
-        $approvers = User::whereIn('job_level', ['supervisor', 'manager', 'director'])
-            ->where(function ($q) use ($targetAliases) {
-                foreach ($targetAliases as $alias) {
-                    $q->orWhere('divisi', 'LIKE', '%' . $alias . '%');
-                }
-            })
-            ->get();
+        $query = User::where('is_active', 1);
+
+        if ($config) {
+            // [FIX] Menggunakan Logic Matrix
+            $query->where(function ($q) use ($config) {
+                // A. Cek Supervisor
+                $q->orWhere(function ($sub) use ($config) {
+                    // PERBAIKAN: Gunakan whereIn (bukan where) untuk array
+                    $sub->whereIn('job_level', ['SUPERVISOR', 'SPV'])
+                        ->whereIn('divisi', $config['spv']);
+                });
+
+                // B. Cek Manager
+                $q->orWhere(function ($sub) use ($config) {
+                    $sub->whereIn('job_level', ['MANAGER', 'HEAD', 'MGR'])
+                        ->whereIn('divisi', $config['mgr']);
+                });
+            });
+        } else {
+            // [FALLBACK] Logic Keyword (Jika tidak ada di matrix)
+            $aliases = $this->getPlantAliases($plantName);
+
+            // PERBAIKAN: Cari Supervisor DAN Manager (jangan cuma Supervisor)
+            $query->whereIn('job_level', ['SUPERVISOR', 'SPV', 'MANAGER', 'HEAD', 'MGR'])
+                ->where(function ($q) use ($aliases) {
+                    foreach ($aliases as $alias) {
+                        $q->orWhere('divisi', 'LIKE', '%' . $alias . '%');
+                    }
+                });
+        }
+
+        $approvers = $query->get();
+
+        // Generate Link Approval (Penting agar bisa diklik)
+        // $approvalLink = url('/fh/' . $ticket->id); // Sesuaikan route Anda
 
         foreach ($approvers as $approver) {
+            // 1. Kirim Email
             $this->safeMail($approver->email, new FacilityNotification($ticket, 'need_approval'));
+
+            // 2. Kirim WA dengan LOGGING
+            if ($approver->no_hp) {
+                $msg = "═══════════════════════\n" .
+                    "🔧 *WORK ORDER FACILITY*\n" .
+                    "═══════════════════════\n\n" .
+                    "👋 Halo *{$approver->name}*,\n\n" .
+                    "━━━━━━━━━━━━━━━━━━━━━\n" .
+                    "🔔 *APPROVAL DIPERLUKAN*\n" .
+                    "━━━━━━━━━━━━━━━━━━━━━\n\n" .
+                    "📋 *Detail Tiket*\n" .
+                    "┣ Nomor: `{$ticket->ticket_num}`\n" .
+                    "┣ Lokasi: {$ticket->plant}\n" .
+                    "┣ Area: {$ticket->location_details}\n" .
+                    "┗ Kategori: {$ticket->category}\n\n" .
+                    "💬 *Masalah:*\n" .
+                    "_{$ticket->description}_\n\n" .
+                    "━━━━━━━━━━━━━━━━━━━━━\n" .
+                    "⚡ Mohon segera diapprove. Terima kasih!\n" .
+                    "━━━━━━━━━━━━━━━━━━━━━";
+
+                try {
+                    GaWhatsappService::send($approver->no_hp, $msg);
+
+                    // [LOG SUKSES]
+                    \Log::info("✅ WA FACILITY SENT to Approver: {$approver->name} ({$approver->no_hp}) | Ticket: {$ticket->ticket_num}");
+                } catch (\Exception $e) {
+                    // [LOG ERROR]
+                    \Log::error("❌ WA FACILITY FAILED to Approver: {$approver->name} | Error: " . $e->getMessage());
+                }
+            } else {
+                \Log::warning("⚠️ WA SKIP: Approver {$approver->name} tidak memiliki No HP.");
+            }
         }
     }
 
@@ -410,5 +660,75 @@ class FacilityService
         if (str_contains($cleanName, 'PLANT E')) return ['FO', 'Manager FO', 'Plant E', 'Fiber Optic'];
 
         return [$plantName];
+    }
+
+    // check approval matrix
+    /**
+     * CORE LOGIC: Cek Approval dengan Debugging
+     */
+    private function checkApprovalMatrix($ticketPlant, $user)
+    {
+        // Data User
+        $userDivisi  = strtoupper(trim($user->divisi ?? ''));
+        $userLevel   = strtoupper(trim($user->job_level ?? ''));
+        $userJabatan = strtoupper(trim($user->jabatan ?? '')); // [BARU] Ambil Jabatan
+
+        $matrix = $this->getFacilityMatrix();
+        $config = $matrix[$ticketPlant] ?? null;
+
+        // 1. STRICT MATRIX CHECK
+        if ($config) {
+            // A. Cek Supervisor
+            if (str_contains($userLevel, 'SUPERVISOR') || str_contains($userLevel, 'SPV')) {
+                foreach ($config['spv'] as $keyword) {
+                    $key = strtoupper($keyword);
+                    // Cek apakah Keyword (misal: "CCV") ada di Divisi ATAU Jabatan user
+                    if (str_contains($userDivisi, $key) || str_contains($userJabatan, $key)) {
+                        return true;
+                    }
+                }
+            }
+
+            // B. Cek Manager
+            if (str_contains($userLevel, 'MANAGER') || str_contains($userLevel, 'HEAD')) {
+                foreach ($config['mgr'] as $keyword) {
+                    $key = strtoupper($keyword);
+                    if (str_contains($userDivisi, $key) || str_contains($userJabatan, $key)) {
+                        return true;
+                    }
+                }
+            }
+
+            // Jika User masuk kategori SPV/Manager tapi keywordnya ga ketemu -> TOLAK
+            return false;
+        }
+
+        // 2. FALLBACK
+        return str_contains($userDivisi, strtoupper($ticketPlant));
+    }
+
+    private function getFacilityMatrix()
+    {
+        return [
+            'Plant D - CCV' => [
+                'spv' => ['CCV Line', 'SUPERVISOR CCV'],
+                'mgr' => ['MV D', 'Medium Voltage']
+            ],
+            'Plant D' => [
+                'spv' => ['MV D', 'Medium Voltage', 'PLANT D'],
+                'mgr' => ['MV D', 'Medium Voltage']
+            ],
+            'Plant A - Autowire' => [
+                'spv' => ['SUPERVISOR AUTOWIRE', 'PLANT A'],
+                'mgr' => ['Low Voltage', 'LV']
+            ],
+            'Plant A' => [
+                'spv' => ['LV A', 'Low Voltage', 'PLANT A'],
+                'mgr' => ['Low Voltage', 'LV']
+            ],
+            'Plant B' => ['spv' => ['MV B', 'PLANT B'], 'mgr' => ['MV', 'Medium Voltage']],
+            'Plant C' => ['spv' => ['LV C', 'PLANT C'], 'mgr' => ['LV']],
+            'Plant E' => ['spv' => ['FO', 'PLANT E'], 'mgr' => ['FO']]
+        ];
     }
 }
