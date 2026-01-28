@@ -92,7 +92,12 @@ class UserManagementController extends Controller
             'role' => 'required|exists:roles,name',
         ]);
 
+        // 1. Update Role di Spatie (Tabel model_has_roles)
         $user->syncRoles([$request->role]);
+
+        // 2. [WAJIB] Update Kolom 'role' di Tabel Users (Agar sinkron)
+        $user->role = $request->role;
+        $user->save();
 
         return redirect()->back()->with('success', 'Role user berhasil diupdate!');
     }
