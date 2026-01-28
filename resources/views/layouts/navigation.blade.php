@@ -51,7 +51,7 @@
                             {{ __('User Management') }}
                         </x-nav-link>
                     @endcan
-                    @if (in_array($user->role, ['ga.admin', 'super.ga.admin']))
+                    @if (in_array(Auth::user()->role, ['ga.admin', 'super.ga.admin']))
                         <x-nav-link :href="route('ga.dashboard')" :active="request()->routeIs('ga.dashboard')">
                             {{ __('Admin Dashboard') }}
                         </x-nav-link>
