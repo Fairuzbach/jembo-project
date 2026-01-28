@@ -32,14 +32,13 @@
                             </div>
 
                             <div>
-                                <label class="block text-sm font-semibold text-slate-700 mb-2">Division /
-                                    Plant</label>
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">Division</label>
                                 <input type="text" value="{{ auth()->user()->divisi ?? '-' }}" readonly
                                     class="w-full rounded-xl border-slate-300 bg-slate-100 text-slate-500 cursor-not-allowed focus:ring-0">
                             </div>
                         </div>
                         <div
-                            class="bg-blue-50/50 rounded-2xl p-4 border border-blue-100 grid grid-cols-3 gap-4 text-center">
+                            class="bg-blue-50/50 rounded-2xl p-4 border border-blue-100 grid grid-cols-2 gap-4 text-center">
                             <div>
                                 <div class="text-[10px] font-bold text-blue-300 uppercase">Date</div>
                                 <div class="font-bold text-[#1E3A5F] text-sm" x-text="currentDate"></div>
@@ -49,11 +48,6 @@
                                 <div class="text-[10px] font-bold text-blue-300 uppercase">Time</div>
                                 <div class="font-bold text-[#1E3A5F] text-sm" x-text="currentTime"></div>
                                 <input type="hidden" name="report_time" x-model="currentTime">
-                            </div>
-                            <div>
-                                <div class="text-[10px] font-bold text-blue-300 uppercase">Shift</div>
-                                <div class="font-bold text-[#1E3A5F] text-sm" x-text="currentShift"></div>
-                                <input type="hidden" name="shift" x-model="currentShift">
                             </div>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">

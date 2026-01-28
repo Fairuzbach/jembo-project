@@ -117,40 +117,6 @@
                         {{-- Action Buttons --}}
                         <td class="px-6 py-5 align-top">
                             <div class="flex items-start justify-end gap-2">
-                                @php
-                                    $currRole = strtolower(auth()->user()->role ?? '');
-                                    $currJabatan = strtolower(auth()->user()->jabatan ?? ''); // AMBIL JABATAN
-
-                                    $userDivisi = strtolower(auth()->user()->divisi ?? '');
-                                    $ticketPlant = strtolower($wo->plant);
-
-                                    $canApprove = false;
-
-                                    // 1. TAHAP APPROVAL PLANT
-                                    if ($wo->status == 'waiting_approval') {
-                                        // DEFINISI BOSS: Cek Jabatan ATAU Role
-                                        $isBoss =
-                                            str_contains($currJabatan, 'manager') ||
-                                            str_contains($currJabatan, 'supervisor') ||
-                                            str_contains($currRole, 'admin'); // mv.admin masuk sini
-
-                                        // Cek Kesamaan Lokasi
-                                        $isSamePlant = str_contains($userDivisi, $ticketPlant);
-
-                                        // Admin Bypass
-                                        $isAdminBypass = in_array($currRole, ['fh.admin', 'super.admin']);
-
-                                        if (($isBoss && $isSamePlant) || $isAdminBypass) {
-                                            $canApprove = true;
-                                        }
-                                    }
-                                    // 2. TAHAP FACILITY
-                                    elseif ($wo->status == 'waiting_facility_approval') {
-                                        if (in_array($currRole, ['fh.admin', 'fh.spv', 'fh.manager', 'super.admin'])) {
-                                            $canApprove = true;
-                                        }
-                                    }
-                                @endphp
                                 {{-- Detail Button --}}
                                 <button @click="openDetail({{ $wo->id }})"
                                     class="group px-4 py-2 bg-indigo-500 text-white rounded-lg text-xs font-semibold transition-all duration-200 hover:bg-indigo-600 hover:shadow-lg hover:scale-105 active:scale-95 flex items-center gap-1.5">
@@ -163,7 +129,8 @@
                                     </svg>
                                     Detail
                                 </button>
-                                @if ($canApprove)
+
+                                @if ($wo->canApproveBy(Auth::user()))
                                     {{-- Approve Button --}}
                                     <form action="{{ route('fh.approve', $wo->id) }}" method="POST"
                                         class="inline-block"
