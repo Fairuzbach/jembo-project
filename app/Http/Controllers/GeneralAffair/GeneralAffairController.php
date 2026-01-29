@@ -291,6 +291,8 @@ class GeneralAffairController extends Controller
     public function export(Request $request)
     {
         $user = Auth::user();
+
+        // Pastikan relasi benar
         $query = WorkOrderGeneralAffair::with(['user', 'plantInfo']);
 
         // LOGIKA HAK AKSES (Access Control)
@@ -310,29 +312,43 @@ class GeneralAffairController extends Controller
             'sales1.admin' => ['Sales 1', 'sales 1'],
             'sales2.admin' => ['Sales 2', 'sales 2'],
             'marketing.admin' => ['Marketing', 'marketing'],
+            'pp.admin' => ['Production Planning', 'PP', 'pp']
         ];
 
         if ($user) {
-            if ($user->role === User::ROLE_GA_ADMIN || $user->role === 'admin_ga') {
-                $query->where(function ($q) {
-                    $q->whereIn('status', ['pending', 'approved', 'in_progress', 'completed', 'OPEN']);
-                    $q->orWhere(function ($sub) {
-                        $sub->where('status', 'waiting_approval')
-                            ->whereIn('department', ['GA', 'General Affair']);
-                    });
-                });
-            } elseif (array_key_exists($user->role, $roleMap)) {
+            // 1. LEVEL SUPER ADMIN / GA ADMIN
+            if (
+                $user->role === User::ROLE_GA_ADMIN ||
+                $user->role === 'super.ga.admin' ||
+                $user->role === 'admin_ga'
+            ) {
+            }
+            // 2. LEVEL ADMIN DEPARTEMEN
+            elseif (array_key_exists($user->role, $roleMap)) {
                 $allowedDepts = $roleMap[$user->role];
                 $query->where(function ($q) use ($user, $allowedDepts) {
                     $q->whereIn('department', $allowedDepts)
                         ->orWhere('requester_id', $user->id);
                 });
-            } else {
-                $query->where('requester_id', $user->id);
+            }
+            // 3. LEVEL USER BIASA
+            else {
+                // [PERUBAHAN LOGIC USER]
+                // User bisa lihat data teman sedevisi + data sendiri
+                $userDivisi = $user->divisi;
+
+                $query->where(function ($q) use ($user, $userDivisi) {
+                    // A. Jika user punya divisi, tampilkan semua tiket divisi itu
+                    if ($userDivisi) {
+                        $q->where('department', $userDivisi);
+                    }
+                    // B. ATAU tampilkan tiket buatan sendiri
+                    $q->orWhere('requester_id', $user->id);
+                });
             }
         }
 
-        // LOGIKA FILTER
+        // LOGIKA FILTER DARI FORM (Tetap sama)
         if ($request->filled('selected_ids')) {
             $ids = explode(',', $request->selected_ids);
             $query->whereIn('id', $ids);
@@ -345,6 +361,7 @@ class GeneralAffairController extends Controller
                 });
             });
 
+            // Filter status dari dropdown (bukan batasan hak akses)
             $query->when($request->status && $request->status !== 'all', fn($q) => $q->where('status', $request->status));
             $query->when($request->category && $request->category !== 'all', fn($q) => $q->where('category', $request->category));
             $query->when($request->parameter && $request->parameter !== 'all', fn($q) => $q->where('parameter_permintaan', $request->parameter));
