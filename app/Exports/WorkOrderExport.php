@@ -27,7 +27,7 @@ class WorkOrderExport implements FromCollection, WithHeadings, WithMapping, Shou
 
     public function collection()
     {
-        return $this->data;
+        return $this->data->get();
     }
 
     // 2. HEADER KOLOM
@@ -61,12 +61,21 @@ class WorkOrderExport implements FromCollection, WithHeadings, WithMapping, Shou
         $tglTarget  = $ticket->target_completion_date ? Carbon::parse($ticket->target_completion_date)->locale('id')->isoFormat('DD MMMM YYYY') : '-';
         $tglSelesai = $ticket->actual_completion_date ? Carbon::parse($ticket->actual_completion_date)->locale('id')->isoFormat('DD MMMM YYYY') : '-';
         $tglDibuat  = $ticket->created_at ? Carbon::parse($ticket->created_at)->locale('id')->isoFormat('DD MMMM YYYY') : '-';
+        $namaPlant = $ticket->plantInfo->name ?? $ticket->plant ?? '-';
 
+        if ($ticket->plantInfo) {
+            // Skenario 1: Relasi Ketemu (Normal)
+            $namaPlant = $ticket->plantInfo->name;
+        } else {
+            // Skenario 2: Relasi NULL (Data Master hilang/terhapus)
+            // Kita tampilkan ID aslinya biar ketahuan
+            $namaPlant = 'Unknown Plant (ID: ' . ($ticket->plant ?? 'Kosong') . ')';
+        }
         return [
             $ticket->ticket_num,
             $namaPemohon,
             $divisiPemohon,
-            $ticket->plant,
+            $namaPlant,
             $ticket->department,
             $ticket->parameter_permintaan ?? $ticket->category,
             strtoupper(str_replace('_', ' ', $ticket->status)), // Status Uppercase

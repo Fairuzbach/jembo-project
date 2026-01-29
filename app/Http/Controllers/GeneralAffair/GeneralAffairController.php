@@ -291,7 +291,7 @@ class GeneralAffairController extends Controller
     public function export(Request $request)
     {
         $user = Auth::user();
-        $query = WorkOrderGeneralAffair::query();
+        $query = WorkOrderGeneralAffair::with(['user', 'plantInfo']);
 
         // LOGIKA HAK AKSES (Access Control)
         $roleMap = [

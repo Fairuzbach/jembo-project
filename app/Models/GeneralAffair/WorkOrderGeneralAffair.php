@@ -78,6 +78,6 @@ class WorkOrderGeneralAffair extends Model
 
     public function plantInfo()
     {
-        return $this->belongsTo(\App\Models\Engineering\Plant::class, 'plant');
+        return $this->belongsTo(\App\Models\Engineering\Plant::class, 'plant', 'id');
     }
 }
