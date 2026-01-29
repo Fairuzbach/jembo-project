@@ -668,7 +668,7 @@ class WorkOrderService
 
             // --- LOOPING KIRIM NOTIF ---
             // Buat Link Login/Approval untuk di WA
-            $link = url('/wo-ga' . $wo->id);
+            // $link = url('/wo-ga' . $wo->id);
 
             foreach ($approvers as $approver) {
 
@@ -686,8 +686,7 @@ class WorkOrderService
                         "*Divisi*: {$wo->department}\n" .
                         "*Kategori*: {$wo->category}\n" .
                         "*Deskripsi*: {$wo->description}\n\n" .
-                        "Mohon segera ditinjau melalui link berikut:\n" .
-                        "$link";
+                        "Mohon segera ditinjau.";
 
                     try {
                         GaWhatsappService::send($approver->no_hp, $msg);
