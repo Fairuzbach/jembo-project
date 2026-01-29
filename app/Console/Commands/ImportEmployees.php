@@ -22,7 +22,6 @@ class ImportEmployees extends Command
             return;
         }
 
-        // 1. KAMUS MAPPING DIVISI
         $divisiMap = [
             'INFORMATION TECHNOLOGY'      => 'IT',
             'PROCESS ENGINEERING'         => 'PE',
@@ -30,29 +29,8 @@ class ImportEmployees extends Command
             'SALES SUPPORT'               => 'SS',
             'COMMERCIAL & SUPPLY CHAIN'   => 'SC',
             'HUMAN CAPITAL'               => 'HC',
-            'FACILITY'                    => 'FH'
-        ];
-
-        // 2. DAFTAR TARGET DIVISI (Gunakan Singkatan)
-        $targetDivisi = [
-            'PRESIDENT DIRECTOR',
-            'GENERAL AFFAIR',
-            'IT',
-            'PE',
-            'FH',
-            'MAINTENANCE',
-            'MARKETING',
-            'PLANT A',
-            'PLANT B',
-            'PLANT C',
-            'PLANT D',
-            'PLANT E',
-            'QR',
-            'SALES 1',
-            'SALES 2',
-            'SS',
-            'SC',
-            'HC',
+            'FACILITY'                    => 'FH',
+            'PRODUCTION PLANNING'         => 'PP'
         ];
 
         $this->info("🚀 Memulai proses import...");
@@ -61,18 +39,12 @@ class ImportEmployees extends Command
         $this->output->progressStart(100);
 
         $masuk = 0;
-        $skip = 0;
 
-        $reader->getRows()->each(function (array $row) use ($targetDivisi, $divisiMap, &$masuk, &$skip) {
+        $reader->getRows()->each(function (array $row) use ($divisiMap, &$masuk) {
 
             // A. LOGIKA DIVISI
             $rawDivisi = strtoupper(trim($row['Organization']));
             $fixedDivisi = $divisiMap[$rawDivisi] ?? $rawDivisi;
-
-            if (!in_array($fixedDivisi, $targetDivisi)) {
-                $skip++;
-                return;
-            }
 
             // B. FIX NIK
             $nik = trim((string) $row['Employee ID']);
@@ -82,11 +54,8 @@ class ImportEmployees extends Command
                 }
             }
 
-            // C. LOGIKA AUTO-ROLE (JABATAN OTOMATIS)
-            // Default role adalah 'user'
+            // C. LOGIKA AUTO-ROLE
             $roleOtomatis = 'user';
-
-            // Ambil jabatan (uppercase biar mudah dicek)
             $jabatanUpper = strtoupper($row['Job Position'] ?? '');
 
             // Cek Kata Kunci Boss
@@ -94,7 +63,6 @@ class ImportEmployees extends Command
                 str_contains($jabatanUpper, 'DIRECTOR') || str_contains($jabatanUpper, 'SUPERVISOR');
 
             if ($isBoss) {
-                // Jika dia Boss, cek divisinya untuk menentukan role admin
                 $roleOtomatis = match ($fixedDivisi) {
                     'PRESIDENT DIRECTOR' => 'Super Admin',
                     'GENERAL AFFAIR' => 'ga.admin',
@@ -114,30 +82,34 @@ class ImportEmployees extends Command
                     'SS' => 'ss.admin',
                     'SC' => 'sc.admin',
                     'HC' => 'hc.admin',
-                    default          => 'user',         // Boss divisi lain (Sales/Plant) tetap user biasa
+                    'PP' => 'pp.admin',
+                    default => 'user',
                 };
             }
+
+            // [PERBAIKAN DISINI]
+            // Hapus 'if ($roleOtomatis !== user)', langsung buat saja.
+            // Ini menjamin role 'user' juga dibuatkan di database jika belum ada.
             Role::firstOrCreate(['name' => $roleOtomatis, 'guard_name' => 'web']);
+
             // D. SIMPAN KE DATABASE
             $user = User::updateOrCreate(
                 ['nik' => $nik],
                 [
                     'name'         => $row['Full Name'],
-                    'email'        => $nik . '@jembo.com', // Email Dummy dari NIK
+                    'email'        => $nik . '@jembo.com',
                     'divisi'       => $fixedDivisi,
                     'jabatan'      => $row['Job Position'] ?? null,
                     'password'     => Hash::make('jembopass'),
-                    'job_level'   => $row['Job Level'] ?? null,
-
-                    // PENTING: Gunakan variabel roleOtomatis, JANGAN hardcode 'user'
+                    'job_level'    => $row['Job Level'] ?? null,
                     'role'         => $roleOtomatis,
-
                     'is_active'    => true,
                 ]
             );
 
-            $masuk++;
             $user->syncRoles($roleOtomatis);
+
+            $masuk++;
             $this->output->progressAdvance();
         });
 
