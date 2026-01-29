@@ -25,7 +25,10 @@
         {{-- ========================================================= --}}
         @auth
             <div class="absolute top-4 right-4 z-50 flex items-center gap-3">
-
+                <a href="{{ route('view.change.password') }}"
+                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    🔒 Ganti Password
+                </a>
                 {{-- Nama User (Hidden di Mobile) --}}
                 <div class="hidden sm:block text-right">
                     <p class="text-xs text-gray-500">Login sebagai</p>

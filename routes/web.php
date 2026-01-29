@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Facilities\FacilitiesController;
 use App\Http\Controllers\GeneralAffair\GeneralAffairController;
 use App\Http\Controllers\Engineering\WorkOrderEngineeringController;
+use App\Http\Controllers\ChangePasswordController;
 use App\Models\Employee;
 
 /*
@@ -128,7 +129,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
+    Route::get('/security/change-password', [ChangePasswordController::class, 'index'])->name('view.change.password');
+    Route::post('/security/change-password', [ChangePasswordController::class, 'update'])->name('save.change.password');
 
     // --- G. SUPER ADMIN ---
     Route::middleware(['can:user.manage'])->prefix('admin')->name('users.')->group(function () {
