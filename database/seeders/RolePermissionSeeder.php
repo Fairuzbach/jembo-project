@@ -75,7 +75,7 @@ class RolePermissionSeeder extends Seeder
         $roleGa->givePermissionTo($gaAdminRole);
 
         // 4. Role Super Admin (Paling Tinggi)
-        $superAdmin = Role::firstOrCreate(['name' => 'super.ga.admin']);
+        $superAdmin = Role::firstOrCreate(['name' => 'super.admin']);
         $superAdmin->givePermissionTo(Permission::all());
 
         // 5. Role User Biasa
@@ -87,11 +87,11 @@ class RolePermissionSeeder extends Seeder
             'email' => 'admin@jembo.com'
         ], [
             'name'     => 'Administrator',
-            'nik'      => '6666',
+            'nik'      => 'aezakmy',
             'divisi' => 'IT',
             'password' => bcrypt('password')
         ]);
 
-        $user->assignRole('super.ga.admin');
+        $user->assignRole('super.admin');
     }
 }
