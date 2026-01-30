@@ -27,54 +27,62 @@ class FacilitiesController extends Controller
     {
         $user = auth()->user();
 
-        // 1. QUERY UTAMA (Load Relasi)
-        // Hapus 'plant' dari with() karena tabel WO tidak punya plant_id (relasi error)
+        // 1. QUERY DASAR
         $query = WorkOrderFacilities::with(['user', 'machine', 'technicians']);
 
-        // --- LOGIKA HAK AKSES (VISIBILITY) ---
+        // =================================================================
+        // LOGIKA HAK AKSES (VISIBILITY) - [FIXED]
+        // =================================================================
 
-        // A. KELOMPOK FACILITY / ADMIN (Bisa Lihat Semua)
+        // A. KELOMPOK FACILITY / ADMIN (Lihat Semua)
         $isFacilityOrAdmin = ($user->divisi === 'Facility') ||
             str_contains($user->role, 'fh.') ||
             ($user->role === 'super.admin');
 
         if ($isFacilityOrAdmin) {
+            // Admin Facility tidak perlu lihat draft yang belum disetujui atasan
             $query->where('status', '!=', 'waiting_approval');
         }
 
-        // B. KELOMPOK BOSS LOKAL (Manager / SPV / Admin Unit)
+        // B. KELOMPOK USER (Manager, SPV, Staff)
         else {
-            // Ambil data user, konversi ke huruf kecil
-            $jabatan = strtolower($user->jabatan ?? '');
-            $role    = strtolower($user->role ?? '');
+            $uDiv   = strtoupper($user->divisi ?? ''); // Normalisasi Upper
+            $uLevel = strtoupper($user->job_level ?? '');
+            $uRole  = $user->role;
 
-            // Cek apakah user memiliki jabatan Boss
-            $isBoss = str_contains($jabatan, 'manager') ||
-                str_contains($jabatan, 'spv') ||
-                str_contains($jabatan, 'supervisor') ||
-                str_contains($role, 'admin'); // Termasuk 'mv.admin'
+            // Cek Level Jabatan
+            $isManager = str_contains($uLevel, 'MANAGER') || str_contains($uLevel, 'HEAD');
+            $isSpv     = str_contains($uLevel, 'SPV') || str_contains($uLevel, 'SUPERVISOR') || str_contains($uRole, 'admin');
 
-            if ($isBoss) {
-                $query->where(function ($q) use ($user) {
-                    // 1. Selalu tampilkan tiket buatan sendiri
-                    $q->where('requester_id', $user->id);
+            $query->where(function ($q) use ($user, $uDiv, $isManager, $isSpv) {
 
-                    // 2. Tampilkan tiket bawahan (Cek kesamaan teks Nama Plant dengan Divisi User)
+                // 1. Selalu tampilkan tiket buatan sendiri (Apapun jabatannya)
+                $q->where('requester_id', $user->id);
+
+                // 2. Tampilkan Tiket Bawahan (Logic Hierarki)
+                if ($isManager) {
+                    // [LOGIC MANAGER] - FUZZY MATCH
+                    // Manager MV (Plant D) -> Boleh lihat 'Plant D' DAN 'Plant D - CCV'
+                    // Maka kita pakai LIKE
                     if (!empty($user->divisi)) {
-                        $cleanDivisi = strtolower(trim($user->divisi));
-                        // Logic: Kolom 'plant' (text) mengandung kata dari divisi user
-                        $q->orWhereRaw('LOWER(plant) LIKE ?', ['%' . $cleanDivisi . '%']);
+                        $q->orWhere('plant', 'LIKE', '%' . $user->divisi . '%');
                     }
-                });
-            }
-            // C. STAFF BIASA (Hanya Lihat Punya Sendiri)
-            else {
-                $query->where('requester_id', $user->id);
-            }
+                } elseif ($isSpv) {
+                    // [LOGIC SUPERVISOR] - STRICT MATCH (PERBAIKAN UTAMA DISINI)
+                    // Supervisor MV (Plant D) -> HANYA boleh lihat 'Plant D' (Exact Match)
+                    // Tidak boleh intip 'Plant D - CCV'
+                    if (!empty($user->divisi)) {
+                        $q->orWhere('plant', '=', $user->divisi); // Pake Sama Dengan (=), Jangan LIKE
+                    }
+                }
+            });
         }
 
-        // --- FILTER SEARCH ---
-        if ($request->has('search') && $request->search != '') {
+        // =================================================================
+        // FILTER SEARCH & LAINNYA
+        // =================================================================
+
+        if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('ticket_num', 'like', "%{$search}%")
@@ -83,68 +91,48 @@ class FacilitiesController extends Controller
             });
         }
 
-        // --- FILTER PLANT (Dropdown) ---
-        // Karena tabel pakai Text 'plant', kita harus konversi ID dropdown jadi Text
-        if ($request->has('plant_id') && $request->plant_id != '') {
+        if ($request->filled('plant_id')) {
             $filterPlant = \App\Models\Engineering\Plant::find($request->plant_id);
             if ($filterPlant) {
                 $query->where('plant', $filterPlant->name);
             }
         }
 
-        // --- FILTER LAINNYA ---
-        if ($request->has('category') && $request->category != '') {
+        if ($request->filled('category')) {
             $query->where('category', $request->category);
         }
 
-        if ($request->has('status') && $request->status != '') {
+        if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
-        // --- EKSEKUSI DATA UTAMA ---
+        // =================================================================
+        // HITUNG STATISTIK (EFISIENSI)
+        // =================================================================
+        // Jangan tulis ulang logic visibility! Clone saja query utama yang sudah difilter di atas.
+
+        $statsQuery = clone $query;
+        // Note: Query utama belum dipaginate, jadi aman di-clone untuk count.
+
+        $countTotal           = (clone $statsQuery)->count();
+        // Cek Typo Status di Database Anda: 'waiting_facility_approval' vs 'waiting_facilities_approval'
+        // Sesuaikan string di bawah ini dengan isi database:
+        $countPending         = (clone $statsQuery)->where('status', 'waiting_approval')->count();
+        $countWaitingApproval = (clone $statsQuery)->where('status', 'waiting_facility_approval')->count();
+        $countProgress        = (clone $statsQuery)->where('status', 'in_progress')->count();
+        $countDone            = (clone $statsQuery)->where('status', 'completed')->count();
+
+
+        // EKSEKUSI DATA (PAGINATION)
         $workOrders = $query->latest()->paginate(10)->withQueryString();
-
-
-        // --- DATA PENDUKUNG VIEW ---
-        // Pastikan Model Plant sudah di-use atau panggil full namespace
-        $excludedPlants = ['PE', 'QC FO', 'HC', 'Plant F', 'FA', 'IT', 'Sales', 'Marketing', 'RM Office', 'RM 1', 'RM 2', 'RM 3', 'RM 5', 'MT', 'FH', 'FO', 'QR', 'Plant Tools', 'Gudang Jadi'];
-        $listPlants = \App\Models\Engineering\Plant::whereNotIn('name', $excludedPlants)->get();
-
-        $machines = \App\Models\Engineering\Machine::all();
-        $technicians = \App\Models\FacilityTech::all();
         $pageIds = $workOrders->pluck('id')->toArray();
 
+        // DATA PENDUKUNG
+        $excludedPlants = ['PE', 'QC FO', 'HC', 'Plant F', 'FA', 'IT', 'Sales', 'Marketing', 'RM Office', 'RM 1', 'RM 2', 'RM 3', 'RM 5', 'MT', 'FH', 'FO', 'QR', 'Plant Tools', 'Gudang Jadi', 'QC Lab', 'SS', 'Konstruksi'];
+        $listPlants = \App\Models\Engineering\Plant::whereNotIn('name', $excludedPlants)->get();
+        $machines = \App\Models\Engineering\Machine::all();
+        $technicians = \App\Models\FacilityTech::all();
 
-        // --- HITUNG STATISTIK (LOGIKA SAMA DENGAN DI ATAS) ---
-        $statsQuery = WorkOrderFacilities::query();
-
-        // Terapkan filter hak akses yang sama ke statistik
-        if (!$isFacilityOrAdmin) {
-            $jabatan = strtolower($user->jabatan ?? '');
-            $role    = strtolower($user->role ?? '');
-            $isBoss = str_contains($jabatan, 'manager') || str_contains($jabatan, 'spv') || str_contains($jabatan, 'supervisor') || str_contains($role, 'admin');
-
-            if ($isBoss) {
-                $statsQuery->where(function ($q) use ($user) {
-                    $q->where('requester_id', $user->id);
-                    if (!empty($user->divisi)) {
-                        $cleanDivisi = strtolower(trim($user->divisi));
-                        $q->orWhereRaw('LOWER(plant) LIKE ?', ['%' . $cleanDivisi . '%']);
-                    }
-                });
-            } else {
-                $statsQuery->where('requester_id', $user->id);
-            }
-        }
-
-        // Hitung Angka
-        $countTotal = (clone $statsQuery)->count();
-        $countPending = (clone $statsQuery)->where('status', 'waiting_approval')->count();
-        $countWaitingApproval = (clone $statsQuery)->where('status', 'waiting_facilities_approval')->count();
-        $countProgress = (clone $statsQuery)->where('status', 'in_progress')->count();
-        $countDone = (clone $statsQuery)->where('status', 'completed')->count();
-
-        // --- RETURN VIEW ---
         return view('Division.Facilities.index', compact(
             'workOrders',
             'listPlants',
@@ -192,18 +180,7 @@ class FacilitiesController extends Controller
         ]);
 
         try {
-            $ticket = WorkOrderFacilities::findOrFail($id);
-
-            // Update Data Tiket
-            $ticket->update([
-                'status' => $request->status,
-                'start_date' => $request->start_date,
-            ]);
-
-            // Sync Teknisi (Pivot Table)
-            if ($request->has('facility_tech_ids')) {
-                $ticket->technicians()->sync($request->facility_tech_ids);
-            }
+            $this->facilityService->updateStatus($id, $request->all());
 
             return redirect()->back()->with('success', 'Status updated successfully');
         } catch (\Exception $e) {
