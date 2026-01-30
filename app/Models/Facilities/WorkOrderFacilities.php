@@ -49,7 +49,7 @@ class WorkOrderFacilities extends Model
     public function canApproveBy($user)
     {
         // 1. Cek Status
-        if (!in_array($this->status, ['waiting_approval', 'pending'])) return false;
+        if (!in_array($this->status, ['waiting_approval', 'pending', 'waiting_facility_approval'])) return false;
 
         $userRole    = strtolower(trim($user->role));
         $ticketPlant = trim($this->plant);
