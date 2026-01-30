@@ -52,17 +52,18 @@
     // Kita bungkus semua logic x-data ke dalam fungsi ini
     function facilitiesData() {
         return {
-            currentUserRole: '{{ auth()->user()->role }}',
-            currentUserDivisi: '{{ auth()->user()->divisi ?? '' }}',
-            currentUserJabatan: '{{ auth()->user()->jabatan ?? '' }}',
+            // --- DATA USER ---
+            currentUserRole: @json(auth()->user()->role),
+            currentUserDivisi: @json(auth()->user()->divisi ?? ''),
+            currentUserJabatan: @json(auth()->user()->jabatan ?? ''),
 
+            // State
             showCreateModal: false,
             showEditModal: false,
             showDetailModal: false,
             ticket: null,
-            currentUserRole: '{{ auth()->user()->role }}',
 
-            // Forms
+            // --- FORM DATA ---
             form: {
                 requester_name: '',
                 plant_id: '',
@@ -73,14 +74,17 @@
                 target_completion_date: '',
                 photo: null
             },
+
             editForm: {
                 id: '',
                 status: '',
                 start_date: '',
+                actual_completion_date: '',
+                completion_note: '',
                 selectedTechs: []
             },
 
-
+            // Data Master
             machinesData: @json($machines),
             techniciansData: @json($technicians),
             filteredMachines: [],
@@ -88,17 +92,78 @@
             pageIds: @json($pageIds),
             selectedTickets: [],
 
-            // Time & Date
+            // Time
             currentDate: '',
             currentDateDB: '',
             currentTime: '',
             currentShift: '',
 
+            // =====================================================================
+            // 1. INIT & WATCHER (SOLUSI UTAMA ANDA)
+            // =====================================================================
             init() {
                 this.updateTime();
                 setInterval(() => this.updateTime(), 1000);
+
+                // [FIX] WATCHER: Pantau perubahan pada dropdown Status
+                this.$watch('editForm.status', (newStatus) => {
+
+                    // A. Jika status berubah ke PROGRESS atau COMPLETED
+                    if (newStatus === 'in_progress' || newStatus === 'completed') {
+                        // Cek: Kalau Start Date masih kosong, isi dengan Waktu Sekarang
+                        if (!this.editForm.start_date) {
+                            this.editForm.start_date = this.getNowISO();
+                        }
+                    }
+
+                    // B. Jika status berubah ke COMPLETED
+                    if (newStatus === 'completed') {
+                        // Cek: Kalau Completion Date masih kosong, isi dengan Waktu Sekarang
+                        if (!this.editForm.actual_completion_date) {
+                            this.editForm.actual_completion_date = this.getNowISO();
+                        }
+                    }
+                });
             },
 
+            // Helper untuk dapatkan waktu sekarang format HTML5 (YYYY-MM-DDTHH:MM)
+            getNowISO() {
+                let now = new Date();
+                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+                return now.toISOString().slice(0, 16);
+            },
+
+            // =====================================================================
+            // 2. OPEN MODAL LOGIC (DIPERBAIKI)
+            // =====================================================================
+            openEditModal(wo) {
+                this.ticket = wo;
+                this.editForm.id = wo.id;
+                this.editForm.status = wo.status;
+                this.editForm.selectedTechs = wo.technicians ? wo.technicians.map(t => t.id) : [];
+
+                // A. LOAD START DATE (Jangan Reset jika ada)
+                if (wo.start_date) {
+                    // Ubah format DB "2023-01-01 10:00:00" -> HTML "2023-01-01T10:00"
+                    this.editForm.start_date = wo.start_date.replace(' ', 'T').substring(0, 16);
+                } else {
+                    // Jika kosong, biarkan kosong (nanti diisi oleh Watcher di atas jika status berubah)
+                    this.editForm.start_date = '';
+                }
+
+                // B. LOAD COMPLETION DATE
+                if (wo.actual_completion_date) {
+                    this.editForm.actual_completion_date = wo.actual_completion_date.replace(' ', 'T').substring(0, 16);
+                } else {
+                    this.editForm.actual_completion_date = ''; // Biarkan kosong/auto-fill by watcher
+                }
+
+                this.editForm.completion_note = wo.completion_note || '';
+
+                this.showEditModal = true;
+            },
+
+            // --- Helper Function Lainnya (Sama seperti sebelumnya) ---
             updateTime() {
                 const now = new Date();
                 this.currentDate = now.toLocaleDateString('id-ID', {
@@ -106,10 +171,12 @@
                     month: 'long',
                     year: 'numeric'
                 });
+
                 const year = now.getFullYear();
                 const month = String(now.getMonth() + 1).padStart(2, '0');
                 const day = String(now.getDate()).padStart(2, '0');
                 this.currentDateDB = `${year}-${month}-${day}`;
+
                 this.currentTime = now.toLocaleTimeString('id-ID', {
                     hour: '2-digit',
                     minute: '2-digit',
@@ -140,32 +207,15 @@
             },
 
             needsMachineSelect() {
-                const dropdownCategories = [
-                    'Modifikasi Mesin', 'Pembongkaran Mesin', 'Relokasi Mesin', 'Perbaikan', 'Pembuatan Alat Baru'
+                const dropdownCategories = ['Modifikasi Mesin', 'Pembongkaran Mesin', 'Relokasi Mesin', 'Perbaikan',
+                    'Pembuatan Alat Baru'
                 ];
                 return dropdownCategories.includes(this.form.category);
             },
 
             openDetail(id) {
-                // Cari tiket berdasarkan ID
                 this.ticket = this.ticketsData.find(t => t.id == id);
-                // console.log('Tiket Object:', this.ticket);
                 this.showDetailModal = true;
-            },
-
-            openEditModal(wo) {
-                this.ticket = wo;
-                this.editForm.id = wo.id;
-                this.editForm.status = wo.status;
-                this.editForm.start_date = wo.start_date;
-                this.editForm.selectedTechs = wo.technicians ? wo.technicians.map(t => t.id) : [];
-                this.showEditModal = true;
-
-                setTimeout(() => {
-                    document.querySelectorAll('.date-picker-edit').forEach(el => flatpickr(el, {
-                        dateFormat: 'Y-m-d'
-                    }));
-                }, 100);
             },
 
             toggleTech(id) {
@@ -206,32 +256,47 @@
                 window.location.href = url;
             },
 
-            // Logika Approval Button
             canApprove(ticket) {
                 if (!ticket) return false;
 
-                const userDivisi = (this.currentUserDivisi || '').toLowerCase();
-                const userJabatan = (this.currentUserJabatan || '').toLowerCase(); // AMBIL JABATAN
-                const userRole = (this.currentUserRole || '').toLowerCase();
-                const ticketPlant = (ticket.plant || '').toLowerCase();
+                const userDivisi = (this.currentUserDivisi || '').toString().toLowerCase().trim();
+                const userJabatan = (this.currentUserJabatan || '').toString().toLowerCase().trim();
+                const userRole = (this.currentUserRole || '').toString().toLowerCase().trim();
 
-                // LOGIK 1: Approval Plant (SPV/Manager Lokal)
-                if (ticket.status === 'waiting_approval') {
+                const ticketPlant = (ticket.plant || '').toString().toLowerCase().trim();
+                const ticketStatus = (ticket.status || '').toString().toLowerCase().trim();
 
-                    // Cek apakah dia Boss (Lihat Jabatan ATAU Role)
+                // List Role Sakti
+                const adminRoles = ['fh.admin', 'super.admin', 'super.fh.admin'];
+
+                // LOGIC 1: Waiting Approval
+                if (ticketStatus === 'waiting_approval') {
+
+                    // Admin selalu bisa
+                    if (adminRoles.includes(userRole)) return true;
+
+                    // Cek Jabatan Boss
                     const isBoss = userJabatan.includes('manager') ||
                         userJabatan.includes('spv') ||
                         userJabatan.includes('supervisor') ||
-                        userRole.includes('admin'); // mv.admin
+                        userJabatan.includes('head');
 
-                    const isSamePlant = userDivisi.includes(ticketPlant);
-                    const isAdminBypass = ['fh.admin', 'super.admin'].includes(this.currentUserRole);
+                    // --- [FIX] LOGIKA KHUSUS PLANT D vs CCV ---
+                    // Jika Tiket = "plant d" DAN User = "ccv" -> TOMBOL HILANG
+                    if (ticketPlant === 'plant d' && (userDivisi.includes('ccv') || userJabatan.includes('ccv'))) {
+                        return false;
+                    }
+                    // ------------------------------------------
 
-                    return (isBoss && isSamePlant) || isAdminBypass;
+                    // Cek Kesamaan Lokasi (Logic Lama)
+                    const isSamePlant = userDivisi.includes(ticketPlant) || ticketPlant.includes(userDivisi);
+
+                    return isBoss && isSamePlant;
                 }
-                // LOGIK 2: Approval Facility
-                if (ticket.status === 'waiting_facility_approval') {
-                    return ['fh.admin', 'fh.spv', 'fh.manager', 'super.admin'].includes(this.currentUserRole);
+
+                // LOGIC 2: Verifikasi Facility
+                if (ticketStatus === 'waiting_facility_approval') {
+                    return adminRoles.includes(userRole);
                 }
 
                 return false;
