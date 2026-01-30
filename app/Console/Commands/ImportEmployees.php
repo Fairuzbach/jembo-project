@@ -11,7 +11,7 @@ use Spatie\Permission\Models\Role;
 class ImportEmployees extends Command
 {
     protected $signature = 'employee:import {file}';
-    protected $description = 'Import data karyawan dengan Fix NIK, Email Dummy & Auto-Role Jabatan';
+    protected $description = 'Import data karyawan dengan Divisi UPPERCASE & Auto-Role';
 
     public function handle()
     {
@@ -22,18 +22,25 @@ class ImportEmployees extends Command
             return;
         }
 
+        // Mapping Divisi Standar (Singkatan ke Nama Baku UPPERCASE)
         $divisiMap = [
             'INFORMATION TECHNOLOGY'      => 'IT',
             'PROCESS ENGINEERING'         => 'PE',
             'QUALITY ASSURANCE & R D'     => 'QR',
             'SALES SUPPORT'               => 'SS',
-            'COMMERCIAL & SUPPLY CHAIN'   => 'SC',
+            'COMMERCIAL & SUPPLY CHAIN'   => 'COMMERCIAL & SUPPLY CHAIN',
             'HUMAN CAPITAL'               => 'HC',
-            'FACILITY'                    => 'FH',
-            'PRODUCTION PLANNING'         => 'PP'
+            'PRODUCTION PLANNING'         => 'PP',
+            'GENERAL AFFAIR'              => 'GENERAL AFFAIR', // Fix Uppercase
+            'GA'                          => 'GENERAL AFFAIR',
+            'FACILITY'                    => 'FACILITY',       // Fix Uppercase
+            'MAINTENANCE'                 => 'MAINTENANCE',    // Fix Uppercase
+            'MARKETING'                   => 'MARKETING',      // Fix Uppercase
+            'ENGINEERING'                 => 'ENGINEERING',
+            'PROCUREMENT'                 => 'SC',
         ];
 
-        $this->info("🚀 Memulai proses import...");
+        $this->info("🚀 Memulai proses import (Mode: UPPERCASE)...");
 
         $reader = SimpleExcelReader::create($filePath);
         $this->output->progressStart(100);
@@ -42,11 +49,40 @@ class ImportEmployees extends Command
 
         $reader->getRows()->each(function (array $row) use ($divisiMap, &$masuk) {
 
-            // A. LOGIKA DIVISI
-            $rawDivisi = strtoupper(trim($row['Organization']));
-            $fixedDivisi = $divisiMap[$rawDivisi] ?? $rawDivisi;
+            // ==========================================================
+            // A. LOGIKA PENENTUAN DIVISI (UPPERCASE MODE)
+            // ==========================================================
 
+            // 1. Ambil Raw Data (Pastikan Upper)
+            $rawDivisi  = strtoupper(trim($row['Organization']));
+            $rawJabatan = strtoupper(trim($row['Job Position'] ?? ''));
+
+            $fixedDivisi = $rawDivisi; // Default sudah UPPERCASE
+
+            // 2. [LOGIC BARU] Cek Spesifik Autowire & CCV (UPPERCASE)
+            if (str_contains($rawJabatan, 'AUTOWIRE') || str_contains($rawDivisi, 'AUTOWIRE')) {
+                $fixedDivisi = 'PLANT A - AUTOWIRE';
+            } elseif (str_contains($rawJabatan, 'CCV') || str_contains($rawDivisi, 'CCV')) {
+                $fixedDivisi = 'PLANT D - CCV';
+            } else {
+                // 3. Logic Standar
+                // Cek Mapping (Misal: 'GA' -> 'GENERAL AFFAIR')
+                if (isset($divisiMap[$rawDivisi])) {
+                    $fixedDivisi = $divisiMap[$rawDivisi];
+                } else {
+                    // Jika tidak ada di map, gunakan nama aslinya (PLANT A, PLANT B, dll)
+                    // Pastikan tetap UPPERCASE
+                    $fixedDivisi = $rawDivisi;
+
+                    // Normalisasi Singkatan Manual (Jaga-jaga)
+                    if ($fixedDivisi == 'PE') $fixedDivisi = 'PE'; // Tetap PE
+                    // Tambahkan normalisasi lain jika nama plant aneh-aneh
+                }
+            }
+
+            // ==========================================================
             // B. FIX NIK
+            // ==========================================================
             $nik = trim((string) $row['Employee ID']);
             if (ctype_digit($nik)) {
                 if (strlen($nik) < 4) {
@@ -54,52 +90,87 @@ class ImportEmployees extends Command
                 }
             }
 
+            // ==========================================================
             // C. LOGIKA AUTO-ROLE
-            $roleOtomatis = 'user';
-            $jabatanUpper = strtoupper($row['Job Position'] ?? '');
+            // ==========================================================
+            $roleOtomatis = 'user'; // Default
 
             // Cek Kata Kunci Boss
-            $isBoss = str_contains($jabatanUpper, 'MANAGER') ||
-                str_contains($jabatanUpper, 'DIRECTOR') || str_contains($jabatanUpper, 'SUPERVISOR');
+            $isBoss = str_contains($rawJabatan, 'MANAGER') ||
+                str_contains($rawJabatan, 'DIRECTOR') ||
+                str_contains($rawJabatan, 'SUPERVISOR') ||
+                str_contains($rawJabatan, 'HEAD') ||
+                str_contains($rawJabatan, 'MGR') ||
+                str_contains($rawJabatan, 'SPV');
 
             if ($isBoss) {
+                // Gunakan match dengan kunci UPPERCASE
                 $roleOtomatis = match ($fixedDivisi) {
                     'PRESIDENT DIRECTOR' => 'Super Admin',
+
+                    // Admin Dept (UPPERCASE KEYS)
                     'GENERAL AFFAIR' => 'ga.admin',
-                    'IT' => 'it.admin',
-                    'PE' => 'eng.admin',
-                    'FH' => 'fh.admin',
-                    'MAINTENANCE' => 'mt.admin',
-                    'MARKETING' => 'marketing.admin',
+                    'SALES 1' => 'sales1.admin',
+                    'SALES 2' => 'sales2.admin',
+                    'ACCOUNTING' => 'accounting.admin',
+                    'INTERNAL CONTROL' => 'ic.admin',
+                    'IT'             => 'it.admin',
+                    'PE'             => 'eng.admin',
+                    'FACILITY'       => 'fh.admin',      // <-- Ini pasti cocok sekarang
+                    'MAINTENANCE'    => 'mt.admin',
+                    'MARKETING'      => 'marketing.admin',
+                    'QR'             => 'qr.admin',
+                    'SS'             => 'ss.admin',
+                    'PROCUREMENT'             => 'sc.admin',
+                    'HC'             => 'hc.admin',
+                    'PP'             => 'pp.admin',
+
+                    // Plant General (Admin Role)
                     'PLANT A' => 'lv.admin',
                     'PLANT B' => 'mv.admin',
                     'PLANT C' => 'lv.admin',
-                    'PLANT D' => 'mv.admin',
+                    'PLANT D' => 'mv.admin', // Plant D Murni
                     'PLANT E' => 'fo.admin',
-                    'QR' => 'qr.admin',
-                    'SALES 1' => 'sales1.admin',
-                    'SALES 2' => 'sales2.admin',
-                    'SS' => 'ss.admin',
-                    'SC' => 'sc.admin',
-                    'HC' => 'hc.admin',
-                    'PP' => 'pp.admin',
+
+                    // Plant Spesifik -> User Biasa
+                    'PLANT A - AUTOWIRE' => 'user',
+                    'PLANT D - CCV'      => 'user',
+
                     default => 'user',
                 };
             }
+            $rawHp = (string) ($row['Mobile Phone'] ?? $row['Phone'] ?? '');
 
-            // [PERBAIKAN DISINI]
-            // Hapus 'if ($roleOtomatis !== user)', langsung buat saja.
-            // Ini menjamin role 'user' juga dibuatkan di database jika belum ada.
+            // 2. Hapus spasi, strip (-), atau karakter non-angka lainnya (kecuali +)
+            // Contoh: "0812-3456" jadi "08123456"
+            $cleanHp = preg_replace('/[^0-9+]/', '', $rawHp);
+
+            // 3. Ubah Format
+            if (str_starts_with($cleanHp, '+62')) {
+                // Jika diawali +62, hapus 3 karakter awal (+62), ganti dengan 0
+                $cleanHp = '0' . substr($cleanHp, 3);
+            } elseif (str_starts_with($cleanHp, '62')) {
+                // Jika diawali 62 (tanpa plus), hapus 2 karakter awal (62), ganti dengan 0
+                $cleanHp = '0' . substr($cleanHp, 2);
+            }
+
+            // Optional: Validasi panjang minimal (misal min 10 digit)
+            if (strlen($cleanHp) < 9) {
+                $cleanHp = null; // Anggap tidak valid jika terlalu pendek
+            }
             Role::firstOrCreate(['name' => $roleOtomatis, 'guard_name' => 'web']);
 
+            // ==========================================================
             // D. SIMPAN KE DATABASE
+            // ==========================================================
             $user = User::updateOrCreate(
                 ['nik' => $nik],
                 [
                     'name'         => $row['Full Name'],
                     'email'        => $nik . '@jembo.com',
-                    'divisi'       => $fixedDivisi,
+                    'divisi'       => $fixedDivisi, // <--- Hasilnya pasti UPPERCASE (misal: FACILITY)
                     'jabatan'      => $row['Job Position'] ?? null,
+                    'no_hp' => $cleanHp,
                     'password'     => Hash::make('jembopass'),
                     'job_level'    => $row['Job Level'] ?? null,
                     'role'         => $roleOtomatis,
@@ -116,6 +187,7 @@ class ImportEmployees extends Command
         $this->output->progressFinish();
         $this->info("------------------------------------------------");
         $this->info("✅ BERHASIL DISIMPAN : $masuk Karyawan");
+        $this->info("   Catatan: Semua nama divisi disimpan dalam HURUF BESAR.");
         $this->info("------------------------------------------------");
     }
 }

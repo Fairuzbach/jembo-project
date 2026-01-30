@@ -78,7 +78,8 @@ class User extends Authenticatable
         'is_active',
         'divisi',   // Menyimpan departemen user (e.g., 'Engineering', 'Maintenance')
         'jabatan',
-        'job_level'
+        'job_level',
+        'no_hp'
     ];
 
     /**
