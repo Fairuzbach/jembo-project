@@ -26,17 +26,34 @@ class FacilityService
             $user = auth()->user();
             $userLevel = strtoupper(trim($user->job_level ?? ''));
 
-            // 1. Cek Apakah Pembuat Tiket adalah Boss (SPV/Manager/Head)
+            // 1. CEK ROLE ADMIN (PRIORITAS UTAMA)
+            // Cek apakah dia fh.admin (Sakti)
+            $isAdmin = ($user->role === 'fh.admin' ||
+                $user->role === 'super.fh.admin' ||
+                $user->role === 'super.admin');
+
+            // 2. CEK LEVEL BOSS
             $isBoss = str_contains($userLevel, 'SUPERVISOR') ||
                 str_contains($userLevel, 'SPV') ||
                 str_contains($userLevel, 'MANAGER') ||
                 str_contains($userLevel, 'HEAD') ||
                 str_contains($userLevel, 'MGR');
 
-            // 2. Tentukan Status Awal
-            // Jika Boss -> Langsung ke Tahap Verifikasi Facility (Bypass Approval)
-            // Jika Staff -> Masuk Waiting Approval dulu
-            $initialStatus = $isBoss ? 'waiting_facility_approval' : 'waiting_approval';
+            // 3. TENTUKAN STATUS AWAL (HIERARKI LOGIC)
+            if ($isAdmin) {
+                // [BYPASS ADMIN] 
+                // Admin Facility buat tiket -> Langsung masuk list kerja (Pending)
+                // Tidak perlu approval atasan, tidak perlu verifikasi diri sendiri.
+                $initialStatus = 'pending';
+            } elseif ($isBoss) {
+                // [BYPASS BOSS]
+                // Boss buat tiket -> Skip SPV, tapi butuh Verifikasi Admin Facility
+                $initialStatus = 'waiting_facility_approval';
+            } else {
+                // [STAFF BIASA]
+                // Staff buat tiket -> Butuh Approval SPV/Manager
+                $initialStatus = 'waiting_approval';
+            }
 
             // A. Handle File Upload
             $photoPath = $file ? $file->store('wo_facilities', 'public') : null;
@@ -49,7 +66,7 @@ class FacilityService
             $newSeq = $lastTicket ? ((int)substr($lastTicket->ticket_num, -3) + 1) : 1;
             $ticketNum = $prefix . sprintf('%03d', $newSeq);
 
-            // C. Logika Mesin (Tetap Sama)
+            // C. Logika Mesin & Plant
             $machineId = null;
             $machineName = null;
             if ($data['category'] == 'Pemasangan Mesin' && !empty($data['new_machine_name'])) {
@@ -67,11 +84,9 @@ class FacilityService
                     $machineName = $m->name ?? null;
                 }
             }
-
-            // D. Ambil Nama Plant
             $plantName = Plant::where('id', $data['plant_id'])->value('name') ?? '-';
 
-            // E. Simpan WO
+            // D. Simpan WO
             $ticket = WorkOrderFacilities::create([
                 'ticket_num' => $ticketNum,
                 'requester_id' => Auth::id(),
@@ -88,32 +103,28 @@ class FacilityService
                 'target_completion_date' => $data['target_completion_date'] ?? null,
                 'photo_path' => $photoPath,
 
-                // [PENTING] Status sesuai level user
+                // GUNAKAN STATUS HASIL LOGIC DI ATAS
                 'status' => $initialStatus
             ]);
 
-            // F. NOTIFIKASI (LOGIC BYPASS)
+            // E. NOTIFIKASI
+            $message = '';
 
-            if ($isBoss) {
-                // KASUS 1: BOSS YANG BUAT
-                // Tidak perlu kirim ke Approver (diri sendiri/setara).
-                // Langsung Info ke Admin Facility bahwa ada tiket masuk minta verifikasi.
-                $this->notifyAdmins($ticket, 'fh_new'); // fh_new = Trigger WA "Perlu Verifikasi"
-
+            if ($isAdmin) {
+                // Admin buat tiket -> Tidak kirim notif approval ke siapa-siapa.
+                $message = 'Tiket dibuat oleh Admin (Auto-Approved). Status: Pending.';
+                \Log::info("✅ FACILITY BYPASS: Admin {$user->name} created ticket {$ticket->ticket_num}");
+            } elseif ($isBoss) {
+                // Boss buat tiket -> Kirim Notif ke Admin Facility (minta verifikasi)
+                $this->notifyAdmins($ticket, 'fh_new');
                 $message = 'Tiket berhasil dibuat (Auto-Approve). Menunggu Verifikasi Facility.';
-                \Log::info("✅ TICKET BYPASS: Created by Boss ({$user->name}) -> Skip Approval.");
             } else {
-                // KASUS 2: STAFF BIASA YANG BUAT
-                // Kirim ke Approver (SPV/Manager)
+                // Staff buat tiket -> Kirim Notif ke Atasan (minta approve)
                 $this->notifyApprovers($ticket, $plantName);
-
-                // Info ke Admin (Sekadar info ada tiket baru, belum butuh aksi)
-                $this->notifyAdmins($ticket, 'new_ticket');
-
                 $message = 'Tiket berhasil dibuat. Menunggu persetujuan Atasan.';
             }
 
-            // Info ke Diri Sendiri (Email Confirm)
+            // Info ke Diri Sendiri
             $this->safeMail($user->email, new FacilityNotification($ticket, 'created_info'));
 
             return [
@@ -134,18 +145,44 @@ class FacilityService
 
         $user = auth()->user();
 
-        // Cek Admin (Facility / Super / MV Admin)
-        $isAdmin = in_array($user->role, ['fh.admin', 'super.admin', 'mv.admin']) || $user->divisi === 'Facility';
+        // [PERUBAHAN VITAL]
+        // HAPUS role area (mv.admin, lv.admin, ga.admin, dll) dari sini!
+        // Hanya Admin Facility & Super Admin yang boleh dianggap "Dewa" (Bypass Matrix).
+        // Role lain (mv.admin, dll) dianggap sebagai "Manager" yang wajib tunduk pada Matrix Approval.
+        $isAdmin = in_array($user->role, ['fh.admin', 'super.admin', 'super.fh.admin']) || $user->divisi === 'Facility';
+
+        // ------------------------------------------------------------------
+        // CEK 0: STATUS PENDING
+        // ------------------------------------------------------------------
+        if ($ticket->status === 'pending') {
+            return [
+                'success' => false,
+                'message' => 'Tiket ini SUDAH DISETUJI (Status Pending). Silakan gunakan tombol UPDATE/SELESAIKAN untuk memproses pekerjaan.'
+            ];
+        }
+
+        // ------------------------------------------------------------------
+        // CEK 0.5: SELF-APPROVAL (JERUK MAKAN JERUK)
+        // ------------------------------------------------------------------
+        // Jika User adalah Pembuat Tiket, DAN dia bukan Admin Facility -> TOLAK
+        if ($ticket->requester_id == $user->id && !$isAdmin) {
+            return [
+                'success' => false,
+                'message' => 'Anda tidak dapat menyetujui tiket yang Anda buat sendiri. Harap tunggu persetujuan atasan.'
+            ];
+        }
 
         // ------------------------------------------------------------------
         // KASUS 1: TAHAP VERIFIKASI (Tiket sudah diapprove SPV -> Cek Admin)
         // ------------------------------------------------------------------
         if ($ticket->status == 'waiting_facility_approval') {
+
+            // Karena mv.admin sudah dihapus dari $isAdmin, maka Manager MV tidak bisa klik ini.
+            // Hanya Admin Facility yang bisa memverifikasi final.
             if ($isAdmin) {
-                // Admin memverifikasi tiket -> Status jadi PENDING (Siap dikerjakan)
                 $ticket->update(['status' => 'pending', 'updated_at' => now()]);
 
-                // Notif ke Requester bahwa tiket sudah diterima Facility
+                // Notif ke Requester
                 $this->notifyRequester($ticket, 'status_update');
 
                 \Log::info("✅ FACILITY VERIFIED: {$user->name} verified ticket {$ticket->ticket_num}");
@@ -161,41 +198,44 @@ class FacilityService
         // ------------------------------------------------------------------
         if ($ticket->status == 'waiting_approval') {
 
-            // A. BYPASS ADMIN
-            // Jika Admin yang approve di tahap awal, langsung lolos ke tahap verifikasi
+            // A. BYPASS ADMIN (Hanya fh.admin / Super Admin)
             if ($isAdmin) {
                 $ticket->update(['status' => 'waiting_facility_approval', 'updated_at' => now()]);
 
                 $this->notifyRequester($ticket, 'status_update');
-
-                // PENTING: Panggil notifyAdmins agar Admin lain/diri sendiri dapat notif WA
-                $this->notifyAdmins($ticket, 'fh_new');
+                $this->notifyAdmins($ticket, 'fh_new'); // Info ke admin lain
 
                 \Log::info("✅ APPROVE BYPASS: {$user->name} approved ticket {$ticket->ticket_num}");
 
                 return ['success' => true, 'message' => 'Disetujui Admin (Bypass). Menunggu Verifikasi Akhir.'];
             }
 
-            // B. LOGIC MATRIX (SPV/MANAGER)
+            // B. LOGIC MATRIX (SPV/MANAGER AREA)
+            // mv.admin, lv.admin, user biasa, dll akan masuk ke sini.
+            // Di sinilah Logic "Plant D - CCV" vs "Plant D" diperiksa.
             if ($this->checkApprovalMatrix($ticket->plant, $user)) {
 
                 // 1. Update Status
                 $ticket->update(['status' => 'waiting_facility_approval', 'updated_at' => now()]);
 
-                // 2. Notif ke Requester (Bahwa tiketnya sudah diapprove bosnya)
+                // 2. Notif ke Requester
                 $this->notifyRequester($ticket, 'status_update');
 
-                // 3. [PENTING] Notif ke FACILITY ADMIN (Panggil function di atas)
+                // 3. Notif ke FACILITY ADMIN (Agar mereka tahu ada tiket masuk yg sudah diapprove bos)
                 $this->notifyAdmins($ticket, 'fh_new');
 
-                \Log::info("✅ APPROVE MATRIX: {$user->name} approved {$ticket->ticket_num}");
+                \Log::info("✅ APPROVE MATRIX: {$user->name} approved {$ticket->ticket_num} (Plant: {$ticket->plant})");
 
                 return ['success' => true, 'message' => 'Disetujui. Notifikasi telah dikirim ke Tim Facility.'];
             }
 
-            // GAGAL
+            // GAGAL MATRIX
             \Log::warning("⛔ APPROVE FAIL: {$user->name} (Div: {$user->divisi}) tried to approve {$ticket->plant}");
-            return ['success' => false, 'message' => "Gagal. Divisi Anda ({$user->divisi}) tidak sesuai dengan Matrix Approval area {$ticket->plant}."];
+
+            return [
+                'success' => false,
+                'message' => "Gagal. Divisi/Jabatan Anda tidak memiliki wewenang approval untuk area {$ticket->plant} (Khusus CCV/Autowire harus sesuai wewenang)."
+            ];
         }
 
         return ['success' => false, 'message' => 'Status tiket tidak valid.'];
@@ -280,7 +320,13 @@ class FacilityService
 
         // 5. Notifikasi WA ke Requester (DENGAN LOG)
         $requester = User::find($wo->requester_id);
-
+        \Log::info("🔍 DEBUG UPDATE STATUS:", [
+            'ticket_id' => $wo->id,
+            'status_received' => $data['status'], // Lihat apa yg dikirim frontend
+            'requester_id' => $wo->requester_id,
+            'requester_name' => $requester ? $requester->name : 'USER TIDAK DITEMUKAN',
+            'requester_hp' => $requester ? $requester->no_hp : 'N/A'
+        ]);
         if ($requester && $requester->no_hp) {
             $msg = "";
             // $link = url('/facility/' . $wo->id); // Generate Link
@@ -303,9 +349,7 @@ class FacilityService
                         "║   ✅ *COMPLETED*      ║\n" .
                         "╚═══════════════════════╝\n\n" .
                         "📋 Tiket: *{$wo->ticket_num}*\n\n" .
-                        "🎉 Pekerjaan selesai!\n\n" .
-                        "⭐ Beri rating sekarang:\n" .
-                        "🔗 $link";
+                        "🎉 Pekerjaan selesai!\n\n";
                     break;
 
                 case 'cancelled':
@@ -318,6 +362,9 @@ class FacilityService
                         "📋 Tiket: *{$wo->ticket_num}*\n\n" .
                         "ℹ️ Tiket dibatalkan/ditolak\n" .
                         "💬 Hubungi admin jika perlu";
+                    break;
+                default:
+                    \Log::warning("⚠️ STATUS TIDAK DIKENALI: '{$data['status']}' - Pesan WA tidak dibuat.");
                     break;
             }
 
@@ -495,14 +542,26 @@ class FacilityService
         // 1. Cari User Admin/Manager FH
         $recipients = User::where('is_active', 1)
             ->where(function ($q) {
+                // A. Cari berdasarkan Role Admin
                 $q->whereIn('role', ['fh.admin', 'fh.manager', 'super.admin'])
-                    ->orWhere('divisi', 'Facility');
+
+                    // B. ATAU Cari Orang Facility TAPI HANYA LEVEL MANAGER (Jangan Staff)
+                    ->orWhere(function ($sub) {
+                        $sub->where('divisi', 'Facility') // Atau 'FACILITY' sesuai database
+                            ->where(function ($lvl) {
+                                $lvl->where('job_level', 'LIKE', '%MANAGER%')
+                                    ->orWhere('job_level', 'LIKE', '%HEAD%')
+                                    ->orWhere('job_level', 'LIKE', '%MGR%');
+                            });
+                    });
             })
             ->get();
 
         $link = url('/facility/' . $ticket->id);
 
         foreach ($recipients as $admin) {
+            // Jangan kirim notif admin ke diri sendiri (jika dia pembuat tiketnya)
+            if ($admin->id == $ticket->requester_id) continue;
 
             // A. Kirim Email
             $this->safeMail($admin->email, new FacilityNotification($ticket, $type));
@@ -512,6 +571,7 @@ class FacilityService
                 $msg = "";
 
                 if ($type == 'fh_new') {
+                    // Pesan untuk Admin Facility saat ada tiket yang SUDAH diapprove Manager/SPV
                     $msg = "🔧 *WORK ORDER FACILITY*\n" .
                         "👋 Halo Tim FH,\n\n" .
                         "━━━━━━━━━━━━━━━━━━━━━\n" .
@@ -522,40 +582,35 @@ class FacilityService
                         "┣ User: {$ticket->requester_name}\n" .
                         "┣ Plant: {$ticket->plant}\n" .
                         "┣ Status: ✅ Approved SPV/Manager\n\n" .
-                        "┣ Category: {$ticket->category}\n\n" .
-                        "┗ Mesin: {$ticket->machine_name}\n\n" .
-                        "🛠 *Deskirpsi:*\n" .
+                        "🛠 *Deskripsi:*\n" .
                         "_{$ticket->description}_\n\n" .
                         "━━━━━━━━━━━━━━━━━━━━━";
                 } elseif ($type == 'new_ticket') {
+                    // Pesan Info Tiket Baru (Hanya Info)
                     $msg = "🔧 *WORK ORDER FACILITY*\n" .
-                        "👋 Halo,\n\n" .
+                        "👋 Halo Admin,\n\n" .
                         "━━━━━━━━━━━━━━━━━━━━━\n" .
                         "🆕 *INFO TIKET BARU*\n" .
                         "━━━━━━━━━━━━━━━━━━━━━\n\n" .
                         "📋 *Detail Tiket*\n" .
                         "┣ Nomor: `{$ticket->ticket_num}`\n" .
                         "┣ Requester: {$ticket->requester_name}\n" .
-                        "┗ Status: ⏳ Menunggu Approval\n\n" .
-                        "━━━━━━━━━━━━━━━━━━━━━\n" .
-                        "ℹ️ Notifikasi ini bersifat informasi\n" .
+                        "┗ Status: ⏳ Menunggu Approval Atasan\n\n" .
                         "━━━━━━━━━━━━━━━━━━━━━";
                 }
 
                 if ($msg) {
                     try {
                         GaWhatsappService::send($admin->no_hp, $msg);
-                        // [LOG SUKSES]
                         \Log::info("✅ WA ADMIN SENT to: {$admin->name} | Type: $type");
                     } catch (\Exception $e) {
-                        // [LOG ERROR - GAGAL KIRIM]
                         \Log::error("❌ WA ADMIN FAILED to: {$admin->name} | Error: " . $e->getMessage());
                     }
                 }
             } else {
-                // [LOG WARNING - TIDAK ADA NOMOR HP]
-                // Ini penting agar Anda tahu kenapa admin tertentu tidak dapat WA
-                \Log::warning("⚠️ WA ADMIN SKIP: User '{$admin->name}' tidak memiliki No HP. (Type: $type)");
+                // Log Warning dikurangi levelnya agar tidak memenuhi log jika memang banyak staff tanpa HP
+                // Atau filter query di atas whereNotNull('no_hp') jika hanya ingin mengirim ke yg punya HP
+                \Log::debug("⚠️ WA ADMIN SKIP: User '{$admin->name}' tidak memiliki No HP.");
             }
         }
     }
@@ -565,41 +620,51 @@ class FacilityService
         $matrix = $this->getFacilityMatrix();
         $config = $matrix[$plantName] ?? null;
 
+        $requester = User::find($ticket->requester_id);
+        $reqLevel = strtoupper(trim($requester->job_level ?? ''));
+
+        $targetLevel = 'SPV';
+        if (str_contains($reqLevel, 'SUPERVISOR') || str_contains($reqLevel, 'SUPERVISOR')) {
+            $targetLevel = 'MGR';
+        } elseif (str_contains($reqLevel, 'MANAGER')) {
+            return;
+        }
+
         $query = User::where('is_active', 1);
 
         if ($config) {
             // [FIX] Menggunakan Logic Matrix
-            $query->where(function ($q) use ($config) {
+            $query->where(function ($q) use ($config, $targetLevel) {
                 // A. Cek Supervisor
-                $q->orWhere(function ($sub) use ($config) {
-                    // PERBAIKAN: Gunakan whereIn (bukan where) untuk array
-                    $sub->whereIn('job_level', ['SUPERVISOR', 'SPV'])
-                        ->whereIn('divisi', $config['spv']);
-                });
-
-                // B. Cek Manager
-                $q->orWhere(function ($sub) use ($config) {
-                    $sub->whereIn('job_level', ['MANAGER', 'HEAD', 'MGR'])
-                        ->whereIn('divisi', $config['mgr']);
-                });
+                if ($targetLevel === 'SPV') {
+                    $q->where(function ($sub) {
+                        $sub->where('job_level', 'LIKE', '%SUPERVISOR%')->orWhere('job_level', 'LIKE', '%SPV%');
+                    })->whereIn('divisi', $config['spv']);
+                } else {
+                    $q->where(function ($sub) {
+                        $sub->where('job_level', 'LIKE', '%MANAGER%');
+                    })->whereIn('divisi', $config['mgr']);
+                }
             });
         } else {
             // [FALLBACK] Logic Keyword (Jika tidak ada di matrix)
             $aliases = $this->getPlantAliases($plantName);
 
-            // PERBAIKAN: Cari Supervisor DAN Manager (jangan cuma Supervisor)
-            $query->whereIn('job_level', ['SUPERVISOR', 'SPV', 'MANAGER', 'HEAD', 'MGR'])
-                ->where(function ($q) use ($aliases) {
-                    foreach ($aliases as $alias) {
-                        $q->orWhere('divisi', 'LIKE', '%' . $alias . '%');
-                    }
-                });
+            if (empty($aliases)) return;
+
+            $query->where(function ($q) use ($targetLevel) {
+                if ($targetLevel === 'SPV') {
+                    $q->whereIn('job_level', 'LIKE', '%SUPERVISOR%');
+                } else {
+                    $q->whereIn('job_level', 'LIKE', '%MANAGER%');
+                }
+            })->where(function ($q) use ($aliases) {
+                foreach ($aliases as $alias) {
+                    $q->orWhere('divisi', 'LIKE', '%' . $alias . '%');
+                }
+            });
         }
-
         $approvers = $query->get();
-
-        // Generate Link Approval (Penting agar bisa diklik)
-        // $approvalLink = url('/fh/' . $ticket->id); // Sesuaikan route Anda
 
         foreach ($approvers as $approver) {
             // 1. Kirim Email
@@ -668,10 +733,34 @@ class FacilityService
      */
     private function checkApprovalMatrix($ticketPlant, $user)
     {
-        // Data User
+        // Data User (Normalisasi)
+        \Log::info("🕵️‍♂️ CEK MATRIX APPROVAL:");
+        \Log::info("User: " . $user->name);
+        \Log::info("Role: " . $user->role); // Pastikan ini 'user'
+        \Log::info("Divisi User (Asli): '" . $user->divisi . "'"); // Pakai kutip biar kelihatan spasi
+        \Log::info("Jabatan User (Asli): '" . $user->jabatan . "'");
+        \Log::info("Target Tiket (Asli): '" . $ticketPlant . "'");
         $userDivisi  = strtoupper(trim($user->divisi ?? ''));
         $userLevel   = strtoupper(trim($user->job_level ?? ''));
-        $userJabatan = strtoupper(trim($user->jabatan ?? '')); // [BARU] Ambil Jabatan
+        $userJabatan = strtoupper(trim($user->jabatan ?? ''));
+
+        // Data Tiket (Normalisasi)
+        $plantTarget = strtoupper(trim($ticketPlant));
+
+        // ------------------------------------------------------------------
+        // [FIX] LOGIC PENGECUALIAN / STRICT BLOCKING
+        // ------------------------------------------------------------------
+        // Masalah: "Plant D - CCV" mengandung kata "Plant D".
+        // Solusi: Jika tiketnya MURNI "Plant D", tapi User ada embel-embel "CCV", TOLAK.
+
+        if ($plantTarget === 'PLANT D' || $plantTarget === 'PLANT D (OLD)') {
+            // Cek jika user dari anak CCV
+            if (str_contains($userDivisi, 'CCV') || str_contains($userJabatan, 'CCV')) {
+                \Log::warning("⛔ BLOCKED: User CCV ({$user->name}) mencoba approve tiket Plant D biasa.");
+                return false; // LANGSUNG TOLAK
+            }
+        }
+        // ------------------------------------------------------------------
 
         $matrix = $this->getFacilityMatrix();
         $config = $matrix[$ticketPlant] ?? null;
@@ -682,7 +771,7 @@ class FacilityService
             if (str_contains($userLevel, 'SUPERVISOR') || str_contains($userLevel, 'SPV')) {
                 foreach ($config['spv'] as $keyword) {
                     $key = strtoupper($keyword);
-                    // Cek apakah Keyword (misal: "CCV") ada di Divisi ATAU Jabatan user
+                    // Cek apakah Keyword ada di Divisi ATAU Jabatan user
                     if (str_contains($userDivisi, $key) || str_contains($userJabatan, $key)) {
                         return true;
                     }
@@ -690,7 +779,7 @@ class FacilityService
             }
 
             // B. Cek Manager
-            if (str_contains($userLevel, 'MANAGER') || str_contains($userLevel, 'HEAD')) {
+            if (str_contains($userLevel, 'MANAGER') || str_contains($userLevel, 'HEAD') || str_contains($userLevel, 'MGR')) {
                 foreach ($config['mgr'] as $keyword) {
                     $key = strtoupper($keyword);
                     if (str_contains($userDivisi, $key) || str_contains($userJabatan, $key)) {
@@ -703,8 +792,8 @@ class FacilityService
             return false;
         }
 
-        // 2. FALLBACK
-        return str_contains($userDivisi, strtoupper($ticketPlant));
+        // 2. FALLBACK (Hanya jika tidak ada di Matrix)
+        return str_contains($userDivisi, $plantTarget);
     }
 
     private function getFacilityMatrix()
