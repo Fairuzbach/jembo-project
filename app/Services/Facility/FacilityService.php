@@ -472,31 +472,45 @@ class FacilityService
     {
         $ganttData = [];
         foreach ($collection as $wo) {
-            $start = $wo->created_at ? $wo->created_at->format('Y-m-d') : date('Y-m-d');
-            $end = ($wo->status == 'completed' && $wo->actual_completion_date)
-                ? Carbon::parse($wo->actual_completion_date)->format('Y-m-d')
-                : ($wo->target_completion_date ?? date('Y-m-d'));
+            // 1. [FIX] Gunakan format H:i:s (Lengkap) agar sinkron dengan JS
+            $startObj = $wo->created_at ? $wo->created_at : now();
+            $start    = $startObj->format('Y-m-d H:i:s');
 
-            if ($end < $start) $end = $start;
+            // 2. [LOGIC] Tentukan End Date
+            // Jika completed: pakai actual_completion
+            // Jika belum: pakai target_completion, kalau target null pakai hari ini
+            if ($wo->status == 'completed' && $wo->actual_completion_date) {
+                $endObj = Carbon::parse($wo->actual_completion_date);
+            } else {
+                $endObj = $wo->target_completion_date
+                    ? Carbon::parse($wo->target_completion_date)
+                    : now(); // Default hari ini jika target kosong
+            }
+
+            // Validasi: End tidak boleh sebelum Start
+            if ($endObj->lt($startObj)) {
+                $endObj = $startObj->copy()->addHours(1); // Min durasi 1 jam
+            }
+
+            // 3. [LOGIC] Hitung Durasi (Dalam Hari)
+            // Menggunakan float diffInHours / 24 agar lebih presisi daripada diffInDays
+            $duration = max(1, $startObj->diffInDays($endObj) + 1);
 
             $ganttData[] = [
-                // --- STANDAR DHTMLX (Untuk Grafik) ---
-                'id' => $wo->id,
-                'text' => $wo->ticket_num . ' - ' . Str::limit($wo->description, 20),
-                'start_date' => $start,
-                'duration' => Carbon::parse($start)->diffInDays(Carbon::parse($end)) + 1,
-                'progress' => ($wo->status == 'completed') ? 1 : (($wo->status == 'in_progress') ? 0.5 : 0),
-                'color' => $this->getStatusColor($wo->status),
-                'open' => true,
+                // --- WAJIB UNTUK DHTMLX ---
+                'id'         => $wo->id,
+                'text'       => $wo->ticket_num . ' - ' . Str::limit($wo->description, 30),
+                'start_date' => $start, // Format: 2024-02-02 14:30:00
+                'duration'   => $duration,
+                'progress'   => ($wo->status == 'completed') ? 1 : (($wo->status == 'in_progress') ? 0.5 : 0),
+                'color'      => $this->getStatusColor($wo->status),
+                'open'       => true, // Agar tree terbuka default
 
-                // --- COMPATIBILITY KEYS (Agar View Blade Tidak Error) ---
-                'start' => $start,         // <--- INI YANG DICARI VIEW ANDA
-                'end' => $end,             // <--- INI JUGA MUNGKIN DICARI
-                'ticket' => $wo->ticket_num,
-                'machine_name' => $wo->machine_name ?? '-',
-                'category' => $wo->category ?? '-',
-                'plant' => $wo->plant ?? '-',
-                'status' => $wo->status,
+                // --- DATA TAMBAHAN (Untuk Tooltip JS) ---
+                'plant'        => $wo->plant ?? '-',
+                'status'       => strtoupper($wo->status),
+                'technician'   => $wo->technicians->pluck('name')->join(', ') ?: 'Unassigned',
+                'description'  => Str::limit($wo->description, 100)
             ];
         }
 
@@ -624,7 +638,7 @@ class FacilityService
         $reqLevel = strtoupper(trim($requester->job_level ?? ''));
 
         $targetLevel = 'SPV';
-        if (str_contains($reqLevel, 'SUPERVISOR') || str_contains($reqLevel, 'SUPERVISOR')) {
+        if (str_contains($reqLevel, 'SUPERVISOR') || str_contains($reqLevel, 'SPV')) {
             $targetLevel = 'MGR';
         } elseif (str_contains($reqLevel, 'MANAGER')) {
             return;
@@ -766,7 +780,7 @@ class FacilityService
             }
         }
         $matrix = $this->getFacilityMatrix();
-        $config = $matrix[$ticketPlant] ?? null;
+        $config = $matrix[$plantTarget] ?? null;
 
         // 1. STRICT MATRIX CHECK
         if ($config) {
@@ -802,25 +816,25 @@ class FacilityService
     private function getFacilityMatrix()
     {
         return [
-            'Plant D - CCV' => [
+            'PLANT D - CCV' => [
                 'spv' => ['CCV Line', 'SUPERVISOR CCV'],
-                'mgr' => ['MV D', 'Medium Voltage']
+                'mgr' => ['MV D', 'MEDIUM VOLTAGE']
             ],
-            'Plant D' => [
-                'spv' => ['MV D', 'Medium Voltage', 'PLANT D'],
-                'mgr' => ['MV D', 'Medium Voltage']
+            'PLANT D' => [
+                'spv' => ['MV D', 'MEDIUM VOLTAGE', 'PLANT D'],
+                'mgr' => ['MV D', 'MEIDUM VOLTAGE']
             ],
-            'Plant A - Autowire' => [
+            'PLANT A - AUTOWIRE' => [
                 'spv' => ['SUPERVISOR AUTOWIRE', 'AUTO WIRE'],
-                'mgr' => ['Low Voltage', 'LV']
+                'mgr' => ['LOW VOLTAGE', 'LV']
             ],
-            'Plant A' => [
-                'spv' => ['LV A', 'Low Voltage', 'PLANT A'],
-                'mgr' => ['Low Voltage', 'LV']
+            'PLANT A' => [
+                'spv' => ['LV A', 'LOW VOLTAGE', 'PLANT A'],
+                'mgr' => ['LOW VOLTAGE', 'LV']
             ],
-            'Plant B' => ['spv' => ['MV B', 'PLANT B'], 'mgr' => ['MV', 'Medium Voltage']],
-            'Plant C' => ['spv' => ['LV C', 'PLANT C'], 'mgr' => ['LV']],
-            'Plant E' => ['spv' => ['FO', 'PLANT E'], 'mgr' => ['FO']]
+            'PLANT B' => ['spv' => ['MV B', 'PLANT B'], 'mgr' => ['MV', 'MEDIUM VOLTAGE']],
+            'PLANT C' => ['spv' => ['LV C', 'PLANT C'], 'mgr' => ['LV']],
+            'PLANT E' => ['spv' => ['FO', 'PLANT E'], 'mgr' => ['FO']]
         ];
     }
 }
