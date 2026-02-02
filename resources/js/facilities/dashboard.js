@@ -1,4 +1,6 @@
 import { Chart } from 'chart.js';
+import { gantt } from 'dhtmlx-gantt';
+import 'dhtmlx-gantt/codebase/dhtmlxgantt.css';
 let activePlantFilter = 'all';
 document.addEventListener('DOMContentLoaded', function() {
     console.log("Dashboard JS Loaded"); // Debugging Log
@@ -21,8 +23,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 3. Init Gantt (Hanya jika data gantt ada)
-    if (ganttData && ganttData.data) {
+    if (ganttData && (ganttData.data || Array.isArray(ganttData))) {
         initDHTMLX(ganttData);
+    } else {
+        console.warn("⚠️ Data Gantt kosong atau format salah", ganttData);
     }
 });
 
@@ -224,7 +228,11 @@ function initDHTMLX(ganttData) {
     });
     // --- INITIALIZE ---
     gantt.init("gantt_here");
-    
+    gantt.plugins({
+        marker: true,
+    });
+
+
     // Add CSS for better tooltip styling
     const style = document.createElement('style');
     style.textContent = `
@@ -247,12 +255,13 @@ function initDHTMLX(ganttData) {
 
     // --- TODAY MARKER ---
     const today = new Date();
-    gantt.addMarker({
+     gantt.addMarker({
         start_date: today,
         css: "gantt_marker",
         text: "TODAY",
         title: "Today: " + gantt.date.date_to_str("%d %M %Y")(today)
     });
+
 
     // --- PARSING DATA (FIXED LOGIC) ---
     
