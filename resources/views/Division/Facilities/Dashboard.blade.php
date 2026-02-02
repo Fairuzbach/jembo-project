@@ -161,10 +161,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-    <link rel="stylesheet" href="{{ asset('vendorDHTMLX/dhtmlxgantt.css') }}">
-    <script src="{{ asset('vendorDHTMLX/dhtmlxgantt.js') }}"></script>
-
     @vite(['resources/js/app.js', 'resources/css/app.css'])
 
     <div class="py-12 bg-[#F8FAFC]">
@@ -209,8 +205,12 @@
                             </button>
                             @foreach ($chartPlantLabels ?? [] as $plant)
                                 <button type="button" onclick="filterByPlant('{{ $plant }}')"
-                                    id="plant-filter-{{ str_replace(' ', '-', strtolower($plant)) }}"
-                                    class="plant-filter-btn px-3 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 bg-white text-slate-700 border border-slate-200 hover:bg-slate-50">
+                                    id="plant-filter-{{ \Illuminate\Support\Str::slug($plant) }}"
+                                    class="plant-filter-btn px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 
+               bg-white border-2 border-gray-200 text-gray-700 
+               hover:border-blue-500 hover:text-blue-600 hover:shadow-md
+               active:scale-95
+               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                                     {{ $plant }}
                                 </button>
                             @endforeach
@@ -256,7 +256,7 @@
                 </div>
 
 
-                <div id="gantt_here" style='width:100%; height:500px;'></div>
+                <div id="gantt_here" style='width:100%; height:600px;'></div>
             </div>
 
         </div>
