@@ -165,7 +165,7 @@
     <link rel="stylesheet" href="{{ asset('vendorDHTMLX/dhtmlxgantt.css') }}">
     <script src="{{ asset('vendorDHTMLX/dhtmlxgantt.js') }}"></script>
 
-    @vite(['resources/js/app.js'])
+    @vite(['resources/js/app.js', 'resources/css/app.css'])
 
     <div class="py-12 bg-[#F8FAFC]">
         <div id="dashboard-content" class="max-w-8xl mx-auto sm:px-6 lg:px-8 p-4 bg-[#F8FAFC]">
