@@ -49,7 +49,7 @@
     }
 
     // 3. ALPINE JS DATA OBJECT (REFACTOR x-data)
-    // Kita bungkus semua logic x-data ke dalam fungsi ini
+    // bungkus semua logic x-data ke dalam fungsi ini
     function facilitiesData() {
         return {
             // --- DATA USER ---
@@ -99,13 +99,13 @@
             currentShift: '',
 
             // =====================================================================
-            // 1. INIT & WATCHER (SOLUSI UTAMA ANDA)
+            // 1. INIT & WATCHER 
             // =====================================================================
             init() {
                 this.updateTime();
                 setInterval(() => this.updateTime(), 1000);
 
-                // [FIX] WATCHER: Pantau perubahan pada dropdown Status
+                //WATCHER: Pantau perubahan pada dropdown Status
                 this.$watch('editForm.status', (newStatus) => {
 
                     // A. Jika status berubah ke PROGRESS atau COMPLETED
@@ -134,7 +134,7 @@
             },
 
             // =====================================================================
-            // 2. OPEN MODAL LOGIC (DIPERBAIKI)
+            // 2. OPEN MODAL LOGIC
             // =====================================================================
             openEditModal(wo) {
                 this.ticket = wo;
@@ -266,7 +266,7 @@
                 const ticketPlant = (ticket.plant || '').toString().toLowerCase().trim();
                 const ticketStatus = (ticket.status || '').toString().toLowerCase().trim();
 
-                // List Role Sakti
+                // List Role
                 const adminRoles = ['fh.admin', 'super.admin', 'super.fh.admin'];
 
                 // LOGIC 1: Waiting Approval
@@ -281,14 +281,14 @@
                         userJabatan.includes('supervisor') ||
                         userJabatan.includes('head');
 
-                    // --- [FIX] LOGIKA KHUSUS PLANT D vs CCV ---
+
                     // Jika Tiket = "plant d" DAN User = "ccv" -> TOMBOL HILANG
                     if (ticketPlant === 'plant d' && (userDivisi.includes('ccv') || userJabatan.includes('ccv'))) {
                         return false;
                     }
                     // ------------------------------------------
 
-                    // Cek Kesamaan Lokasi (Logic Lama)
+
                     const isSamePlant = userDivisi.includes(ticketPlant) || ticketPlant.includes(userDivisi);
 
                     return isBoss && isSamePlant;

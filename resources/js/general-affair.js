@@ -74,7 +74,7 @@ document.addEventListener('alpine:init', () => {
             'RM 1': 'SC', 'RM 2': 'SC', 'RM 3': 'SC', 'RM 5': 'SC', 'RM Office': 'SC',
             'Workshop Electric': 'MT', 'Konstruksi': 'FH', 'Plant E': 'FO',
             'Plant Tools': 'PE', 'Gudang Jadi': 'SS', 'GA': 'GA', 'FA': 'FA',
-            'IT': 'IT', 'HC': 'HC', 'Sales': 'Sales', 'Marketing': 'Marketing',
+            'IT': 'IT', 'HC': 'HC', 'Sales': 'Sales', 'Marketing': 'Marketing', 'Plant A - Autowire': 'Low Voltage', 'Plant D - CCV': 'Medium Voltage'
         },
 
         // --- METHODS ---

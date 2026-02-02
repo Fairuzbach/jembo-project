@@ -60,7 +60,7 @@ class ImportEmployees extends Command
             $fixedDivisi = $rawDivisi; // Default sudah UPPERCASE
 
             // 2. [LOGIC BARU] Cek Spesifik Autowire & CCV (UPPERCASE)
-            if (str_contains($rawJabatan, 'AUTOWIRE') || str_contains($rawDivisi, 'AUTOWIRE')) {
+            if (str_contains($rawJabatan, 'AUTOWIRE') || str_contains($rawDivisi, 'AUTOWIRE') || (str_contains($rawJabatan, 'AUTO WIRE') || str_contains($rawDivisi, 'AUTO WIRE'))) {
                 $fixedDivisi = 'PLANT A - AUTOWIRE';
             } elseif (str_contains($rawJabatan, 'CCV') || str_contains($rawDivisi, 'CCV')) {
                 $fixedDivisi = 'PLANT D - CCV';
@@ -121,7 +121,7 @@ class ImportEmployees extends Command
                     'MARKETING'      => 'marketing.admin',
                     'QR'             => 'qr.admin',
                     'SS'             => 'ss.admin',
-                    'PROCUREMENT'             => 'sc.admin',
+                    'PROCUREMENT'    => 'sc.admin',
                     'HC'             => 'hc.admin',
                     'PP'             => 'pp.admin',
 
@@ -133,8 +133,8 @@ class ImportEmployees extends Command
                     'PLANT E' => 'fo.admin',
 
                     // Plant Spesifik -> User Biasa
-                    'PLANT A - AUTOWIRE' => 'user',
-                    'PLANT D - CCV'      => 'user',
+                    'PLANT A - AUTOWIRE' => 'autowire.admin',
+                    'PLANT D - CCV'      => 'ccv.admin',
 
                     default => 'user',
                 };

@@ -165,7 +165,7 @@
                                     @endif
                                 </div>
 
-                                {{-- FORM APPROVE & REJECT (STANDARD HTML POST) --}}
+                                {{-- FORM APPROVE & REJECT --}}
                                 @if ($showActionButtons)
                                     <div class="flex items-center justify-end gap-2">
 
@@ -215,7 +215,7 @@
                                     </div>
                                 @endif
 
-                                {{-- STATUS BADGES (Jika tombol tidak muncul) --}}
+                                {{-- STATUS BADGES  --}}
                                 @if (!$showActionButtons)
                                     @if ($status === 'waiting_facility_approval' && !$isFacilityAdmin)
                                         <span
@@ -264,7 +264,7 @@
     </div>
 </div>
 
-{{-- SCRIPT PENDUKUNG (Wajib ada agar loading spinner jalan) --}}
+{{-- SCRIPT PENDUKUNG  --}}
 <script>
     function confirmSubmit(form, message) {
         if (confirm(message)) {
@@ -281,11 +281,11 @@
             if (icon) icon.classList.add('hidden');
             if (spinner) spinner.classList.remove('hidden');
 
-            // Submit form secara manual
+
             form.submit();
             return true;
         }
-        return false; // User klik Cancel
+        return false;
     }
 
     function promptReject(form) {
@@ -304,6 +304,6 @@
             form.submit();
             return true;
         }
-        return false; // Cancel atau kosong
+        return false;
     }
 </script>

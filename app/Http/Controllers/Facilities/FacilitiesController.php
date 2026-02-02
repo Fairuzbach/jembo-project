@@ -46,33 +46,53 @@ class FacilitiesController extends Controller
 
         // B. KELOMPOK USER (Manager, SPV, Staff)
         else {
-            $uDiv   = strtoupper($user->divisi ?? ''); // Normalisasi Upper
-            $uLevel = strtoupper($user->job_level ?? '');
-            $uRole  = $user->role;
+            $uDiv   = strtoupper(trim($user->divisi ?? '')); // Pastikan Trim & Upper
 
-            // Cek Level Jabatan
-            $isManager = str_contains($uLevel, 'MANAGER') || str_contains($uLevel, 'HEAD');
-            $isSpv     = str_contains($uLevel, 'SPV') || str_contains($uLevel, 'SUPERVISOR') || str_contains($uRole, 'admin');
+            // Cek Role Spesifik (Hasil diskusi sebelumnya)
+            $isAutowireAdmin = $user->hasRole('autowire.admin');
+            $isCcvAdmin      = $user->hasRole('ccv.admin');
+            $isLvAdmin       = $user->hasRole('lv.admin'); // Plant A General
+            $isMvAdmin       = $user->hasRole('mv.admin'); // Plant D General
 
-            $query->where(function ($q) use ($user, $uDiv, $isManager, $isSpv) {
+            // Cek Level Jabatan (String Match)
+            $uLevel    = strtoupper($user->job_level ?? '');
+            $isManager = str_contains($uLevel, 'MANAGER') || str_contains($uLevel, 'HEAD') || $isLvAdmin || $isMvAdmin;
+            $isSpv     = str_contains($uLevel, 'SPV') || str_contains($uLevel, 'SUPERVISOR');
 
-                // 1. Selalu tampilkan tiket buatan sendiri (Apapun jabatannya)
+            $query->where(function ($q) use ($user, $uDiv, $isManager, $isSpv, $isAutowireAdmin, $isCcvAdmin) {
+
+                // 1. WAJIB: Selalu tampilkan tiket buatan sendiri
                 $q->where('requester_id', $user->id);
 
-                // 2. Tampilkan Tiket Bawahan (Logic Hierarki)
-                if ($isManager) {
-                    // [LOGIC MANAGER] - FUZZY MATCH
-                    // Manager MV (Plant D) -> Boleh lihat 'Plant D' DAN 'Plant D - CCV'
-                    // Maka kita pakai LIKE
-                    if (!empty($user->divisi)) {
-                        $q->orWhere('plant', 'LIKE', '%' . $user->divisi . '%');
+                // 2. LOGIC HAK AKSES AREA
+
+                // KASUS KHUSUS: AUTOWIRE ADMIN
+                if ($isAutowireAdmin) {
+                    // Kunci mati ke Autowire saja
+                    $q->orWhere('plant', 'PLANT A - AUTOWIRE');
+                }
+
+                // KASUS KHUSUS: CCV ADMIN
+                elseif ($isCcvAdmin) {
+                    // Kunci mati ke CCV saja
+                    $q->orWhere('plant', 'PLANT D - CCV');
+                }
+
+                // KASUS MANAGER (General)
+                elseif ($isManager) {
+                    // Logic LIKE: "Plant A" bisa lihat "Plant A - Autowire"
+                    // "Plant D" bisa lihat "Plant D - CCV"
+                    if (!empty($uDiv)) {
+                        $q->orWhere('plant', 'LIKE', '%' . $uDiv . '%');
                     }
-                } elseif ($isSpv) {
-                    // [LOGIC SUPERVISOR] - STRICT MATCH (PERBAIKAN UTAMA DISINI)
-                    // Supervisor MV (Plant D) -> HANYA boleh lihat 'Plant D' (Exact Match)
-                    // Tidak boleh intip 'Plant D - CCV'
-                    if (!empty($user->divisi)) {
-                        $q->orWhere('plant', '=', $user->divisi); // Pake Sama Dengan (=), Jangan LIKE
+                }
+
+                // KASUS SPV / STAFF LAINNYA
+                elseif ($isSpv) {
+                    // Logic STRICT (=): "PLANT A" HANYA lihat "PLANT A"
+                    // Tidak akan bocor ke Autowire
+                    if (!empty($uDiv)) {
+                        $q->orWhere('plant', '=', $uDiv);
                     }
                 }
             });

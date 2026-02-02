@@ -754,14 +754,17 @@ class FacilityService
         // Solusi: Jika tiketnya MURNI "Plant D", tapi User ada embel-embel "CCV", TOLAK.
 
         if ($plantTarget === 'PLANT D' || $plantTarget === 'PLANT D (OLD)') {
-            // Cek jika user dari anak CCV
             if (str_contains($userDivisi, 'CCV') || str_contains($userJabatan, 'CCV')) {
                 \Log::warning("⛔ BLOCKED: User CCV ({$user->name}) mencoba approve tiket Plant D biasa.");
-                return false; // LANGSUNG TOLAK
+                return false;
             }
         }
-        // ------------------------------------------------------------------
-
+        if ($plantTarget === 'PLANT A') {
+            if (str_contains($userDivisi, 'AUTOWIRE') || str_contains($userJabatan, 'AUTOWIRE')) {
+                \Log::warning("⛔ BLOCKED: User Autowire ({$user->name}) mencoba approve tiket Plant A biasa.");
+                return false;
+            }
+        }
         $matrix = $this->getFacilityMatrix();
         $config = $matrix[$ticketPlant] ?? null;
 
@@ -808,7 +811,7 @@ class FacilityService
                 'mgr' => ['MV D', 'Medium Voltage']
             ],
             'Plant A - Autowire' => [
-                'spv' => ['SUPERVISOR AUTOWIRE', 'PLANT A'],
+                'spv' => ['SUPERVISOR AUTOWIRE', 'AUTO WIRE'],
                 'mgr' => ['Low Voltage', 'LV']
             ],
             'Plant A' => [

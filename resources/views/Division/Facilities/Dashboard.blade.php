@@ -255,7 +255,7 @@
                     </div>
                 </div>
 
-                {{-- Container Wajib DHTMLX --}}
+
                 <div id="gantt_here" style='width:100%; height:500px;'></div>
             </div>
 

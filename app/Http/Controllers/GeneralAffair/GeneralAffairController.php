@@ -127,11 +127,12 @@ class GeneralAffairController extends Controller
                 case 'Plant C':
                 case 'Plant F':
                 case 'MC Cable':
-                case 'Autowire':
+                case 'Plant A - Autowire':
                     $specificDept = 'Low Voltage';
                     break;
                 case 'Plant B':
                 case 'Plant D':
+                case 'Plant D - CCV':
                     $specificDept = 'Medium Voltage';
                     break;
                 case 'Plant E':
