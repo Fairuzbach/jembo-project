@@ -176,7 +176,7 @@ class FacilitiesController extends Controller
         $data = $this->facilityService->getDashboardStats($request);
 
 
-        return view('Division.Facilities.dashboard', $data);
+        return view('Division.Facilities.Dashboard', $data);
     }
 
     public function store(StoreFacilityRequest $request)
