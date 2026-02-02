@@ -1,100 +1,98 @@
 import { Chart } from 'chart.js';
-import { gantt } from 'dhtmlx-gantt';
-import 'dhtmlx-gantt/codebase/dhtmlxgantt.css';
-let activePlantFilter = 'all';
-document.addEventListener('DOMContentLoaded', function() {
-    console.log("Dashboard JS Loaded"); // Debugging Log
 
-    // 1. Safety Check: Pastikan Data Global Ada
+// JIKA ANDA SUDAH 'npm install dhtmlx-gantt', UNCOMMENT 2 BARIS INI:
+// import { gantt } from 'dhtmlx-gantt';
+// import 'dhtmlx-gantt/codebase/dhtmlxgantt.css';
+
+// Jika belum install npm, pastikan CDN DHTMLX ada di Blade (seperti sebelumnya).
+
+let activePlantFilter = 'all';
+
+// --- 1. HELPER PENTING: SLUGIFY ---
+// Ini wajib ada agar ID tombol filter ("Plant A - Autowire") cocok dengan logic JS
+function slugify(text) {
+    return text.toString().toLowerCase()
+        .replace(/\s+/g, '-')           // Spasi -> dash
+        .replace(/[^\w\-]+/g, '')       // Hapus karakter aneh
+        .replace(/\-\-+/g, '-')         // Hapus dash ganda
+        .replace(/^-+/, '')             // Trim depan
+        .replace(/-+$/, '');            // Trim belakang
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("Dashboard JS Loaded"); 
+
+    // Safety Check Data
     if (!window.facilitiesData) {
-        console.error("CRITICAL: window.facilitiesData tidak ditemukan. Cek Controller & Blade Anda.");
+        console.error("CRITICAL: window.facilitiesData missing.");
         return; 
     }
 
     const data = window.facilitiesData.stats;
     const ganttData = window.facilitiesData.gantt;
 
-    // 2. Init Charts (Hanya jika data stats ada)
-    // Kita cek apakah 'data' ada, DAN apakah 'data.catLabels' ada (tidak undefined)
+    // 1. Init Charts
     if (data && data.catLabels) {
         initCharts(data);
-    } else {
-        console.warn("WARNING: Data 'stats' kosong. Grafik tidak akan dirender.", data);
     }
 
-    // 3. Init Gantt (Hanya jika data gantt ada)
+    // 2. Init Gantt
+    // Cek format data (Array atau Object)
     if (ganttData && (ganttData.data || Array.isArray(ganttData))) {
         initDHTMLX(ganttData);
     } else {
-        console.warn("⚠️ Data Gantt kosong atau format salah", ganttData);
+        console.warn("⚠️ Data Gantt Kosong/Format Salah:", ganttData);
     }
 });
 
+// --- FUNGSI CHART.JS (LOGIC LAMA ANDA, SUDAH OK) ---
 function initCharts(data) {
-    // Registrasi Plugin (Safe Mode)
     try {
         if (typeof ChartDataLabels !== 'undefined') Chart.register(ChartDataLabels);
     } catch (e) {
-        console.warn("ChartDataLabels plugin missing");
+        console.warn("ChartDataLabels missing");
     }
 
-    // Fungsi Pembantu Pembuat Chart
-    // Fungsi Pembantu Pembuat Chart
-const createChart = (id, type, labels, datasetData, colors, showLegend = false, showPercent = false) => {
-    const ctx = document.getElementById(id);
-    
-    // 1. Cek apakah elemen canvas ada
-    if (!ctx) {
-        return;
-    }
+    const createChart = (id, type, labels, datasetData, colors, showLegend = false, showPercent = false) => {
+        const ctx = document.getElementById(id);
+        if (!ctx) return;
 
-    // 2. [FIX] Hancurkan Chart Lama Jika Ada
-    // Chart.getChart(id) akan mencari instance chart yang sedang aktif di canvas tersebut
-    const existingChart = Chart.getChart(id);
-    if (existingChart) {
-        existingChart.destroy();
-    }
-    
-    // 3. Cek data label kosong (Safety Check)
-    if (!labels || labels.length === 0) {
-        return;
-    }
+        const existingChart = Chart.getChart(id);
+        if (existingChart) existingChart.destroy();
+        
+        if (!labels || labels.length === 0) return;
 
-    // 4. Buat Chart Baru
-    new Chart(ctx, {
-        type: type,
-        data: {
-            labels: labels,
-            datasets: [{
-                data: datasetData || [],
-                backgroundColor: colors,
-                borderWidth: 1,
-                borderRadius: type === 'bar' ? 4 : 0
-            }]
-        },
-        options: {
-            indexAxis: type === 'bar' && id !== 'catChart' ? 'y' : 'x',
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: showLegend, position: 'bottom' },
-                datalabels: {
-                    display: showPercent,
-                    color: '#fff',
-                    font: { weight: 'bold' },
-                    formatter: (val, ctx) => {
-                        let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                        return sum === 0 ? '0%' : (val * 100 / sum).toFixed(1) + '%';
+        new Chart(ctx, {
+            type: type,
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: datasetData || [],
+                    backgroundColor: colors,
+                    borderWidth: 1,
+                    borderRadius: type === 'bar' ? 4 : 0
+                }]
+            },
+            options: {
+                indexAxis: type === 'bar' && id !== 'catChart' ? 'y' : 'x',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: showLegend, position: 'bottom' },
+                    datalabels: {
+                        display: showPercent,
+                        color: '#fff',
+                        font: { weight: 'bold' },
+                        formatter: (val, ctx) => {
+                            let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                            return sum === 0 ? '0%' : (val * 100 / sum).toFixed(1) + '%';
+                        }
                     }
                 }
             }
-        }
-    });
-};
+        });
+    };
 
-    // --- EKSEKUSI PEMBUATAN CHART ---
-    // Menggunakan || [] sebagai fallback agar tidak error 'undefined'
-    
     createChart('catChart', 'bar', data.catLabels || [], data.catValues || [], '#1E3A5F');
 
     const statusMap = {
@@ -109,223 +107,123 @@ const createChart = (id, type, labels, datasetData, colors, showLegend = false, 
     createChart('techChart', 'bar', data.techLabels || [], data.techValues || [], '#a855f7');
 }
 
+// --- FUNGSI GANTT CHART (INI YANG KITA PERBAIKI) ---
 function initDHTMLX(ganttData) {
     const ganttContainer = document.getElementById("gantt_here");
     if (!ganttContainer) return;
 
-    // Pastikan library DHTMLX ada
     if (typeof gantt === 'undefined') {
-        console.error("Library DHTMLX Gantt belum dimuat.");
+        console.error("Library DHTMLX Gantt belum dimuat (Cek CDN atau Import).");
         return;
     }
 
-    console.log("Memulai Render Gantt dengan Data:", ganttData);
+    console.log("Memulai Render Gantt...", ganttData);
 
-    // --- ZOOM CONFIGURATION ---
-    const zoomConfig = {
-        levels: [{
-                name: "day",
-                scale_height: 54,
-                min_column_width: 80,
-                scales: [{
-                        unit: "month",
-                        step: 1,
-                        format: "%F %Y"
-                    },
-                    {
-                        unit: "day",
-                        step: 1,
-                        format: "%d %M"
-                    }
-                ]
-            },
-            {
-                name: "week",
-                scale_height: 54,
-                min_column_width: 60,
-                scales: [{
-                        unit: "month",
-                        step: 1,
-                        format: "%F %Y"
-                    },
-                    {
-                        unit: "week",
-                        step: 1,
-                        format: "Week #%W"
-                    }
-                ]
-            },
-            {
-                name: "month",
-                scale_height: 54,
-                min_column_width: 120,
-                scales: [{
-                        unit: "year",
-                        step: 1,
-                        format: "%Y"
-                    },
-                    {
-                        unit: "month",
-                        step: 1,
-                        format: "%M"
-                    }
-                ]
-            }
-        ]
-    };
-
-    gantt.ext.zoom.init(zoomConfig);
-    gantt.ext.zoom.setLevel("month");
-
-    // --- CONFIGURATION ---
-    gantt.config.xml_date = "%Y-%m-%d %H:%i:%s"; // Format tanggal dari PHP (Y-m-d)
+    // [FIX 1] CONFIG TANGGAL (Wajib sama dengan PHP: Y-m-d H:i:s)
+    gantt.config.xml_date = "%Y-%m-%d %H:%i:%s"; 
+    
     gantt.config.readonly = true;
     gantt.config.details_on_dblclick = false;
-    
-    // Fitur agar chart pas di layar
-    gantt.config.fit_tasks = true; 
-    gantt.config.bar_height = 28;
-    gantt.config.row_height = 40;
-    gantt.config.scale_height = 54;
+    gantt.config.fit_tasks = true; // Auto Zoom
+    gantt.config.bar_height = 24;
+    gantt.config.row_height = 38;
 
-    // Kolom Tabel Kiri
+    // Kolom
     gantt.config.columns = [
-        { name: "text", label: "Task / Ticket", tree: true, width: 200, resize: true },
+        { name: "text", label: "Task / Ticket", tree: true, width: 250, resize: true },
         { name: "start_date", label: "Start", align: "center", width: 90 },
-        { name: "plant", label: "Loc", align: "center", width: 60 }
+        { name: "plant", label: "Loc", align: "center", width: 70 }
     ];
 
-    // Header Waktu
-    gantt.config.scale_unit = "month";
-    gantt.config.date_scale = "%F, %Y";
-    gantt.config.subscales = [{ unit: "day", step: 1, date: "%j" }];
-
-    // Warna Bar
+    // [FIX 2] CLASS WARNA
+    // Menggunakan CSS class di Blade agar warna status muncul
     gantt.templates.task_class = function(start, end, task) {
-        switch (task.status) {
-            case "completed": return "gantt-task-completed";
-            case "in_progress": return "gantt-task-progress";
-            case "rejected": return "gantt-task-rejected";
-            case "pending": case "waiting_approval": return "gantt-task-pending";
-            default: return "gantt-task-default";
+        if (task.status) {
+            return "gantt-task-" + task.status.toLowerCase();
         }
+        return "gantt-task-default";
     };
 
     // Tooltip
     gantt.templates.tooltip_text = function(start, end, task){
-        return `<b>Ticket:</b> ${task.text}<br/><b>Status:</b> ${task.status ? task.status.toUpperCase() : '-'}<br/><b>Plant:</b> ${task.plant || '-'}`;
+        return `<b>Ticket:</b> ${task.text}<br/>
+                <b>Status:</b> ${task.status ? task.status.toUpperCase() : '-'}<br/>
+                <b>Plant:</b> ${task.plant || '-'}`;
     };
+
+    // [FIX 3] LOGIC FILTER LEBIH KUAT
     gantt.attachEvent("onBeforeTaskDisplay", function(id, task){
         if(activePlantFilter === 'all'){
             return true;
         }
+        
+        // Safety check null
+        const tPlant = (task.plant || '').toLowerCase();
+        const fFilter = activePlantFilter.toLowerCase();
 
-        if(task.plant && task.plant.toLowerCase() === activePlantFilter.toLowerCase()){
+        // Logic "Contains" agar "Plant A - Autowire" tetap muncul saat filter "Plant A"
+        if(tPlant.includes(fFilter)){
             return true;
         }
-
         return false;
     });
-    // --- INITIALIZE ---
+
+    // Initialize
     gantt.init("gantt_here");
-    gantt.plugins({
-        marker: true,
-    });
-
-
-    // Add CSS for better tooltip styling
-    const style = document.createElement('style');
-    style.textContent = `
-        .gantt_tooltip {
-            background: linear-gradient(135deg, #1f2937 0%, #111827 100%) !important;
-            color: #f3f4f6 !important;
-            border: 1px solid #374151 !important;
-            border-radius: 6px !important;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3) !important;
-            padding: 10px 12px !important;
-            font-size: 13px !important;
-        }
-        .gantt_tooltip b {
-            color: #fbbf24 !important;
-            font-weight: 700;
-        }
-    `;
-    document.head.appendChild(style);
     gantt.clearAll();
 
-    // --- TODAY MARKER ---
-    const today = new Date();
-     gantt.addMarker({
-        start_date: today,
-        css: "gantt_marker",
-        text: "TODAY",
-        title: "Today: " + gantt.date.date_to_str("%d %M %Y")(today)
-    });
-
-
-    // --- PARSING DATA (FIXED LOGIC) ---
-    
-    // Kasus 1: Data adalah Array langsung (Sesuai data Anda sekarang)
+    // Parse Data
     if (Array.isArray(ganttData)) {
-        // Kita bungkus jadi object {data: [...]} agar DHTMLX paham
         gantt.parse({ data: ganttData, links: [] });
-    } 
-    // Kasus 2: Data adalah Object {data: [...]} (Standard DHTMLX)
-    else if (ganttData.data) {
+    } else if (ganttData.data) {
         gantt.parse(ganttData);
-    } 
-    else {
-        console.warn("Format data Gantt tidak dikenali atau kosong.");
     }
 }
 
-// Global Plant Filter Function
+// --- GLOBAL FUNCTIONS (Agar bisa diakses onclick di Blade) ---
+
 window.filterByPlant = function(plant) {
     if (typeof gantt === 'undefined') return;
     
-    // 1. Update Variabel Global
     activePlantFilter = plant;
-    
-    // 2. Refresh Gantt (Ini akan memicu event onBeforeTaskDisplay di atas)
     gantt.refreshData();
     
-    // 3. Update Button Styles (Copy-paste styling Anda tadi sudah bagus)
+    // Reset Button Styles
     document.querySelectorAll('.plant-filter-btn').forEach(btn => {
         btn.classList.remove('bg-gradient-to-r', 'from-emerald-500', 'to-emerald-600', 'text-white', 'shadow-sm');
         btn.classList.add('bg-white', 'text-slate-700', 'border', 'border-slate-200', 'hover:bg-slate-50');
     });
     
-    // Cari tombol aktif berdasarkan ID (Pastikan di HTML id buttonnya: plant-filter-namaPlant)
-    // Contoh ID: plant-filter-all, plant-filter-plant a
-    // Karena ID tidak boleh spasi, pastikan saat render blade ID-nya diganti spasi jadi dash/underscore jika perlu, 
-    // atau gunakan querySelector berdasarkan atribut data.
-    
-    // Asumsi ID aman (misal plant 'all', 'PlantA'):
-    const cleanId = plant.replace(/\s+/g, '_'); // Ganti spasi dengan _ jaga-jaga
-    const activeBtn = document.getElementById('plant-filter-' + cleanId) || document.getElementById('plant-filter-' + plant);
+    // [FIX 4] Highlight Button Aktif Menggunakan Slugify
+    let btnId;
+    if (plant === 'all') {
+        btnId = 'plant-filter-all';
+    } else {
+        btnId = 'plant-filter-' + slugify(plant);
+    }
+
+    const activeBtn = document.getElementById(btnId);
     
     if (activeBtn) {
         activeBtn.classList.remove('bg-white', 'text-slate-700', 'border', 'border-slate-200', 'hover:bg-slate-50');
         activeBtn.classList.add('bg-gradient-to-r', 'from-emerald-500', 'to-emerald-600', 'text-white', 'shadow-sm');
+    } else {
+        console.warn("Tombol filter tidak ketemu:", btnId);
     }
 };
 
-// Global Zoom Control Function
 window.changeZoom = function(level) {
-    if (window.gantt) {
-        gantt.ext.zoom.setLevel(level);
-        
-        // Update button states
-        document.querySelectorAll('.zoom-btn-fh').forEach(btn => {
-            btn.classList.remove('active', 'bg-gradient-to-r', 'from-blue-500', 'to-blue-600', 'text-white', 'shadow-sm');
-            btn.classList.add('bg-white', 'text-slate-700', 'border', 'border-slate-200', 'hover:bg-slate-50');
-        });
-
-        const activeBtn = document.getElementById('zoom-fh-' + level);
-        if (activeBtn) {
-            activeBtn.classList.remove('bg-white', 'text-slate-700', 'border', 'border-slate-200', 'hover:bg-slate-50');
-            activeBtn.classList.add('active', 'bg-gradient-to-r', 'from-blue-500', 'to-blue-600', 'text-white', 'shadow-sm');
+    if (typeof gantt !== 'undefined') {
+        // Logic Zoom Manual Sederhana
+        switch(level){
+            case 'day':
+                gantt.config.scale_unit = "day"; gantt.config.date_scale = "%d %M"; break;
+            case 'week':
+                gantt.config.scale_unit = "week"; gantt.config.date_scale = "Week #%W"; break;
+            case 'month':
+                gantt.config.scale_unit = "month"; gantt.config.date_scale = "%F %Y"; break;
         }
+        gantt.render();
     }
 };
 
