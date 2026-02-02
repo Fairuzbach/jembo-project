@@ -178,7 +178,7 @@ function initDHTMLX(ganttData) {
     gantt.ext.zoom.setLevel("month");
 
     // --- CONFIGURATION ---
-    gantt.config.xml_date = "%Y-%m-%d"; // Format tanggal dari PHP (Y-m-d)
+    gantt.config.xml_date = "%Y-%m-%d %H:%i:%s"; // Format tanggal dari PHP (Y-m-d)
     gantt.config.readonly = true;
     gantt.config.details_on_dblclick = false;
     
