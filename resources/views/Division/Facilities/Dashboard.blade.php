@@ -1,11 +1,9 @@
 @section('browser_title', 'Facilities Dashboard')
 
 <x-app-layout>
-    {{-- 1. LOAD LIBRARY (CDN) --}}
+    {{-- 1. LOAD LIBRARY EKSTERNAL (CDN) --}}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dhtmlx-gantt@8.0.6/codebase/dhtmlxgantt.css">
     <script src="https://cdn.jsdelivr.net/npm/dhtmlx-gantt@8.0.6/codebase/dhtmlxgantt.js"></script>
-
-    {{-- Library Lain --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js">
@@ -14,7 +12,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    {{-- 2. DATA INJECTION --}}
+    {{-- 2. DATA INJECTION (PHP -> JS Global Variable) --}}
     <script>
         window.facilitiesData = {
             stats: {
@@ -41,6 +39,7 @@
                 {{ __('Facilities Dashboard') }}
             </h2>
             <div class="flex items-center gap-4">
+                {{-- Filter Month --}}
                 <form method="GET" action="{{ route('fh.dashboard') }}" class="flex items-center gap-3">
                     <label class="text-xs text-slate-500 font-bold uppercase">Month:</label>
                     <input type="month" name="month" value="{{ $selectedMonth ?? '' }}"
@@ -48,20 +47,24 @@
                     <button type="submit"
                         class="px-5 py-2.5 bg-gradient-to-br from-slate-600 to-slate-700 text-white rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105">Filter</button>
                 </form>
+                {{-- Export Button --}}
                 <div class="relative">
                     <button onclick="toggleExportMenu()"
                         class="bg-gradient-to-br from-[#3B82F6] via-blue-500 to-[#1E40AF] text-white px-6 py-2.5 rounded-xl font-bold text-sm uppercase shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 border border-blue-400/50 hover:scale-105 active:scale-95">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                        </svg> Export
+                        </svg>
+                        Export
                     </button>
                     <div id="exportMenu"
                         class="hidden absolute right-0 top-full mt-3 w-60 bg-white rounded-2xl shadow-2xl z-50 border border-slate-100 overflow-hidden transform transition-all duration-200">
                         <button onclick="exportToPDF(); toggleExportMenu();"
-                            class="w-full text-left px-5 py-4 text-gray-800 hover:bg-gray-50 flex items-center gap-4">
+                            class="w-full text-left px-5 py-4 text-gray-800 hover:bg-gray-50 flex items-center gap-4 border-b border-slate-100 last:border-0 group active:bg-red-100">
                             <span class="text-xl">📄</span>
-                            <p class="font-semibold text-gray-900 text-sm">Export as PDF</p>
+                            <div>
+                                <p class="font-semibold text-gray-900 text-sm">Export as PDF</p>
+                            </div>
                         </button>
                     </div>
                 </div>
@@ -69,20 +72,18 @@
         </div>
     </x-slot>
 
-    {{-- 3. CSS MANUAL (Target ID Baru) --}}
+    {{-- 3. STYLE CSS (Agar Chart Tidak Blank) --}}
     <style>
-        #gantt_chart_robust,
-        #gantt_chart_robust * {
-            box-sizing: content-box !important;
-        }
-
         #gantt_chart_robust {
             width: 100%;
             height: 600px !important;
             background: #fff;
             border: 1px solid #e2e8f0;
-            position: relative;
-            display: block;
+            box-sizing: content-box !important;
+        }
+
+        #gantt_chart_robust * {
+            box-sizing: content-box !important;
         }
 
         .gantt_task_line.gantt-task-completed {
@@ -122,33 +123,6 @@
             z-index: 9999;
         }
 
-        /* Style untuk button filter */
-        .plant-filter-btn {
-            transition: all 0.2s ease;
-        }
-
-        .plant-filter-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .plant-filter-btn.active {
-            background: linear-gradient(to right, #10b981, #059669) !important;
-            color: white !important;
-            border-color: #059669 !important;
-            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
-        }
-
-        .zoom-btn-fh {
-            transition: all 0.2s ease;
-        }
-
-        .zoom-btn-fh.active {
-            background-color: #3b82f6 !important;
-            color: white !important;
-            border-color: #2563eb !important;
-        }
-
         input[type="month"],
         select {
             @apply transition-all duration-200 shadow-sm;
@@ -177,319 +151,33 @@
                 <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
                     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                         <h3 class="font-bold text-gray-700">Project Timeline</h3>
-
-                        {{-- Filter Buttons --}}
                         <div class="flex gap-2 bg-slate-50 rounded-lg p-1 border border-slate-200 flex-wrap">
-                            <button type="button" onclick="filterByPlant('all')" id="plant-filter-all"
-                                class="plant-filter-btn active px-4 py-2 text-xs font-semibold rounded-lg bg-white text-slate-700 border border-slate-200 hover:bg-slate-50">
-                                Semua
-                            </button>
+                            <button type="button" onclick="robust_filterByPlant('all')" id="plant-filter-all"
+                                class="plant-filter-btn px-3 py-1.5 text-xs font-semibold rounded-md bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-sm">Semua</button>
                             @foreach ($chartPlantLabels ?? [] as $plant)
-                                <button type="button" onclick="filterByPlant('{{ $plant }}')"
+                                <button type="button" onclick="robust_filterByPlant('{{ $plant }}')"
                                     id="plant-filter-{{ \Illuminate\Support\Str::slug($plant) }}"
-                                    class="plant-filter-btn px-4 py-2 text-xs font-semibold rounded-lg bg-white text-slate-700 border border-slate-200 hover:bg-slate-50">
-                                    {{ $plant }}
-                                </button>
+                                    class="plant-filter-btn px-3 py-1.5 text-xs font-semibold rounded-md bg-white text-slate-700 border border-slate-200 hover:bg-slate-50">{{ $plant }}</button>
                             @endforeach
                         </div>
-
-                        {{-- Zoom Buttons --}}
                         <div class="flex gap-2 bg-slate-50 rounded-lg p-1 border border-slate-200">
-                            <button onclick="changeZoom('day')" id="zoom-day"
-                                class="zoom-btn-fh px-4 py-2 text-xs font-semibold rounded-lg bg-white text-slate-700 border border-slate-200 hover:bg-slate-50">
-                                Hari
-                            </button>
-                            <button onclick="changeZoom('week')" id="zoom-week"
-                                class="zoom-btn-fh px-4 py-2 text-xs font-semibold rounded-lg bg-white text-slate-700 border border-slate-200 hover:bg-slate-50">
-                                Minggu
-                            </button>
-                            <button onclick="changeZoom('month')" id="zoom-month"
-                                class="zoom-btn-fh active px-4 py-2 text-xs font-semibold rounded-lg bg-white text-slate-700 border border-slate-200 hover:bg-slate-50">
-                                Bulan
-                            </button>
+                            <button onclick="robust_changeZoom('day')"
+                                class="zoom-btn-fh px-3 py-1.5 text-xs bg-white border rounded">Hari</button>
+                            <button onclick="robust_changeZoom('week')"
+                                class="zoom-btn-fh px-3 py-1.5 text-xs bg-white border rounded">Minggu</button>
+                            <button onclick="robust_changeZoom('month')"
+                                class="zoom-btn-fh px-3 py-1.5 text-xs bg-blue-500 text-white rounded">Bulan</button>
                         </div>
-                    </div>
-
-                    {{-- Legend --}}
-                    <div class="text-xs text-gray-500 space-x-2 whitespace-nowrap">
-                        <span class="inline-block w-3 h-3 bg-emerald-500 rounded-sm"></span> Done
-                        <span class="inline-block w-3 h-3 bg-blue-500 rounded-sm"></span> Process
-                        <span class="inline-block w-3 h-3 bg-yellow-500 rounded-sm"></span> Pending
                     </div>
                 </div>
 
-                {{-- CONTAINER GANTT (ID ROBUST) --}}
+                {{-- Container Chart --}}
                 <div id="gantt_chart_robust"></div>
             </div>
         </div>
     </div>
 
-    {{-- 4. LOGIKA JS (ROBUST MODE) --}}
-    <script>
-        // 1. Definisikan Global Variables
-        var activePlantFilter = 'all';
-        var activeZoomLevel = 'month';
-        var ganttInitialized = false;
+    {{-- 4. PANGGIL PARTIAL SCRIPT DI SINI --}}
+    @include('Division.Facilities.partials.gantt_script')
 
-        function slugify(text) {
-            return text.toString().toLowerCase()
-                .replace(/\s+/g, '-')
-                .replace(/[^\w\-]+/g, '')
-                .replace(/\-\-+/g, '-')
-                .replace(/^-+/, '')
-                .replace(/-+$/, '');
-        }
-
-        document.addEventListener("DOMContentLoaded", function() {
-            console.log("🚀 Init Gantt (Robust ID: gantt_chart_robust)...");
-
-            const containerID = "gantt_chart_robust";
-            const ganttContainer = document.getElementById(containerID);
-
-            if (!ganttContainer) {
-                console.error("Container gantt tidak ditemukan!");
-                return;
-            }
-
-            if (typeof gantt === 'undefined') {
-                ganttContainer.innerHTML = "<p class='text-red-500 p-4'>Error: Library DHTMLX gagal dimuat.</p>";
-                return;
-            }
-
-            // 2. AMBIL & BERSIHKAN DATA
-            let rawData = window.facilitiesData.gantt;
-            let cleanTasks = [];
-
-            if (rawData && rawData.data && Array.isArray(rawData.data)) {
-                cleanTasks = rawData.data.map(task => {
-                    // Potong Jam agar format YYYY-MM-DD
-                    let cleanStart = String(task.start_date).substring(0, 10);
-                    return {
-                        id: task.id,
-                        text: task.text,
-                        start_date: cleanStart,
-                        duration: task.duration || 1,
-                        plant: task.plant || '-',
-                        status: task.status || 'pending',
-                        progress: (task.status === 'completed' ? 1 : 0),
-                        open: true
-                    };
-                });
-            }
-
-            console.log("✅ Data Bersih:", cleanTasks);
-
-            // 3. CONFIG GANTT
-            gantt.clearAll();
-            gantt.config.xml_date = "%Y-%m-%d";
-            gantt.config.fit_tasks = true;
-            gantt.config.readonly = true;
-            gantt.config.bar_height = 24;
-            gantt.config.row_height = 38;
-
-            // Set default zoom ke month
-            gantt.config.scale_unit = "month";
-            gantt.config.date_scale = "%F %Y";
-            gantt.config.subscales = [];
-
-            // Kolom
-            gantt.config.columns = [{
-                    name: "text",
-                    label: "Task",
-                    tree: true,
-                    width: 220,
-                    resize: true
-                },
-                {
-                    name: "start_date",
-                    label: "Start",
-                    align: "center",
-                    width: 90
-                },
-                {
-                    name: "plant",
-                    label: "Loc",
-                    align: "center",
-                    width: 60
-                }
-            ];
-
-            // Mapping Class Warna
-            gantt.templates.task_class = function(start, end, task) {
-                return task.status ? "gantt-task-" + task.status.toLowerCase() : "gantt-task-default";
-            };
-
-            // Logic Filter
-            gantt.attachEvent("onBeforeTaskDisplay", function(id, task) {
-                if (activePlantFilter === 'all') return true;
-                const tPlant = (task.plant || '').toLowerCase();
-                const fFilter = activePlantFilter.toLowerCase();
-                return tPlant.includes(fFilter);
-            });
-
-            // 4. INIT & RENDER
-            gantt.init(containerID);
-            ganttInitialized = true;
-
-            if (cleanTasks.length > 0) {
-                gantt.parse({
-                    data: cleanTasks,
-                    links: []
-                });
-            } else {
-                ganttContainer.innerHTML = "<p class='text-gray-500 p-4'>Tidak ada data untuk ditampilkan.</p>";
-            }
-
-            // Force Redraw setelah load
-            setTimeout(function() {
-                gantt.render();
-            }, 300);
-        });
-
-        // ==========================================
-        // WINDOW FUNCTIONS (GLOBAL)
-        // ==========================================
-
-        window.filterByPlant = function(plant) {
-            console.log("🔍 Filter Plant:", plant);
-
-            if (!ganttInitialized || typeof gantt === 'undefined') {
-                console.error("Gantt belum diinisialisasi!");
-                return;
-            }
-
-            // Update State
-            activePlantFilter = plant;
-
-            // Refresh Gantt
-            gantt.refreshData();
-
-            // Update UI Tombol - Reset semua
-            document.querySelectorAll('.plant-filter-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-
-            // Set active button
-            let btnId = 'plant-filter-' + (plant === 'all' ? 'all' : slugify(plant));
-            let activeBtn = document.getElementById(btnId);
-            if (activeBtn) {
-                activeBtn.classList.add('active');
-            }
-
-            console.log("✅ Filter diterapkan:", plant);
-        };
-
-        window.changeZoom = function(level) {
-            console.log("🔎 Change Zoom:", level);
-
-            if (!ganttInitialized || typeof gantt === 'undefined') {
-                console.error("Gantt belum diinisialisasi!");
-                return;
-            }
-
-            // Update state
-            activeZoomLevel = level;
-
-            // Update konfigurasi gantt
-            switch (level) {
-                case 'day':
-                    gantt.config.scale_unit = "day";
-                    gantt.config.date_scale = "%d %M";
-                    gantt.config.subscales = [];
-                    break;
-                case 'week':
-                    gantt.config.scale_unit = "week";
-                    gantt.config.date_scale = "Week #%W";
-                    gantt.config.subscales = [{
-                        unit: "day",
-                        step: 1,
-                        date: "%D"
-                    }];
-                    break;
-                case 'month':
-                    gantt.config.scale_unit = "month";
-                    gantt.config.date_scale = "%F %Y";
-                    gantt.config.subscales = [];
-                    break;
-            }
-
-            // Render ulang gantt
-            gantt.render();
-
-            // Update UI Tombol - Reset semua
-            document.querySelectorAll('.zoom-btn-fh').forEach(btn => {
-                btn.classList.remove('active');
-            });
-
-            // Set active button
-            let activeBtn = document.getElementById('zoom-' + level);
-            if (activeBtn) {
-                activeBtn.classList.add('active');
-            }
-
-            console.log("✅ Zoom diterapkan:", level);
-        };
-
-        window.toggleExportMenu = function() {
-            const menu = document.getElementById('exportMenu');
-            if (menu) {
-                menu.classList.toggle('hidden');
-            }
-        };
-
-        window.exportToPDF = function() {
-            const element = document.getElementById('dashboard-content');
-
-            // Cek Library
-            if (typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
-                alert("Library Export sedang dimuat... silakan coba sesaat lagi.");
-                return;
-            }
-
-            // SweetAlert Loading
-            Swal.fire({
-                title: 'Exporting PDF...',
-                allowOutsideClick: false,
-                didOpen: () => Swal.showLoading()
-            });
-
-            html2canvas(element, {
-                scale: 1.5,
-                logging: false,
-                useCORS: true
-            }).then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
-                const {
-                    jsPDF
-                } = window.jspdf;
-                const pdf = new jsPDF('l', 'mm', 'a4');
-
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = pdf.internal.pageSize.getHeight();
-                const imgProps = pdf.getImageProperties(imgData);
-                const ratio = (imgProps.height * pdfWidth) / imgProps.width;
-
-                pdf.addImage(imgData, 'PNG', 0, 10, pdfWidth, ratio);
-
-                pdf.setFontSize(10);
-                pdf.text("Export Date: " + new Date().toLocaleDateString(), 10, 7);
-
-                pdf.save("Facility_Dashboard.pdf");
-                Swal.close();
-            }).catch(err => {
-                console.error(err);
-                Swal.fire('Error', 'Gagal export PDF', 'error');
-            });
-        };
-
-        // Close export menu when clicking outside
-        document.addEventListener('click', function(event) {
-            const exportMenu = document.getElementById('exportMenu');
-            const exportButton = event.target.closest('button[onclick*="toggleExportMenu"]');
-
-            if (exportMenu && !exportMenu.contains(event.target) && !exportButton) {
-                exportMenu.classList.add('hidden');
-            }
-        });
-    </script>
 </x-app-layout>
