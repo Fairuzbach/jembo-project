@@ -79,6 +79,8 @@ class RolePermissionSeeder extends Seeder
         $roleGa->givePermissionTo($gaAdminRole);
 
         // 4. Role Super Admin (Paling Tinggi)
+        $superGaAdmin = Role::firstOrCreate(['name' => 'super.ga.admin']);
+        $superGaAdmin->givePermissionTo(Permission::all());
         $superAdmin = Role::firstOrCreate(['name' => 'super.admin']);
         $superAdmin->givePermissionTo(Permission::all());
 
