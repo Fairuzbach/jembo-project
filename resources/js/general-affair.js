@@ -245,18 +245,33 @@ document.addEventListener('alpine:init', () => {
 // Flatpickr Range Init
 document.addEventListener('DOMContentLoaded', function() {
     const pickerInput = document.getElementById("date_range_picker");
-    const config = window.gaConfig || {};
+    // Mengambil config jika ada, atau object kosong agar tidak error
+    const config = window.gaConfig || {}; 
 
     if (pickerInput && typeof flatpickr !== 'undefined') {
         flatpickr(pickerInput, {
-            mode: "range", dateFormat: "Y-m-d", altInput: true, altFormat: "j F Y",
+            mode: "range", 
+            dateFormat: "Y-m-d", 
+            altInput: true, 
+            altFormat: "j F Y",
+            // Pastikan config.startDate & endDate memiliki nilai atau undefined
             defaultDate: [config.startDate, config.endDate],
-            onChange: function(selectedDates) {
+            
+            // Parameter 'instance' ditambahkan untuk akses fungsi format bawaan
+            onChange: function(selectedDates, dateStr, instance) {
+                // Cek apakah user sudah memilih Start DAN End date
                 if (selectedDates.length === 2) {
-                    const start = selectedDates[0].toISOString().split('T')[0];
-                    const end = selectedDates[1].toISOString().split('T')[0];
+                    // Menggunakan formatter bawaan Flatpickr (Lebih aman dari timezone)
+                    const start = instance.formatDate(selectedDates[0], "Y-m-d");
+                    const end = instance.formatDate(selectedDates[1], "Y-m-d");
+
+                    // Set nilai ke input hidden
                     document.getElementById('start_date').value = start;
                     document.getElementById('end_date').value = end;
+
+                    // --- BAGIAN PENTING: AUTO SUBMIT ---
+                    // Mencari form pembungkus input ini dan melakukan submit
+                    pickerInput.closest('form').submit();
                 }
             }
         });
