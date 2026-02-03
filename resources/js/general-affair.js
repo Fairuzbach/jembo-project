@@ -6,7 +6,6 @@ Chart.register(ChartDataLabels);
 window.Chart = Chart;
 
 document.addEventListener('alpine:init', () => {
-    // Ambil konfigurasi dari Window (yang dikirim dari Blade)
     const config = window.gaConfig || {};
 
     Alpine.data('gaData', () => ({
@@ -27,7 +26,6 @@ document.addEventListener('alpine:init', () => {
         show: false,
 
         // --- 2. DATA SELECTION (BULK ACTION) ---
-        // Kita pindahkan logika checkbox dari Blade ke sini
         selected: JSON.parse(localStorage.getItem('ga_selected_ids') || '[]').map(String),
         pageIds: (config.pageIds || []).map(String),
 
@@ -85,21 +83,17 @@ document.addEventListener('alpine:init', () => {
 
         // Toggle Select All (Checkbox Header)
         toggleSelectAll() {
-            // Cek apakah semua ID di halaman ini sudah terpilih
             const allSelected = this.pageIds.length > 0 && this.pageIds.every(id => this.selected.includes(id));
             
-            if (allSelected) {
-                // Uncheck semua yang ada di halaman ini
+            if (allSelected) {            
                 this.selected = this.selected.filter(id => !this.pageIds.includes(id));
             } else {
-                // Check semua di halaman ini (hindari duplikat)
                 this.pageIds.forEach(id => {
                     if (!this.selected.includes(id)) {
                         this.selected.push(id);
                     }
                 });
             }
-            // Simpan ke localStorage agar persisten saat pindah page
             localStorage.setItem('ga_selected_ids', JSON.stringify(this.selected));
         },
 
@@ -122,7 +116,6 @@ document.addEventListener('alpine:init', () => {
         
       openEditModal(data) {
     // console.log("CEK DATA DARI BACKEND:", data);
-
     this.editForm.id = data.id;
     this.editForm.ticket_num = data.ticket_num;
     this.editForm.status = data.status;
@@ -141,7 +134,6 @@ document.addEventListener('alpine:init', () => {
             fullStartDate = d.toISOString().slice(0, 16).replace('T', ' ');
         }
     }
-    // Masukkan ke model Alpine
     this.editForm.start_date = fullStartDate;
 
 
@@ -154,7 +146,6 @@ document.addEventListener('alpine:init', () => {
         return date.toISOString().slice(0, 16); // Format YYYY-MM-DDTHH:mm
     };
 
-    // PERBAIKAN TYPO: actual_end_date (bukan data)
     this.editForm.actual_end_date = formatToDateTimeLocal(data.actual_end_date); 
     
     // Reset field lain
@@ -164,17 +155,17 @@ document.addEventListener('alpine:init', () => {
 
     this.showEditModal = true;
     
-    // --- 3. FLATPICKR START DATE (AKTIFKAN WAKTU) ---
+    // --- 3. FLATPICKR START DATE ---
     setTimeout(() => {
         const startDateInput = document.getElementById('modal_start_date');
         if (startDateInput && typeof flatpickr !== 'undefined') {
             if (startDateInput._flatpickr) startDateInput._flatpickr.destroy();
 
             flatpickr(startDateInput, { 
-                enableTime: true,        // <--- PENTING: Agar bisa pilih jam
-                dateFormat: "Y-m-d H:i", // <--- Format kirim ke server (YYYY-MM-DD HH:mm)
-                time_24hr: true,         // Format 24 jam
-                defaultDate: fullStartDate, // <--- Gunakan variabel yang ada jamnya
+                enableTime: true,  
+                dateFormat: "Y-m-d H:i",
+                time_24hr: true,        
+                defaultDate: fullStartDate, 
                 allowInput: true,
                 onChange: (selectedDates, dateStr) => {
                     this.editForm.start_date = dateStr;
@@ -183,7 +174,6 @@ document.addEventListener('alpine:init', () => {
         }
     }, 50);
 },
-
         resetToMe() {
             this.formData.nik = this.currentUser.nik;
             this.formData.manual_requester_name = this.currentUser.name;
@@ -245,7 +235,6 @@ document.addEventListener('alpine:init', () => {
 // Flatpickr Range Init
 document.addEventListener('DOMContentLoaded', function() {
     const pickerInput = document.getElementById("date_range_picker");
-    // Mengambil config jika ada, atau object kosong agar tidak error
     const config = window.gaConfig || {}; 
 
     if (pickerInput && typeof flatpickr !== 'undefined') {
@@ -254,23 +243,16 @@ document.addEventListener('DOMContentLoaded', function() {
             dateFormat: "Y-m-d", 
             altInput: true, 
             altFormat: "j F Y",
-            // Pastikan config.startDate & endDate memiliki nilai atau undefined
             defaultDate: [config.startDate, config.endDate],
             
-            // Parameter 'instance' ditambahkan untuk akses fungsi format bawaan
             onChange: function(selectedDates, dateStr, instance) {
-                // Cek apakah user sudah memilih Start DAN End date
                 if (selectedDates.length === 2) {
-                    // Menggunakan formatter bawaan Flatpickr (Lebih aman dari timezone)
                     const start = instance.formatDate(selectedDates[0], "Y-m-d");
                     const end = instance.formatDate(selectedDates[1], "Y-m-d");
 
-                    // Set nilai ke input hidden
                     document.getElementById('start_date').value = start;
                     document.getElementById('end_date').value = end;
 
-                    // --- BAGIAN PENTING: AUTO SUBMIT ---
-                    // Mencari form pembungkus input ini dan melakukan submit
                     pickerInput.closest('form').submit();
                 }
             }

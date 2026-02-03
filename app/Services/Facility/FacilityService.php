@@ -27,7 +27,7 @@ class FacilityService
             $userLevel = strtoupper(trim($user->job_level ?? ''));
 
             // 1. CEK ROLE ADMIN (PRIORITAS UTAMA)
-            // Cek apakah dia fh.admin (Sakti)
+            // Cek apakah dia fh.admin
             $isAdmin = ($user->role === 'fh.admin' ||
                 $user->role === 'super.fh.admin' ||
                 $user->role === 'super.admin');
@@ -442,8 +442,6 @@ class FacilityService
         $stats['chartTechValues'] = array_values($techData);
 
         // Gantt Data (Reuse logic via method to avoid duplication)
-        // Kita panggil method getGanttChartData secara internal tapi pass data yg sudah di-load
-        // agar tidak query ulang
         $stats['ganttData'] = $this->formatGanttData($workOrders);
         $stats['selectedMonth'] = $request->input('month', date('Y-m'));
 
@@ -472,7 +470,6 @@ class FacilityService
     {
         $ganttData = [];
         foreach ($collection as $wo) {
-            // 1. [FIX] Gunakan format H:i:s (Lengkap) agar sinkron dengan JS
             $startObj = $wo->created_at ? $wo->created_at : now();
             $start    = $startObj->format('Y-m-d H:i:s');
 
@@ -762,10 +759,8 @@ class FacilityService
         $plantTarget = strtoupper(trim($ticketPlant));
 
         // ------------------------------------------------------------------
-        // [FIX] LOGIC PENGECUALIAN / STRICT BLOCKING
+        //  LOGIC PENGECUALIAN / STRICT BLOCKING
         // ------------------------------------------------------------------
-        // Masalah: "Plant D - CCV" mengandung kata "Plant D".
-        // Solusi: Jika tiketnya MURNI "Plant D", tapi User ada embel-embel "CCV", TOLAK.
 
         if ($plantTarget === 'PLANT D' || $plantTarget === 'PLANT D (OLD)') {
             if (str_contains($userDivisi, 'CCV') || str_contains($userJabatan, 'CCV')) {

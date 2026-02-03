@@ -46,7 +46,6 @@
                 </button>
 
                 {{-- 2. Export Button (UPDATED) --}}
-                {{-- Menggunakan formaction agar mengirim data form (filter/search) ke route export --}}
                 <button type="submit" formaction="{{ route('ga.export') }}"
                     class="group flex items-center justify-center gap-2 px-5 py-3 border-2 border-emerald-100 bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 rounded-xl transition-all shadow-sm hover:shadow-md font-bold text-xs uppercase"
                     title="Export Data ke Excel (.xlsx)">
@@ -125,7 +124,6 @@
     </form>
 
     @if (Auth::user()->role === 'ga.admin')
-        {{-- Bulk Action Bar (MUNCUL SAAT ADA YANG DICENTANG) --}}
         <div x-show="selected.length > 0" x-transition
             class="bg-yellow-50 px-5 py-3 border-t border-yellow-200 flex flex-col md:flex-row justify-between items-center gap-4">
 
