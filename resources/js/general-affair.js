@@ -66,13 +66,13 @@ document.addEventListener('alpine:init', () => {
         ticket: null,
         isChecking: false,
         locationMap: {
-            'Plant A': 'Low Voltage', 'Plant B': 'Medium Voltage', 'Plant C': 'Low Voltage',
-            'Plant D': 'Medium Voltage', 'Autowire': 'Low Voltage', 'MC Cable': 'Low Voltage',
-            'QC LAB': 'QR', 'QC LV': 'QR', 'QC MV': 'QR', 'QC FO': 'QR',
-            'RM 1': 'SC', 'RM 2': 'SC', 'RM 3': 'SC', 'RM 5': 'SC', 'RM Office': 'SC',
-            'Workshop Electric': 'MT', 'Konstruksi': 'FH', 'Plant E': 'FO',
-            'Plant Tools': 'PE', 'Gudang Jadi': 'SS', 'GA': 'GA', 'FA': 'FA',
-            'IT': 'IT', 'HC': 'HC', 'Sales': 'Sales', 'Marketing': 'Marketing', 'Plant A - Autowire': 'Low Voltage', 'Plant D - CCV': 'Medium Voltage'
+            'Plant A': 'LOW VOLTAGE', 'Plant B': 'MEIDUM VOLTAGE', 'Plant C': 'LOW VOLTAGE',
+            'Plant D': 'MEIDUM VOLTAGE', 'Autowire': 'LOW VOLTAGE', 'MC Cable': 'LOW VOLTAGE',
+            'QC LAB': 'QUALITY ASSURANCE & R D', 'QC LV': 'QUALITY ASSURANCE & R D', 'QC MV': 'QUALITY ASSURANCE & R D', 'QC FO': 'QUALITY ASSURANCE & R D',
+            'RM 1': 'PROCUREMENT', 'RM 2': 'PROCUREMENT', 'RM 3': 'PROCUREMENT', 'RM 5': 'PROCUREMENT', 'RM Office': 'PROCUREMENT',
+            'Workshop Electric': 'MAINTENANCE', 'Konstruksi': 'FACILITY', 'Plant E': 'FIBER OPTIC',
+            'Plant Tools': 'PROCESS ENGINEERING', 'Gudang Jadi': 'SALES SUPPORT', 'GA': 'GENERAL AFFAIR', 'FA': 'FINANCE',
+            'IT': 'INFORMATION TECHNOLOGY', 'HC': 'HUMAN CAPITAL', 'Sales': 'Sales', 'Marketing': 'Marketing', 'Plant A - Autowire': 'LOW VOLTAGE', 'Plant D - CCV': 'MEIDUM VOLTAGE'
         },
 
         // --- METHODS ---
@@ -114,30 +114,19 @@ document.addEventListener('alpine:init', () => {
             }
         },
         
-      openEditModal(data) {
-    // console.log("CEK DATA DARI BACKEND:", data);
+  openEditModal(data) {
     this.editForm.id = data.id;
     this.editForm.ticket_num = data.ticket_num;
     this.editForm.status = data.status;
-    this.editForm.pic = data.processed_by_name || this.currentUser.name;
-    this.editForm.department = data.department || 'GA';
+    this.editForm.pic = data.processed_by_name || '';
+    this.editForm.department = data.department ||data.divisi || '';
     this.editForm.category = data.category || 'MEDIUM';
-
-    // --- 1. LOGIKA START DATE (DENGAN JAM) ---
-    let fullStartDate = '';
-    if (data.actual_start_date) {
-        let d = new Date(data.actual_start_date);
-        if (!isNaN(d.getTime())) {
-            // Koreksi Timezone WIB
-            d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-            // Format YYYY-MM-DD HH:mm (Ganti T jadi spasi)
-            fullStartDate = d.toISOString().slice(0, 16).replace('T', ' ');
-        }
-    }
-    this.editForm.start_date = fullStartDate;
+    this.editForm.start_date = data.actual_start_date 
+        ? data.actual_start_date.split('T')[0] 
+        : '';
 
 
-    // --- 2. LOGIKA SELESAI AKTUAL (DENGAN JAM) ---
+    // --- 2. LOGIKA SELESAI AKTUAL  ---
     const formatToDateTimeLocal = (dateString) => {
         if (!dateString) return '';
         let date = new Date(dateString);
@@ -145,34 +134,17 @@ document.addEventListener('alpine:init', () => {
         date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
         return date.toISOString().slice(0, 16); // Format YYYY-MM-DDTHH:mm
     };
-
     this.editForm.actual_end_date = formatToDateTimeLocal(data.actual_end_date); 
     
     // Reset field lain
-    this.editForm.target_date = data.target_completion_date || '';
+    this.editForm.target_date = data.target_completion_date 
+        ? data.target_completion_date.split('T')[0] 
+        : '';
+        
     this.editForm.completion_note = data.completion_note || '';
     this.editForm.cancellation_note = data.cancellation_note || '';
 
     this.showEditModal = true;
-    
-    // --- 3. FLATPICKR START DATE ---
-    setTimeout(() => {
-        const startDateInput = document.getElementById('modal_start_date');
-        if (startDateInput && typeof flatpickr !== 'undefined') {
-            if (startDateInput._flatpickr) startDateInput._flatpickr.destroy();
-
-            flatpickr(startDateInput, { 
-                enableTime: true,  
-                dateFormat: "Y-m-d H:i",
-                time_24hr: true,        
-                defaultDate: fullStartDate, 
-                allowInput: true,
-                onChange: (selectedDates, dateStr) => {
-                    this.editForm.start_date = dateStr;
-                }
-            });
-        }
-    }, 50);
 },
         resetToMe() {
             this.formData.nik = this.currentUser.nik;
