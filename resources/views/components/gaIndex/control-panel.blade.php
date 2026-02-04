@@ -75,22 +75,52 @@
         {{-- Collapsible Filter Panel --}}
         <div x-show="showFilters" x-collapse class="bg-slate-50 px-5 pb-5 pt-2 border-t border-slate-200">
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                @foreach (['status' => ['pending', 'in_progress', 'completed', 'cancelled', 'waiting_approval', 'waiting_approval_ga', 'rejected'], 'category' => ['BERAT', 'SEDANG', 'RINGAN'], 'parameter' => ['KEBERSIHAN', 'PEMELIHARAAN', 'PERBAIKAN', 'PEMBUATAN BARU', 'PERIZINAN', 'RESERVASI']] as $key => $opts)
+
+
+                @php
+                    try {
+                        $parameterData = \App\Models\GeneralAffair\Category::where('status', 'active')
+                            ->pluck('name')
+                            ->toArray();
+                    } catch (\Exception $e) {
+                        $parameterData = []; // Fallback jika error
+                    }
+
+                    // Jika kosong, isi dummy biar kelihatan dropdown-nya jalan
+                    if (empty($parameterData)) {
+                        $parameterData = ['DATA KOSONG (Cek DB)'];
+                    }
+                @endphp
+
+                @foreach ([
+        'department' => ['GENERAL AFFAIR', 'FACILITY', 'MAINTENANCE', 'IT', 'PE', 'HC', 'FINANCE', 'MARKETING', 'SC', 'SS', 'QR', 'PP', 'COMMERCIAL', 'PLANT A', 'PLANT B', 'PLANT C', 'PLANT D', 'PLANT E'],
+        'status' => ['pending', 'in_progress', 'completed', 'cancelled', 'waiting_approval', 'waiting_approval_ga', 'rejected'],
+        'category' => ['BERAT', 'SEDANG', 'RINGAN'],
+        'parameter' => $parameterData,
+    ] as $key => $opts)
                     <div>
-                        <label
-                            class="text-[10px] font-black text-slate-500 uppercase block mb-1 tracking-wider">{{ ucfirst($key) }}</label>
+                        <label class="text-[10px] font-black text-slate-500 uppercase block mb-1 tracking-wider">
+                            {{ $key == 'parameter' ? 'JENIS PERMINTAAN' : (ucfirst($key) == 'Department' ? 'DEPARTEMEN' : ucfirst($key)) }}
+                        </label>
+
                         <select name="{{ $key }}" onchange="this.form.submit()"
                             class="w-full text-xs font-bold border-slate-300 focus:border-yellow-400 focus:ring-0 rounded-sm bg-white h-10 uppercase cursor-pointer hover:bg-slate-50 transition-colors">
-                            <option value="">SEMUA {{ strtoupper($key) }}</option>
+
+                            <option value="">SEMUA
+                                {{ strtoupper($key) == 'DEPARTMENT' ? 'DEPT' : (strtoupper($key) == 'PARAMETER' ? 'JENIS' : strtoupper($key)) }}
+                            </option>
+
                             @foreach ($opts as $opt)
+                                {{-- Logic Select: Cek apakah request sesuai dengan option --}}
                                 <option value="{{ $opt }}" {{ request($key) == $opt ? 'selected' : '' }}>
-                                    {{ str_replace('_', ' ', strtoupper($opt)) }}</option>
+                                    {{ str_replace('_', ' ', strtoupper($opt)) }}
+                                </option>
                             @endforeach
                         </select>
                     </div>
                 @endforeach
 
-                {{-- Date Picker --}}
+                {{-- Date Picker (JANGAN DIHAPUS) --}}
                 <div class="md:col-span-2">
                     <label class="text-[10px] font-black text-slate-500 uppercase block mb-1 tracking-wider">RENTANG
                         TANGGAL</label>
