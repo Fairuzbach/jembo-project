@@ -211,16 +211,16 @@ class WorkOrderService
         }
     }
 
-    public function processTicket($id, string $action, ?string $reason): array
+
+    public function processTicket($id, string $action, ?string $reason, array $data = []): array
     {
+        // dd($data);
         $ticket = WorkOrderGeneralAffair::findOrFail($id);
         $user = Auth::user();
 
         // Ambil Data Requester untuk Notif (WA)
         $requester = \App\Models\User::where('nik', $ticket->requester_nik)->first();
         $requesterPhone = $requester ? ($requester->no_hp ?? $requester->phone) : null;
-
-        // $ticketLink = url('/wo-ga');
 
         // 1. BERSIHKAN ROLE
         $cleanRole = strtolower(trim($user->role));
@@ -229,14 +229,35 @@ class WorkOrderService
         $updateData = [];
         $emailType = null; // Penanda jenis notif
 
-        $isGaAdmin = in_array($cleanRole, ['ga.admin', 'super.ga.admin']);
+        $adminRoles = ['ga.admin', 'admin_ga', 'ga_admin', 'super.ga.admin'];
+        $isGaAdmin = in_array($cleanRole, $adminRoles);
 
-        // --- SKENARIO 1: GA ADMIN BYPASS ---
+        // =========================================================================
+        // [MODIFIKASI UTAMA] TANGKAP DATA FORM DI AWAL
+        // Agar data klasifikasi (kategori, bobot, tanggal) selalu tersimpan
+        // jika yang melakukan action adalah GA Admin dan action-nya approve.
+        // =========================================================================
+        if ($isGaAdmin && !empty($data) && $action === 'approve') {
+            $updateData['category'] = $data['category'] ?? $ticket->category;
+            $updateData['parameter_permintaan'] = $data['parameter_permintaan'] ?? $ticket->parameter_permintaan;
+            $updateData['target_completion_date'] = $data['target_completion_date'] ?? $ticket->target_completion_date;
+
+            // Set Approver & PIC ke GA Admin (Menimpa nama manager sebelumnya)
+            $updateData['approved_ga_by'] = $user->id;
+            $updateData['approved_ga_at'] = now();
+            $updateData['processed_by'] = $user->id;
+            $updateData['processed_by_name'] = $user->name;
+        }
+
+        // --- SKENARIO 1: GA ADMIN BYPASS (Langsung Approve Tiket Baru) ---
+        // Jika tiket masih waiting_approval tapi yang approve GA Admin
         if ($ticket->status === 'waiting_approval' && $action === 'approve' && $isGaAdmin) {
-            $ticket->status       = 'waiting_approval_ga';
-            $ticket->approved_ga_at = now();
-            $ticket->save();
+            $newStatus = 'pending';
+            $desc = "Tiket diterima & diklasifikasikan langsung oleh GA Admin (Bypass Manager).";
 
+            // Note: Data updateData['category'] dll sudah ditangkap di blok atas
+
+            // Buat history khusus bypass
             WorkOrderGaHistory::create([
                 'work_order_id' => $ticket->id,
                 'user_id'       => $user->id,
@@ -244,99 +265,76 @@ class WorkOrderService
                 'description'   => 'GA Admin melakukan bypass approval manager.',
             ]);
 
-            // [WA Bypass - Requester Only]
-            if ($requesterPhone) {
-                $msg = "🎫 *WORK ORDER GENERAL AFFAIR*\n" .
-                    "━━━━━━━━━━━━━━━━━━━━━━\n\n" .
-                    "Halo *{$requester->name}* 👋\n\n" .
-                    "⚡ *FAST TRACK APPROVAL*\n\n" .
-                    "📋 Ticket: *#{$ticket->ticket_num}*\n" .
-                    "📊 Status: *Menunggu Verifikasi Akhir GA*\n\n" .
-                    "✅ Tiket Anda telah di-approve oleh GA Admin.\n" .
-                    "Proses verifikasi akhir sedang berlangsung.\n\n" .
-                    "━━━━━━━━━━━━━━━━━━━━━━\n" .
-                    "_Mohon menunggu proses selanjutnya_ ⏳";
-
-                GaWhatsappService::send($requesterPhone, $msg);
-            }
-
-            return [
-                'status' => 'success',
-                'message' => '✅ Tiket berhasil di-bypass (Approve) oleh Admin.',
-                'alert' => '⚠️ Segera tentukan PIC untuk tiket ini.'
+            $alertData = [
+                'type' => 'warning',
+                'message' => 'Tiket di-bypass & disetujui (Status: Pending).',
+                'instruction' => 'Segera kerjakan tiket ini.'
             ];
+
+            $emailType = 'ga_approved';
         }
-
         // --- SKENARIO 2: NORMAL FLOW ---
-        if ($action == 'reject') {
-            $newStatus = 'rejected';
-            $desc = "Ditolak. Alasan: $reason";
-            $emailType = 'rejected';
-        } else {
-            $adminRoles = ['ga.admin', 'admin_ga', 'ga_admin', 'super.ga.admin'];
-            $isGAAdmin = in_array($cleanRole, $adminRoles);
-
-            if ($ticket->status === 'waiting_approval') {
-                // TAHAP 1: Approval dari Supervisor/Manager
-                if ($isGAAdmin) {
-                    $newStatus = 'pending';
-                    $desc = "Tiket diterima langsung oleh *General Affair*.";
-                    $updateData['approved_ga_by'] = $user->id;
-                    $updateData['approved_ga_at'] = now();
-                    $emailType = 'ga_approved';
-                } else {
-                    // Normal Manager Approval
+        else {
+            if ($action == 'reject') {
+                $newStatus = 'rejected';
+                $desc = "Ditolak. Alasan: $reason";
+                $emailType = 'rejected';
+            } else {
+                if ($ticket->status === 'waiting_approval') {
+                    // TAHAP 1: Approval dari Manager Divisi (Bukan GA Admin)
                     $newStatus = 'waiting_approval_ga';
                     $desc = "Disetujui oleh Manager ({$user->divisi}). Menunggu General Affair.";
+
+                    // Manager mengisi processed_by sementara (tahap 1)
+                    // Kita timpa updateData khusus untuk manager di sini
                     $updateData['processed_by'] = $user->id;
                     $updateData['processed_by_name'] = $user->name;
-                    $emailType = 'manager_approved'; // <--- Trigger notif ke GA Admin
-                }
-            } elseif ($ticket->status === 'waiting_approval_ga') {
-                // TAHAP 2: Approval dari GA Admin
-                if ($isGAAdmin) {
-                    $newStatus = 'pending';
-                    $desc = "Disetujui oleh General Affair. Masuk antrian pending.";
-                    $updateData['approved_ga_by'] = $user->id;
-                    $updateData['approved_ga_at'] = now();
-                    $alertData = [
-                        'type' => 'warning',
-                        'message' => 'Tiket berhasil disetujui (Status: Pending).',
-                        'instruction' => 'Tiket sekarang dapat dikerjakan oleh tim General Affair!'
-                    ];
-                    $emailType = 'ga_approved';
-                } else {
-                    return [
-                        'status' => 'error',
-                        'message' => 'Hanya GA Admin yang bisa approve di tahap ini!'
-                    ];
-                }
-            } else {
-                // Fallback Status
-                if ($isGAAdmin) {
-                    $newStatus = 'pending';
-                    $desc = "Tiket diterima General Affair.";
-                    $updateData['approved_ga_by'] = $user->id;
-                    $updateData['approved_ga_at'] = now();
-                    $emailType = 'ga_approved';
-                } else {
-                    $newStatus = 'waiting_approval_ga';
-                    $desc = "Disetujui oleh Admin Divisi.";
+
                     $emailType = 'manager_approved';
+                } elseif ($ticket->status === 'waiting_approval_ga') {
+                    // TAHAP 2: Approval dari GA Admin
+                    if ($isGaAdmin) {
+                        $newStatus = 'pending';
+                        $desc = "Disetujui & Diklasifikasikan oleh GA. Masuk antrian pending.";
+
+                        // Note: Data updateData['category'] dll sudah ditangkap di blok paling atas
+
+                        $alertData = [
+                            'type' => 'warning',
+                            'message' => 'Tiket berhasil disetujui (Status: Pending).',
+                            'instruction' => 'Tiket sekarang dapat dikerjakan oleh tim General Affair!'
+                        ];
+                        $emailType = 'ga_approved';
+                    } else {
+                        return ['status' => 'error', 'message' => 'Hanya GA Admin yang bisa approve di tahap ini!'];
+                    }
+                } else {
+                    // Fallback Status (Pending / In Progress)
+                    if ($isGaAdmin) {
+                        $newStatus = 'pending';
+                        $desc = "Tiket diterima General Affair.";
+                        $emailType = 'ga_approved';
+                    } else {
+                        $newStatus = 'waiting_approval_ga';
+                        $desc = "Disetujui oleh Admin Divisi.";
+                        $emailType = 'manager_approved';
+                    }
                 }
             }
         }
 
-        // 3. UPDATE DATABASE
-        $updateData = array_merge($updateData, [
+        // 3. UPDATE DATABASE FINAL
+        // Gabungkan status baru dengan data form yang sudah ditangkap
+        $finalUpdate = array_merge($updateData, [
             'status' => $newStatus,
             'rejection_reason' => ($action === 'reject') ? $reason : null,
+            // Fallback: jika processed_by belum di-set, pakai default user login
             'processed_by' => $updateData['processed_by'] ?? $user->id,
             'processed_by_name' => $updateData['processed_by_name'] ?? $user->name,
             'updated_at' => now()
         ]);
 
-        $ticket->update($updateData);
+        $ticket->update($finalUpdate);
         $this->logHistory($ticket->id, ucfirst($newStatus), $desc);
 
         // ==========================================================
@@ -406,9 +404,7 @@ class WorkOrderService
         }
 
         // C. LOGIKA KIRIM KE GA ADMIN (Next Approver)
-
         if ($emailType === 'manager_approved') {
-
             Log::info("DEBUG WA: Mencari GA Admin untuk notifikasi approval...");
 
             // Cek data GA Admin di Database
@@ -421,7 +417,6 @@ class WorkOrderService
 
             if ($gaAdmins->isEmpty()) {
                 Log::error("DEBUG WA: GAGAL! Tidak ada GA Admin yang memiliki No HP/Role yang sesuai.");
-                // Cek apakah ada admin meski tanpa no hp (untuk diagnosa)
                 $adminsTanpaHp = \App\Models\User::whereIn('role', ['ga.admin', 'super.ga.admin'])->count();
                 Log::info("DEBUG WA: Total GA Admin di DB (termasuk yg tanpa HP): " . $adminsTanpaHp);
             }
@@ -439,7 +434,6 @@ class WorkOrderService
                     "📝 *Deskripsi Pekerjaan:*\n" .
                     "_{$ticket->description}_\n\n" .
                     "━━━━━━━━━━━━━━━━━━━━━━\n" .
-
                     "_Mohon segera review dan approve tiket ini_ ✅";
 
                 try {
@@ -466,7 +460,7 @@ class WorkOrderService
         $this->applyAccessControl($query, $user);
         $this->applyFilters($query, $request);
 
-        $data = $query->with(['user', 'histories.user', 'plantInfo'])
+        $data = $query->with(['user', 'histories.user', 'plantInfo', 'approverGa'])
             ->orderBy('created_at', 'desc')
             ->paginate(10)
             ->withQueryString();
@@ -717,6 +711,7 @@ class WorkOrderService
     private function getApproversForDept(string $targetDept): Collection
     {
         $roleMap = $this->getRoleMapping();
+
         $targetRole = null;
 
         // 1. Cari Role Admin berdasarkan Mapping (Opsional, jika ada admin khusus divisi)
