@@ -101,10 +101,10 @@
                         </div>
 
                         {{-- === BAGIAN 2: FORM KLASIFIKASI GA === --}}
-                        <form :action="'/ga/approve-ga/' + acceptId" method="POST">
+                        <form :action="'/ga/process/' + acceptId" method="POST">
                             @csrf
-                            @method('PATCH')
 
+                            <input type="hidden" name="action" value="approve">
                             <div class="space-y-4 mb-6">
 
                                 {{-- Jenis Permintaan --}}
