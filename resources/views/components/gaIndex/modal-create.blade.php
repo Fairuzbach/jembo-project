@@ -1,5 +1,4 @@
 @props(['plants', 'categoriesDB', 'categories'])
-{{-- ^^^ categoriesDB = Jenis Permintaan (DB), categories = Bobot (Config) --}}
 
 <template x-teleport="body">
     <div x-show="showCreateModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto">
@@ -31,13 +30,12 @@
                         // Default Plant
                         plant_id: '{{ old('plant_id', Auth::user()->plant_id) }}',
                 
-                        // Default Dept (PENTING: ini harus terisi)
+                        // Default Dept
                         department: '{{ old('department', Auth::user()->divisi) }}',
                 
-                        // Default Category (Bobot) - Set default 'RINGAN' agar tidak error required
-                        category: '{{ old('category', 'RINGAN') }}',
-                
-                        parameter_permintaan: '',
+                        // DEFAULT VALUES (Hidden from User)
+                        category: 'RINGAN',
+                        parameter_permintaan: '-',
                         status_permintaan: 'OPEN',
                         target_completion_date: '',
                         description: ''
@@ -75,14 +73,12 @@
                 
                         this.isLoadingDept = true;
                         try {
-                            // PERBAIKAN: Gunakan 'window.axios' bukan 'axios' saja
                             const response = await fetch('/ga/get-departments/' + plantId);
                 
                             if (!response.ok) {
                                 throw new Error('Network response was not ok');
                             }
                 
-                            // Fetch perlu convert ke JSON manual
                             this.departments = await response.json();
                 
                             if (!keepSelected) {
@@ -137,12 +133,13 @@
                     },
                 
                     openConfirm() {
-                        // Validasi Frontend Sederhana
-                        if (!this.formData.plant_id || !this.formData.parameter_permintaan || !this.formData.description || !this.formData.department || !this.formData.category) {
+                        // VALIDASI DISEDERHANAKAN
+                        // Cukup cek Plant, Dept, dan Description
+                        if (!this.formData.plant_id || !this.formData.description || !this.formData.department) {
                             Swal.fire({
                                 icon: 'warning',
                                 title: 'Data Belum Lengkap',
-                                text: 'Mohon lengkapi Lokasi, Department, Kategori, Jenis Permintaan, dan Uraian Pekerjaan.'
+                                text: 'Mohon lengkapi Lokasi, Department, dan Uraian Pekerjaan.'
                             });
                             return;
                         }
@@ -185,6 +182,11 @@
                     @submit-confirmed.window="isSubmitting = true; setTimeout(() => $refs.createForm.submit(), 500)"
                     action="{{ route('ga.store') }}" method="POST" enctype="multipart/form-data">
                     @csrf
+
+                    {{-- HIDDEN INPUTS (Agar Controller Tetap Menerima Data Default) --}}
+                    <input type="hidden" name="category" value="RINGAN">
+                    <input type="hidden" name="parameter_permintaan" value="-">
+                    <input type="hidden" name="status_permintaan" value="OPEN">
 
                     <div class="p-8 space-y-6">
 
@@ -238,20 +240,19 @@
 
                                     {{-- HIDDEN INPUTS UNTUK DIKIRIM KE CONTROLLER --}}
                                     <input type="hidden" name="requester_name" :value="formData.manual_requester_name">
-                                    {{-- NOTE: requester_department atau department akan dikirim dari Select di bawah --}}
                                 </div>
                             </div>
                         </div>
 
                         {{-- SECTION 2: AREA KERJA --}}
                         <div class="bg-slate-50 p-5 rounded-sm border border-slate-200 mt-6">
-                            <label class="block text-xs font-black text-slate-400 uppercase mb-4 tracking-widest">Target
-                                Area Kerja</label>
+                            <label class="block text-xs font-black text-slate-400 uppercase mb-4 tracking-widest">Detail
+                                Lokasi</label>
                             <div class="grid grid-cols-2 gap-4">
 
                                 {{-- 1. PILIH PLANT --}}
                                 <div>
-                                    <label class="text-xs font-bold text-slate-600 uppercase mb-1">Lokasi <span
+                                    <label class="text-xs font-bold text-slate-600 uppercase mb-1">Lokasi Kejadian <span
                                             class="text-red-500">*</span></label>
                                     <select name="plant_id" x-model="formData.plant_id"
                                         @change="fetchDepartments($event.target.value)"
@@ -267,13 +268,13 @@
                                 {{-- 2. PILIH DEPT --}}
                                 <div>
                                     <label class="text-xs font-bold text-slate-600 uppercase mb-1">
-                                        Department Anda <span class="text-red-500">*</span>
+                                        Department Pelapor <span class="text-red-500">*</span>
                                         <span x-show="isLoadingDept"
                                             class="text-[10px] text-yellow-600 ml-2 animate-pulse">Loading...</span>
                                     </label>
 
-                                    {{-- PENTING: name="department" agar divalidasi controller --}}
-                                    <select name="department" x-model="formData.department" @change="syncDisplayDept()"
+                                    <select name="department" x-model="formData.department"
+                                        @change="syncDisplayDept()"
                                         class="w-full border-2 border-slate-300 focus:border-slate-900 rounded-sm text-sm font-bold bg-white h-11"
                                         required :disabled="isLoadingDept">
 
@@ -289,78 +290,34 @@
                             </div>
                         </div>
 
-                        {{-- SECTION 3: DETAIL --}}
-                        <div class="grid grid-cols-2 gap-4 mt-6">
-                            <div>
-                                <label class="text-xs font-bold text-slate-700 uppercase mb-1">Target Selesai
-                                    (Opsional)</label>
-                                <input type="date" name="target_completion_date"
-                                    x-model="formData.target_completion_date"
-                                    class="w-full border-2 border-slate-300 focus:border-slate-900 rounded-sm text-sm font-bold h-11 text-slate-600">
-                            </div>
-
-                            {{-- JENIS PERMINTAAN (Categories DB) --}}
-                            <div>
-                                <label class="text-xs font-bold text-slate-700 uppercase mb-1">Jenis Permintaan <span
-                                        class="text-red-500">*</span></label>
-                                <select name="parameter_permintaan" x-model="formData.parameter_permintaan"
-                                    class="w-full border-2 border-slate-300 focus:border-slate-900 rounded-sm text-sm font-bold h-11"
-                                    required>
-                                    <option value="">-- PILIH --</option>
-                                    @foreach ($categoriesDB ?? [] as $cat)
-                                        <option value="{{ $cat->name }}">{{ $cat->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4 mt-6">
-                            {{-- KATEGORI BOBOT (Categories Config) --}}
-                            <div>
-                                <label class="text-xs font-bold text-slate-700 uppercase mb-1">Kategori Bobot <span
-                                        class="text-red-500">*</span></label>
-                                {{-- PENTING: name="category" agar divalidasi controller --}}
-                                <select name="category" x-model="formData.category"
-                                    class="w-full border-2 border-slate-300 focus:border-slate-900 rounded-sm text-sm font-bold h-11"
-                                    required>
-                                    @foreach ($categories ?? [] as $cat)
-                                        <option value="{{ $cat }}">{{ ucwords(strtolower($cat)) }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div>
-                                <label class="text-xs font-bold text-slate-700 uppercase mb-1">Status
-                                    Permintaan</label>
-                                <select name="status_permintaan" x-model="formData.status_permintaan"
-                                    class="w-full border-2 border-slate-300 focus:border-slate-900 rounded-sm text-sm font-bold h-11">
-                                    <option value="OPEN">Open</option>
-                                    <option value="SUDAH DIRENCANAKAN">Sudah Direncanakan</option>
-                                </select>
-                            </div>
-                        </div>
-
+                        {{-- SECTION 3: URAIAN & FOTO (Simplified) --}}
                         <div class="mt-6">
                             <label class="text-xs font-bold text-slate-700 uppercase mb-1">Uraian Pekerjaan <span
                                     class="text-red-500">*</span></label>
-                            <textarea name="description" x-model="formData.description" rows="3"
-                                class="w-full border-2 border-slate-300 focus:border-slate-900 rounded-sm text-sm font-medium"
-                                placeholder="Deskripsi..." required></textarea>
+                            <textarea name="description" x-model="formData.description" rows="4"
+                                class="w-full border-2 border-slate-300 focus:border-slate-900 rounded-sm text-sm font-medium p-3"
+                                placeholder="Jelaskan secara detail apa yang perlu dikerjakan atau diperbaiki..." required></textarea>
                         </div>
 
                         <div class="mt-4">
-                            <label class="text-xs font-bold text-slate-700 uppercase mb-1">Foto Bukti
+                            <label class="text-xs font-bold text-slate-700 uppercase mb-1">Foto Bukti / Kondisi
                                 (Opsional)</label>
                             <input type="file" accept="image/*" name="photo"
                                 class="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-sm file:border-0 file:text-xs file:font-black file:uppercase file:bg-slate-900 file:text-white hover:file:bg-slate-700 cursor-pointer border border-slate-300 rounded-sm @error('photo') is-invalid @enderror">
+                            <p class="text-[10px] text-slate-400 mt-1 italic">*Lampirkan foto agar tim GA lebih mudah
+                                menganalisa.</p>
                         </div>
 
                         {{-- Footer --}}
                         <div class="px-8 py-5 bg-slate-50 flex flex-row-reverse gap-3 border-t border-slate-200 mt-6">
                             <button type="button" @click="openConfirm()"
-                                class="bg-gradient-to-br from-yellow-400 via-yellow-500 to-amber-500 text-slate-900 hover:from-yellow-500 px-8 py-3.5 rounded-xl font-bold uppercase tracking-wider shadow-lg hover:scale-105 active:scale-95 transition-all">Kirim
-                                Tiket</button>
+                                class="bg-gradient-to-br from-yellow-400 via-yellow-500 to-amber-500 text-slate-900 hover:from-yellow-500 px-8 py-3.5 rounded-xl font-bold uppercase tracking-wider shadow-lg hover:scale-105 active:scale-95 transition-all">
+                                Kirim Tiket
+                            </button>
                             <button type="button" @click="showCreateModal = false"
-                                class="bg-white border-2 border-slate-200 text-slate-600 hover:border-slate-400 px-7 py-3.5 rounded-xl font-bold uppercase tracking-wide shadow-sm hover:shadow-md transition-all">Batal</button>
+                                class="bg-white border-2 border-slate-200 text-slate-600 hover:border-slate-400 px-7 py-3.5 rounded-xl font-bold uppercase tracking-wide shadow-sm hover:shadow-md transition-all">
+                                Batal
+                            </button>
                         </div>
                     </div>
                 </form>

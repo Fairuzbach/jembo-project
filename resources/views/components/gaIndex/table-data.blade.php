@@ -346,33 +346,70 @@
                                     }
                                 @endphp
 
+                                {{-- ... Bagian atas PHP Logic biarkan saja, sudah oke ... --}}
+
                                 @if ($showApproveButton)
-                                    <form id="form-tech-{{ $item->id }}"
-                                        action="{{ route('ga.approve-technical', $item->id) }}" method="POST"
-                                        class="hidden">
-                                        @csrf
-                                        <input type="hidden" name="action" id="input-action-{{ $item->id }}">
-                                        <input type="hidden" name="reason" id="input-reason-{{ $item->id }}">
-                                    </form>
-
                                     <div class="flex gap-2">
-                                        {{-- Tombol Approve --}}
-                                        <button type="button"
-                                            onclick="confirmTechnicalAction('{{ $item->id }}', 'approve')"
-                                            class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1 px-3 rounded text-[10px] shadow-sm transition-all hover:scale-105 active:scale-95">
-                                            Approve
-                                            {{-- Label Bypass untuk Admin di Tahap 1 --}}
-                                            @if ($item->status == 'waiting_approval' && in_array($currRole, ['ga.admin', 'super.ga.admin']))
-                                                (Bypass)
-                                            @endif
-                                        </button>
 
-                                        {{-- Tombol Reject --}}
+                                        {{-- LOGIK A: GA ADMIN (Pakai Modal Validasi) --}}
+                                        @if (in_array($currRole, ['ga.admin', 'super.ga.admin']))
+                                            {{-- Tombol Trigger Modal Validasi --}}
+                                            <button type="button"
+                                                @click="$dispatch('open-accept-modal', {{ json_encode($item) }})"
+                                                class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1 px-3 rounded text-[10px] shadow-sm transition-all hover:scale-105 active:scale-95"
+                                                title="Validasi & Klasifikasi">
+                                                Approve (GA)
+                                            </button>
+                                            {{-- LOGIK B: MANAGER / DEPT ADMIN LAINNYA (Pakai Simple Submit) --}}
+                                        @else
+                                            {{-- Form Hidden untuk JS --}}
+                                            <form id="form-tech-{{ $item->id }}"
+                                                action="{{ route('ga.approve-technical', $item->id) }}" method="POST"
+                                                class="hidden">
+                                                @csrf
+                                                <input type="hidden" name="action"
+                                                    id="input-action-{{ $item->id }}">
+                                                <input type="hidden" name="reason"
+                                                    id="input-reason-{{ $item->id }}">
+                                            </form>
+
+                                            {{-- Tombol Simple Approve --}}
+                                            <button type="button"
+                                                onclick="confirmTechnicalAction('{{ $item->id }}', 'approve')"
+                                                class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1 px-3 rounded text-[10px] shadow-sm transition-all hover:scale-105 active:scale-95">
+                                                Approve
+                                            </button>
+                                        @endif
+
+                                        {{-- TOMBOL REJECT (Sama untuk Semua) --}}
+                                        {{-- Kita butuh form reject khusus jika GA Admin pakai modal, tapi biasanya reject pakai logic simple JS saja cukup --}}
+                                        @if (!in_array($currRole, ['ga.admin', 'super.ga.admin']))
+                                            {{-- Form Reject untuk Manager (GA Admin biasanya reject lewat modal atau tombol terpisah, tapi kalau mau disamakan boleh) --}}
+                                            {{-- Kalau GA Admin mau Reject pakai JS biasa juga bisa, pastikan form-tech-ID nya ada --}}
+                                        @endif
+
+                                        {{-- Agar aman, kita render Form Hidden sekali lagi di luar IF untuk Reject Button --}}
+                                        @if (!in_array($currRole, ['ga.admin', 'super.ga.admin']))
+                                            {{-- Sudah ada form di atas --}}
+                                        @else
+                                            {{-- GA Admin butuh form hidden ini JIKA tombol Rejectnya pakai JS confirmTechnicalAction --}}
+                                            <form id="form-tech-{{ $item->id }}"
+                                                action="{{ route('ga.approve-technical', $item->id) }}" method="POST"
+                                                class="hidden">
+                                                @csrf
+                                                <input type="hidden" name="action"
+                                                    id="input-action-{{ $item->id }}">
+                                                <input type="hidden" name="reason"
+                                                    id="input-reason-{{ $item->id }}">
+                                            </form>
+                                        @endif
+
                                         <button type="button"
                                             onclick="confirmTechnicalAction('{{ $item->id }}', 'decline')"
                                             class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-1 px-3 rounded text-[10px] shadow-sm transition-all hover:scale-105 active:scale-95">
                                             Reject
                                         </button>
+
                                     </div>
                                 @endif
 
