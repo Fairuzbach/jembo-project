@@ -37,6 +37,10 @@ class RolePermissionSeeder extends Seeder
             'wo.approve_pp',
             'wo.approve_autowire',
             'wo.approve_ccv',
+            'wo.approve_fa',
+            'wo.approve_rnd',
+            'wo.approve_qa',
+            'wo.approve_accounting',
             'user.manage', // Izin untuk buka menu user management
         ];
 
@@ -64,7 +68,11 @@ class RolePermissionSeeder extends Seeder
             'marketing.admin' => 'wo.approve_mkt',
             'pp.admin' => 'wo.approve_pp',
             'autowire.admin' => 'wo.approve_autowire',
-            'ccv.admin' => 'wo.approve_ccv'
+            'ccv.admin' => 'wo.approve_ccv',
+            'fa.admin' => 'wo.approve_fa',
+            'qa.admin' => 'wo.approve_qa',
+            'rnd.admin' => 'wo.approve_rnd',
+            'accounting.admin' => 'wo.approve_accounting'
         ];
 
         foreach ($rolesData as $roleName => $permissionName) {

@@ -128,69 +128,69 @@ class GeneralAffairController extends Controller
                 case 'Plant F':
                 case 'MC Cable':
                 case 'Plant A - Autowire':
-                    $specificDept = 'Low Voltage';
+                    $specificDept = 'LOW VOLTAGE';
                     break;
                 case 'Plant B':
                 case 'Plant D':
                 case 'Plant D - CCV':
-                    $specificDept = 'Medium Voltage';
+                    $specificDept = 'MEDIUM VOLTAGE';
                     break;
                 case 'Plant E':
                 case 'FO':
-                    $specificDept = 'FO';
+                    $specificDept = 'FIBER OPTIC';
                     break;
                 case 'RM 1':
                 case 'RM 2':
                 case 'RM 3':
                 case 'RM 5':
                 case 'RM Office':
-                    $specificDept = 'SC';
+                    $specificDept = 'PROCUREMENT';
                     break;
                 case 'QC FO':
                 case 'QC LAB':
                 case 'QC LV':
                 case 'QC MV':
                 case 'QR':
-                    $specificDept = 'QR';
+                    $specificDept = 'QUALITY ASSURANCE & R D';
                     break;
                 case 'Konstruksi':
-                    $specificDept = 'FH';
+                    $specificDept = 'FACILITY';
                     break;
                 case 'Workshop Electric':
                 case 'MT':
-                    $specificDept = 'MT';
+                    $specificDept = 'MAINTENANCE';
                     break;
                 case 'Gudang Jadi':
                 case 'SS':
-                    $specificDept = 'SS';
+                    $specificDept = 'SALES SUPPORT';
                     break;
                 case 'Plant Tools':
                 case 'PE':
-                    $specificDept = 'PE';
+                    $specificDept = 'PROCESS ENGINEERING';
                     break;
                 case 'Planning':
-                    $specificDept = 'Planning';
+                    $specificDept = 'PRODUCTION PLANNING';
                     break;
                 case 'IT':
-                    $specificDept = 'IT';
+                    $specificDept = 'INFORMATION TECHNOLOGY';
                     break;
                 case 'GA':
-                    $specificDept = 'GA';
+                    $specificDept = 'GENERAL AFFAIR';
                     break;
                 case 'FA':
-                    $specificDept = 'FA';
+                    $specificDept = 'FINANCE';
                     break;
                 case 'Marketing':
-                    $specificDept = 'Marketing';
+                    $specificDept = 'MARKETING';
                     break;
                 case 'HC':
-                    $specificDept = 'HC';
+                    $specificDept = 'HUMAN CAPITAL';
                     break;
                 case 'Sales 1':
-                    $specificDept = 'Sales 1';
+                    $specificDept = 'SALES 1';
                     break;
                 case 'Sales 2':
-                    $specificDept = 'Sales 2';
+                    $specificDept = 'SALES 2';
                     break;
                 default:
                     $specificDept = 'General';
@@ -199,23 +199,23 @@ class GeneralAffairController extends Controller
 
             $departments = [
                 $specificDept,
-                'FA',
-                'FH',
-                'FO',
-                'GA',
-                'HC',
-                'IT',
-                'Low Voltage',
-                'MT',
-                'Marketing',
-                'Medium Voltage',
-                'PE',
-                'Planning',
-                'QR',
-                'Sales 1',
-                'Sales 2',
-                'SC',
-                'SS',
+                'FINANCE',
+                'FACILITY',
+                'FIBER OPTIC',
+                'GENERAL AFFAIR',
+                'HUAN CAPITAL',
+                'INFORMATION TECHNOLOGY',
+                'LOW VOLTAGE',
+                'MAINTENANCE',
+                'MARKETING',
+                'MEDIUM VOLTAGE',
+                'PROCESS ENGINEERING',
+                'PRODUCTION PLANNING',
+                'QUALITY ASSURANCE & R D',
+                'SALES 1',
+                'SALES 2',
+                'PROCUREMENT',
+                'SALES SUPPORT',
             ];
 
             return response()->json(array_values(array_unique($departments)));
@@ -228,12 +228,14 @@ class GeneralAffairController extends Controller
     // --- UTAMA: ACTION APPROVE/REJECT OLEH ADMIN GA ---
     public function processTicket(ProcessTicketRequest $request, $id)
     {
+
         try {
             // Panggil Service (Return berupa Array sekarang)
             $result = $this->gaService->processTicket(
                 $id,
                 $request->action,
-                $request->reason
+                $request->reason,
+                $request->all()
             );
 
             // 1. Siapkan Redirect dengan pesan Sukses
@@ -269,6 +271,19 @@ class GeneralAffairController extends Controller
             return redirect()->back()->with('error', 'Gagal: ' . $e->getMessage());
         }
     }
+
+    // public function approveByGa(Request $request, $id)
+    // {
+    //     try {
+    //         // Panggil logic di Service
+    //         // Pastikan Anda sudah punya method 'approveByGa' di GaService seperti pembahasan sebelumnya
+    //         $result = $this->gaService->approveByGa($request, $id);
+
+    //         return redirect()->back()->with('success', 'Tiket berhasil divalidasi dan diproses.');
+    //     } catch (\Exception $e) {
+    //         return redirect()->back()->with('error', 'Gagal memproses tiket: ' . $e->getMessage());
+    //     }
+    // }
 
     // --- UPDATE STATUS PROGRESS (OLEH GA ADMIN) ---
     public function updateStatus(UpdateStatusRequest $request, $id)
