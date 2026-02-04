@@ -1,4 +1,4 @@
-{{-- MODAL EDIT / UPDATE WORK ORDER --}}
+{{-- MODAL EDIT / UPDATE WORK ORDER (VERSI FINAL) --}}
 <div x-show="showEditModal" x-cloak style="display: none;" class="fixed inset-0 z-[60] overflow-y-auto">
 
     {{-- 1. BACKDROP (Visual Gelap) --}}
@@ -54,22 +54,25 @@
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Department</label>
                             <select name="department" x-model="editForm.department"
                                 class="w-full border-slate-300 rounded-lg focus:ring-blue-500 text-sm">
-                                <option value="Low Voltage">Low Voltage</option>
-                                <option value="Medium Voltage">Medium Voltage</option>
-                                <option value="IT">IT</option>
-                                <option value="FH">FH</option>
-                                <option value="PE">PE</option>
-                                <option value="MT">MT</option>
-                                <option value="GA">GA</option>
-                                <option value="FO">FO</option>
-                                <option value="SS">SS</option>
-                                <option value="SC">SC</option>
-                                <option value="QR">QR</option>
-                                <option value="FA">FA</option>
-                                <option value="HC">HC</option>
-                                <option value="Sales">Sales</option>
-                                <option value="Marketing">Marketing</option>
-                                <option value="Planning">Planning</option>
+                                <option value="LOW VOLTAGE">Low Voltage</option>
+                                <option value="MEDIUM VOLTAGE">Medium Voltage</option>
+                                <option value="INFORMATION TECHNOLOGY">IT</option>
+                                <option value="FACILITY">FACILITY</option>
+                                <option value="PROCESS ENGINEERING">PROCESS ENGINEERING</option>
+                                <option value="MAINTENANCE">MAINTENANCE</option>
+                                <option value="GENERAL AFFAIR">GENERAL AFFAIR</option>
+                                <option value="FIBER OPTIC">FIBER OPTIC</option>
+                                <option value="SALES SUPPORT">SALES SUPPORT</option>
+                                <option value="SUPPLY CHAIN">SUPPLY CHAIN</option>
+                                <option value="QUALITY ASSURANCE & R D">QUALITY ASSURANCE & R D</option>
+                                <option value="FINANCE">FINANCE</option>
+                                <option value="HUMAN CAPITAL">HC</option>
+                                <option value="SALES 1">SALES 1</option>
+                                <option value="SALES 2">SALES 2</option>
+                                <option value="MARKETING">MARKETING</option>
+                                <option value="PRODUCTION PLANNING">PRODUCTION PLANNING</option>
+                                <option value="ACCOUNTING">ACCOUNTING</option>
+                                <option value="RESEARCH & DEVELOPMENT">RESEARCH & DEVELOPMENT</option>
                             </select>
                         </div>
 
@@ -85,13 +88,16 @@
                         </div>
 
                         {{-- 4. Tanggal Mulai --}}
-                        {{-- 2. TANGGAL MULAI PENGERJAAN --}}
                         <div class="col-span-2 sm:col-span-1">
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1">
                                 Tanggal Mulai Pengerjaan
                             </label>
                             <input id="modal_start_date" type="text" name="start_date" x-model="editForm.start_date"
-                                placeholder="Pilih Tanggal"
+                                placeholder="Pilih Tanggal" x-init="flatpickr($el, {
+                                    dateFormat: 'Y-m-d',
+                                    enableTime: false, // <-- INI KUNCINYA (Matikan Waktu)
+                                    defaultDate: editForm.start_date
+                                })"
                                 class="date-picker w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 text-sm">
                         </div>
                     </div>
@@ -107,8 +113,14 @@
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Revisi Target
                             Selesai</label>
-                        <input type="text" name="target_date" x-model="editForm.target_date"
-                            class="date-picker w-full border-slate-300 rounded-lg focus:ring-blue-500 text-sm"
+                        <input type="text" x-model="editForm.target_date" x-init="flatpickr($el, {
+                            dateFormat: 'Y-m-d',
+                            defaultDate: editForm.target_date,
+                            onChange: function(selectedDates, dateStr, instance) {
+                                editForm.target_date = dateStr;
+                            }
+                        })"
+                            class="w-full border-slate-300 rounded-lg focus:ring-blue-500 text-sm"
                             placeholder="Pilih Target...">
                     </div>
                 </div>
@@ -120,7 +132,7 @@
                             <span class="w-2 h-2 bg-emerald-500 rounded-full"></span> Detail Penyelesaian
                         </h4>
 
-                        {{-- 1. TANGGAL SELESAI AKTUAL --}}
+                        {{-- Tanggal Selesai Aktual --}}
                         <div class="mb-3">
                             <label class="block text-xs font-bold text-emerald-700 uppercase mb-1">
                                 Tanggal Selesai Aktual
