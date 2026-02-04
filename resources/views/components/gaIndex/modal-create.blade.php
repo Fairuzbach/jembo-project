@@ -252,8 +252,8 @@
 
                                 {{-- 1. PILIH PLANT --}}
                                 <div>
-                                    <label class="text-xs font-bold text-slate-600 uppercase mb-1">Lokasi Kejadian <span
-                                            class="text-red-500">*</span></label>
+                                    <label class="text-xs font-bold text-slate-600 uppercase mb-1">Lokasi Pekerjaan
+                                        <span class="text-red-500">*</span></label>
                                     <select name="plant_id" x-model="formData.plant_id"
                                         @change="fetchDepartments($event.target.value)"
                                         class="w-full border-2 border-slate-300 focus:border-slate-900 rounded-sm text-sm font-bold h-11"
