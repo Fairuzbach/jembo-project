@@ -61,6 +61,11 @@ class WorkOrderGeneralAffair extends Model
 
     // --- RELATIONSHIPS ---
 
+    public function approverGa()
+    {
+        return $this->belongsTo(User::class, 'approve_by_ga');
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class, 'requester_id');
