@@ -1,4 +1,3 @@
-{{-- GUNAKAN TELEPORT AGAR MODAL PINDAH KE BODY (PALING DEPAN) --}}
 <template x-teleport="body">
 
     <div x-show="showDetailModal" x-cloak style="display: none;" class="fixed inset-0 z-[9999] overflow-y-auto">
@@ -148,27 +147,32 @@
                             </div>
 
                             {{-- 5. AREA FOTO --}}
-                            <div class="grid grid-cols-2 gap-4 pt-2"
-                                x-show="ticket.photo_path || ticket.photo_completed_path">
-                                <div x-show="ticket.photo_path">
-                                    <span class="text-xs font-bold text-slate-400 uppercase block mb-2">Foto
-                                        Laporan</span>
-                                    <a :href="'/storage/' + ticket.photo_path" target="_blank">
-                                        <img :src="'/storage/' + ticket.photo_path"
-                                            class="w-full h-48 object-cover rounded-lg border border-slate-200 hover:opacity-90 transition-opacity cursor-pointer"
-                                            alt="Foto Laporan">
-                                    </a>
-                                </div>
+                            <div class="grid grid-cols-2 gap-4 pt-2">
+                                {{-- Foto Laporan --}}
+                                <template x-if="ticket.photo_path">
+                                    <div>
+                                        <span class="text-xs font-bold text-slate-400 uppercase block mb-2">Foto
+                                            Laporan</span>
+                                        <a :href="'/storage/' + ticket.photo_path" target="_blank">
+                                            <img :src="'/storage/' + ticket.photo_path"
+                                                class="w-full h-48 object-cover rounded-lg border border-slate-200 hover:opacity-90 transition-opacity cursor-pointer"
+                                                alt="Foto Laporan">
+                                        </a>
+                                    </div>
+                                </template>
 
-                                <div x-show="ticket.photo_completed_path">
-                                    <span class="text-xs font-bold text-emerald-600 uppercase block mb-2">Bukti
-                                        Penyelesaian</span>
-                                    <a :href="'/storage/' + ticket.photo_completed_path" target="_blank">
-                                        <img :src="'/storage/' + ticket.photo_completed_path"
-                                            class="w-full h-48 object-cover rounded-lg border-2 border-emerald-400 hover:opacity-90 transition-opacity cursor-pointer"
-                                            alt="Foto Selesai">
-                                    </a>
-                                </div>
+                                {{-- Foto Penyelesaian --}}
+                                <template x-if="ticket.photo_completed_path">
+                                    <div>
+                                        <span class="text-xs font-bold text-emerald-600 uppercase block mb-2">Bukti
+                                            Penyelesaian</span>
+                                        <a :href="'/storage/' + ticket.photo_completed_path" target="_blank">
+                                            <img :src="'/storage/' + ticket.photo_completed_path"
+                                                class="w-full h-48 object-cover rounded-lg border-2 border-emerald-400 hover:opacity-90 transition-opacity cursor-pointer"
+                                                alt="Foto Selesai">
+                                        </a>
+                                    </div>
+                                </template>
                             </div>
                             {{-- 6. RIWAYAT AKTIVITAS (HISTORY) --}}
                             <div class="border-t border-slate-100 pt-6"

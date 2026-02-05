@@ -101,7 +101,7 @@ class WorkOrderService
         // Logika Completed
         if ($data['status'] === 'completed') {
             if ($completionPhoto) {
-                $updateData['photo_completion_path'] = $completionPhoto->store('wo_ga_completed', 'public');
+                $updateData['photo_completed_path'] = $completionPhoto->store('wo_ga_completed', 'public');
             }
             $updateData['actual_completion_date'] = $data['actual_completion_date'];
             $updateData['completion_note'] = $data['completion_note'] ?? null;
@@ -113,7 +113,7 @@ class WorkOrderService
             $updateData['cancellation_note'] = $data['cancellation_note'] ?? null;
             $updateData['actual_completion_date'] = null;
             $updateData['completion_note'] = null;
-            $updateData['photo_completion_path'] = null;
+            $updateData['photo_completed_path'] = null;
         }
 
         // Update Optional Fields
