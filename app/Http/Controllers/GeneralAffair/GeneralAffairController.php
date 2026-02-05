@@ -168,6 +168,9 @@ class GeneralAffairController extends Controller
                 case 'PE':
                     $specificDept = 'PROCESS ENGINEERING';
                     break;
+                case 'PP':
+                    $specificDept = 'PRODUCTION PLANNING';
+                    break;
                 case 'Planning':
                     $specificDept = 'PRODUCTION PLANNING';
                     break;
@@ -199,11 +202,12 @@ class GeneralAffairController extends Controller
 
             $departments = [
                 $specificDept,
+                'ACCOUNTING',
                 'FINANCE',
                 'FACILITY',
                 'FIBER OPTIC',
                 'GENERAL AFFAIR',
-                'HUAN CAPITAL',
+                'HUMAN CAPITAL',
                 'INFORMATION TECHNOLOGY',
                 'LOW VOLTAGE',
                 'MAINTENANCE',
@@ -216,6 +220,7 @@ class GeneralAffairController extends Controller
                 'SALES 2',
                 'PROCUREMENT',
                 'SALES SUPPORT',
+                'RESEARCH & DEVELOPMENT'
             ];
 
             return response()->json(array_values(array_unique($departments)));

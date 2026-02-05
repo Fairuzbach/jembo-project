@@ -2,29 +2,21 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use App\Models\FacilityTech; // <--- JANGAN LUPA IMPORT INI
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 
-class DatabaseSeeder extends Seeder
+class PlantMachineSeeder extends Seeder
 {
+    /**
+     * Run the database seeds.
+     */
     use WithoutModelEvents;
 
     public function run(): void
     {
-        $this->call(ImprovementParameterSeeder::class);
-        $this->call(engineerTechSeeder::class);
-        $this->call(ImprovementStatusSeeder::class);
-        // $this->call(UserRoleSeeder::class);
-        $this->call(CategorySeeder::class);
-        $this->call(RolePermissionSeeder::class);
-
-        // 1. DATA PLANT & MESIN
         $plantMachineData = [
             'Plant A' => [
                 'HD-10C',
@@ -311,69 +303,6 @@ class DatabaseSeeder extends Seeder
                 }
                 DB::table('machines')->insert($machineBatch);
             }
-        }
-
-        // // 2. DATA ENGINEER (MT) - Masuk ke USERS
-        // $engineers = [
-        //     'ABDUL HALID ANDRIYANTO',
-        //     'ADI SUANDRI',
-        //     'ADITYA RAMADHAN',
-        //     'ANDY APRIADI',
-        //     'CHRISTIAN BAYU A S',
-        //     'DAFFA ABDUL AZIZ',
-        //     'DANU MAMLUKAT',
-        //     'DWI HASTUTI',
-        //     'EDY MURTOPO',
-        //     'HASIRI',
-        //     'JOKO PURNOMO',
-        //     'KHOIRUL MUNASYIKIN',
-        //     'MAIDAFITRI DEWI PRIATI',
-        //     'MULYANA',
-        //     'MUHAMMAD ANDRIAN',
-        //     'RAHMAT TAMMU',
-        //     'SUDRANTO PURBA',
-        //     'TEGUH MULYAWAN',
-        //     'TRI WAHYU HIDAYAT',
-        //     'YOSEP FAJAR BAYU KURNIAWAN',
-        // ];
-
-        // foreach ($engineers as $name) {
-        //     $role = ($name === 'ANDY APRIADI' || $name === 'DANU MAMLUKAT') ? 'eng.admin' : 'user';
-        //     $usernameKey = Str::lower(str_replace(' ', '.', $name));
-        //     $nik = str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
-
-        //     User::create([
-        //         'nik' => $nik,
-        //         'name' => ucwords(Str::lower($name)),
-        //         'email' => $usernameKey . '@jembo.com',
-        //         'password' => Hash::make('welcomejembo'),
-        //         'role' => $role,
-        //         'divisi' => 'Engineering',
-        //         'jabatan' => 'Engineer',
-        //         'is_active' => true
-        //     ]);
-        // }
-
-        // 3. DATA TEKNISI FACILITY (FH) - Masuk ke FACILITY_TECHS
-        $facilityTechnicians = [
-            'SARJANA',
-            'MULYONO',
-            'AGUS DWI PRIYANTO',
-            'IRAWAN',
-            'MARIO CHANDRA WIJAYA',
-            'RUDI',
-            'SARTANA',
-            'SUHARYANTO',
-            'TEGAR ANDI PRATAMA',
-            'WAHYU AJI MARHABAN',
-        ];
-
-        foreach ($facilityTechnicians as $name) {
-            // Gunakan Model FacilityTech
-            FacilityTech::create([
-                'name' => ucwords(Str::lower($name)),
-
-            ]);
         }
     }
 }
