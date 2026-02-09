@@ -40,6 +40,8 @@ class WorkOrderExport implements FromCollection, WithHeadings, WithMapping, Shou
             'LOKASI',
             'DEPARTEMEN',
             'PARAMETER',
+            'URAIAN PEKERJAAN',
+            'PIC',
             'STATUS',
             'STATUS PERMINTAAN',
             'BOBOT PEKERJAAN',
@@ -78,6 +80,8 @@ class WorkOrderExport implements FromCollection, WithHeadings, WithMapping, Shou
             $namaPlant,
             $ticket->department,
             $ticket->parameter_permintaan ?? $ticket->category,
+            $ticket->description,
+            $ticket->processed_by_name,
             strtoupper(str_replace('_', ' ', $ticket->status)), // Status Uppercase
             $ticket->status_permintaan,
             $ticket->category,
