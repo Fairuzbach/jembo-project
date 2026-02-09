@@ -105,49 +105,7 @@
                             @csrf
 
                             <input type="hidden" name="action" value="approve">
-                            <div class="space-y-4 mb-6">
 
-                                {{-- Jenis Permintaan --}}
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Klasifikasi
-                                        Jenis <span class="text-red-500">*</span></label>
-                                    <select name="parameter_permintaan" x-model="formData.parameter_permintaan" required
-                                        class="w-full border-2 border-slate-300 rounded-lg text-sm font-bold h-10 px-3 focus:border-emerald-500 focus:ring-emerald-500 bg-white">
-                                        <option value="">-- Pilih Klasifikasi --</option>
-                                        @php $modalCats = \App\Models\GeneralAffair\Category::where('status', 'active')->get(); @endphp
-                                        @foreach ($modalCats as $cat)
-                                            <option value="{{ $cat->name }}">{{ $cat->name }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-
-                                {{-- Kategori Bobot --}}
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Bobot Pekerjaan
-                                        <span class="text-red-500">*</span></label>
-                                    <div class="grid grid-cols-3 gap-2">
-                                        @foreach (['RINGAN', 'SEDANG', 'BERAT'] as $bobot)
-                                            <label class="cursor-pointer relative">
-                                                <input type="radio" name="category" value="{{ $bobot }}"
-                                                    x-model="formData.category" class="peer sr-only">
-                                                <div
-                                                    class="text-center py-2 border-2 border-slate-200 rounded-lg text-xs font-bold text-slate-500 peer-checked:border-emerald-500 peer-checked:bg-emerald-50 peer-checked:text-emerald-700 transition-all hover:bg-slate-50">
-                                                    {{ $bobot }}
-                                                </div>
-                                            </label>
-                                        @endforeach
-                                    </div>
-                                </div>
-
-                                {{-- Target Selesai --}}
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Target
-                                        Penyelesaian</label>
-                                    <input type="date" name="target_completion_date"
-                                        x-model="formData.target_completion_date" required
-                                        class="w-full border-2 border-slate-300 rounded-lg text-sm font-bold h-10 px-3 focus:border-emerald-500 focus:ring-emerald-500 text-slate-600">
-                                </div>
-                            </div>
 
                             {{-- Footer Buttons --}}
                             <div class="flex justify-end gap-3 pt-2 border-t border-slate-100">
@@ -161,7 +119,7 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M5 13l4 4L19 7"></path>
                                     </svg>
-                                    Simpan & Proses
+                                    APPROVE
                                 </button>
                             </div>
                         </form>
