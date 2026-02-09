@@ -144,11 +144,7 @@ class WorkOrderService
 
         // 2. Siapkan Link & Pesan
         // [TAMBAHAN LINK]
-        try {
-            $ticketLink = route('ga.show', $ticket->id);
-        } catch (\Exception $e) {
-            $ticketLink = url('/ga/detail/' . $ticket->id);
-        }
+        $ticketLink = route('ga.index');
         $waMessage = "";
 
         switch ($data['status']) {
@@ -346,11 +342,7 @@ class WorkOrderService
         Log::info("DEBUG WA: Status Action: {$action}, EmailType: {$emailType}");
 
         // [TAMBAHAN LINK]
-        try {
-            $ticketLink = route('ga.show', $ticket->id);
-        } catch (\Exception $e) {
-            $ticketLink = url('/ga/detail/' . $ticket->id);
-        }
+        $ticketLink = route('ga.index');
 
         // A. SIAPKAN PESAN UNTUK REQUESTER
         $msgRequester = "";

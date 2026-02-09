@@ -294,11 +294,6 @@ class GeneralAffairController extends Controller
         }
     }
 
-    public function show($id)
-    {
-        $ticket = WorkOrderGeneralAffair::with(['plantInfo', 'user'])->finOrFail($id);
-        return view('ga.show', compact('ticket'));
-    }
 
     // =========================================================================
     // 4. EXPORT
