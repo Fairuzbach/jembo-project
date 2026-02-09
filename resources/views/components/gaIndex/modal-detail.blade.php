@@ -148,29 +148,80 @@
 
                             {{-- 5. AREA FOTO --}}
                             <div class="grid grid-cols-2 gap-4 pt-2">
-                                {{-- Foto Laporan --}}
+
+                                {{-- 1. FOTO LAPORAN (AWAL) --}}
                                 <template x-if="ticket.photo_path">
                                     <div>
                                         <span class="text-xs font-bold text-slate-400 uppercase block mb-2">Foto
                                             Laporan</span>
-                                        <a :href="'/storage/' + ticket.photo_path" target="_blank">
-                                            <img :src="'/storage/' + ticket.photo_path"
-                                                class="w-full h-48 object-cover rounded-lg border border-slate-200 hover:opacity-90 transition-opacity cursor-pointer"
-                                                alt="Foto Laporan">
-                                        </a>
+
+                                        {{-- Cek apakah PDF --}}
+                                        <template x-if="ticket.photo_path.toLowerCase().endsWith('.pdf')">
+                                            <a :href="'/storage/' + ticket.photo_path" target="_blank"
+                                                class="flex items-center justify-center h-48 border border-slate-200 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors p-4 text-center cursor-pointer group">
+                                                <div class="space-y-2">
+                                                    <svg class="w-10 h-10 text-slate-400 mx-auto group-hover:text-slate-600"
+                                                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                                        </path>
+                                                    </svg>
+                                                    <span class="text-xs font-bold text-slate-500 block">Lihat Dokumen
+                                                        PDF</span>
+                                                </div>
+                                            </a>
+                                        </template>
+
+                                        {{-- Cek apakah Gambar (Normal) --}}
+                                        <template x-if="!ticket.photo_path.toLowerCase().endsWith('.pdf')">
+                                            <a :href="'/storage/' + ticket.photo_path" target="_blank">
+                                                <img :src="'/storage/' + ticket.photo_path"
+                                                    class="w-full h-48 object-cover rounded-lg border border-slate-200 hover:opacity-90 transition-opacity cursor-pointer"
+                                                    alt="Foto Laporan">
+                                            </a>
+                                        </template>
                                     </div>
                                 </template>
 
-                                {{-- Foto Penyelesaian --}}
-                                <template x-if="ticket.photo_completed_path">
+                                {{-- 2. FOTO PENYELESAIAN (AKHIR) --}}
+                                {{-- Perhatikan nama variabel: pastikan sesuai database (photo_completion_path atau photo_completed_path) --}}
+                                <template x-if="ticket.photo_completed_path || ticket.photo_completion_path">
                                     <div>
                                         <span class="text-xs font-bold text-emerald-600 uppercase block mb-2">Bukti
                                             Penyelesaian</span>
-                                        <a :href="'/storage/' + ticket.photo_completed_path" target="_blank">
-                                            <img :src="'/storage/' + ticket.photo_completed_path"
-                                                class="w-full h-48 object-cover rounded-lg border-2 border-emerald-400 hover:opacity-90 transition-opacity cursor-pointer"
-                                                alt="Foto Selesai">
-                                        </a>
+
+                                        {{-- Variabel helper untuk mengambil path yang tidak null --}}
+                                        <div x-data="{ path: ticket.photo_completed_path || ticket.photo_completion_path }">
+
+                                            {{-- LOGIKA: JIKA PDF --}}
+                                            <template x-if="path.toLowerCase().endsWith('.pdf')">
+                                                <a :href="'/storage/' + path" target="_blank"
+                                                    class="flex flex-col items-center justify-center h-48 border-2 border-emerald-200 border-dashed rounded-lg bg-emerald-50 hover:bg-emerald-100 transition-colors p-4 text-center cursor-pointer group">
+                                                    <svg class="w-12 h-12 text-red-500 mb-2 group-hover:scale-110 transition-transform"
+                                                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z">
+                                                        </path>
+                                                    </svg>
+                                                    <span class="text-xs font-black text-emerald-800 uppercase">Dokumen
+                                                        PDF</span>
+                                                    <span class="text-[10px] text-emerald-600">Klik untuk
+                                                        membuka</span>
+                                                </a>
+                                            </template>
+
+                                            {{-- LOGIKA: JIKA GAMBAR --}}
+                                            <template x-if="!path.toLowerCase().endsWith('.pdf')">
+                                                <a :href="'/storage/' + path" target="_blank">
+                                                    <img :src="'/storage/' + path"
+                                                        class="w-full h-48 object-cover rounded-lg border-2 border-emerald-400 hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
+                                                        alt="Foto Selesai">
+                                                </a>
+                                            </template>
+
+                                        </div>
                                     </div>
                                 </template>
                             </div>

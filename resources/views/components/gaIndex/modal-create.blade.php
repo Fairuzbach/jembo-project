@@ -302,7 +302,7 @@
                         <div class="mt-4">
                             <label class="text-xs font-bold text-slate-700 uppercase mb-1">Foto Bukti / Kondisi
                                 (Opsional)</label>
-                            <input type="file" accept="image/*" name="photo"
+                            <input type="file" accept="image/*, .pdf" name="photo"
                                 class="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-sm file:border-0 file:text-xs file:font-black file:uppercase file:bg-slate-900 file:text-white hover:file:bg-slate-700 cursor-pointer border border-slate-300 rounded-sm @error('photo') is-invalid @enderror">
                             <p class="text-[10px] text-slate-400 mt-1 italic">*Lampirkan foto agar tim GA lebih mudah
                                 menganalisa.</p>

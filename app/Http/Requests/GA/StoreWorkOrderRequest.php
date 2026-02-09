@@ -41,7 +41,6 @@ class StoreWorkOrderRequest extends FormRequest
             'photo' => [
                 'nullable',           // Boleh kosong
                 'file',               // Harus berupa file upload
-                'image',              // Validasi dasar image
                 'mimes:jpg,jpeg,png,webp,pdf', // SECURITY: Cek isi biner file (MIME Types)
                 'max:5120',           // Max 5MB
             ],
