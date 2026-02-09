@@ -12,13 +12,11 @@ use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
-
 use Carbon\Carbon;
 
-class WorkOrderExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithStyles
+class WorkOrderExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithStyles, WithEvents
 {
     protected $data;
-
 
     public function __construct($data)
     {
@@ -30,7 +28,7 @@ class WorkOrderExport implements FromCollection, WithHeadings, WithMapping, Shou
         return $this->data->get();
     }
 
-    // 2. HEADER KOLOM
+    // 1. HEADER KOLOM (Total 14 Kolom)
     public function headings(): array
     {
         return [
@@ -38,11 +36,11 @@ class WorkOrderExport implements FromCollection, WithHeadings, WithMapping, Shou
             'PEMOHON',
             'DIVISI PELAPOR',
             'LOKASI',
-            'DEPARTEMEN',
+            'DEPARTEMEN TUJUAN',
             'PARAMETER',
             'URAIAN PEKERJAAN',
-            'PIC',
             'STATUS',
+            'PIC', // Kolom Baru
             'STATUS PERMINTAAN',
             'BOBOT PEKERJAAN',
             'TANGGAL DIBUAT',
@@ -51,28 +49,23 @@ class WorkOrderExport implements FromCollection, WithHeadings, WithMapping, Shou
         ];
     }
 
-
+    // 2. MAPPING DATA
     public function map($ticket): array
     {
-        // Handle User
         $user = $ticket->user;
         $namaPemohon = $user ? $user->name : ($ticket->requester_name ?? '-');
         $divisiPemohon = $user ? ($user->divisi ?? '-') : '-';
 
-        // Format Tanggal Indonesia
         $tglTarget  = $ticket->target_completion_date ? Carbon::parse($ticket->target_completion_date)->locale('id')->isoFormat('DD MMMM YYYY') : '-';
         $tglSelesai = $ticket->actual_completion_date ? Carbon::parse($ticket->actual_completion_date)->locale('id')->isoFormat('DD MMMM YYYY') : '-';
         $tglDibuat  = $ticket->created_at ? Carbon::parse($ticket->created_at)->locale('id')->isoFormat('DD MMMM YYYY') : '-';
-        $namaPlant = $ticket->plantInfo->name ?? $ticket->plant ?? '-';
 
         if ($ticket->plantInfo) {
-            // Skenario 1: Relasi Ketemu (Normal)
             $namaPlant = $ticket->plantInfo->name;
         } else {
-            // Skenario 2: Relasi NULL (Data Master hilang/terhapus)
-            // Kita tampilkan ID aslinya biar ketahuan
-            $namaPlant = 'Unknown Plant (ID: ' . ($ticket->plant ?? 'Kosong') . ')';
+            $namaPlant = $ticket->plant ? 'Unknown Plant (ID: ' . $ticket->plant . ')' : '-';
         }
+
         return [
             $ticket->ticket_num,
             $namaPemohon,
@@ -80,9 +73,9 @@ class WorkOrderExport implements FromCollection, WithHeadings, WithMapping, Shou
             $namaPlant,
             $ticket->department,
             $ticket->parameter_permintaan ?? $ticket->category,
-            $ticket->description,
-            $ticket->processed_by_name,
-            strtoupper(str_replace('_', ' ', $ticket->status)), // Status Uppercase
+            $ticket->description ?? '-',
+            strtoupper(str_replace('_', ' ', $ticket->status)),
+            $ticket->processed_by_name ?? '-', // DATA PIC / TEKNISI
             $ticket->status_permintaan,
             $ticket->category,
             $tglDibuat,
@@ -90,57 +83,52 @@ class WorkOrderExport implements FromCollection, WithHeadings, WithMapping, Shou
             $tglSelesai,
         ];
     }
+
+    // 3. REGISTER EVENTS
     public function registerEvents(): array
     {
         return [
             AfterSheet::class => function (AfterSheet $event) {
-
-                // 1. Ambil Objek Worksheet Asli
                 $sheet = $event->sheet->getDelegate();
-
-                // 2. Cari Huruf Kolom Terakhir (Misal: 'K')
                 $lastColumn = $sheet->getHighestColumn();
-
-                // 3. Cari Nomor Baris Terakhir (Misal: 50)
                 $lastRow = $sheet->getHighestRow();
 
-                // 4. Buat String Range (Misal: "A1:K50")
-                // Penting: Pastikan range mencakup Header (A1) sampai data terakhir
-                $fullRange = 'A1:' . $lastColumn . $lastRow;
-
-                // 5. Terapkan AutoFilter pada Range tersebut
-                $sheet->setAutoFilter($fullRange);
-
-                // Opsional: Freeze Pane (Bekukan Baris Header agar tetap terlihat saat scroll)
+                $sheet->setAutoFilter('A1:' . $lastColumn . $lastRow);
                 $sheet->freezePane('A2');
+
+                // Wrap Text untuk Uraian Pekerjaan (Kolom G)
+                $sheet->getStyle('G2:G' . $lastRow)->getAlignment()->setWrapText(true);
             },
         ];
     }
 
+    // 4. STYLING
     public function styles(Worksheet $sheet)
     {
         $lastRow = $sheet->getHighestRow();
+        $lastColumn = $sheet->getHighestColumn();
 
         return [
-            // Style Header (Baris 1)
             1 => [
-                'font' => ['bold' => true, 'color' => ['argb' => '000000']], // Teks Hitam Bold
+                'font' => ['bold' => true],
                 'fill' => [
                     'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-                    'startColor' => ['argb' => 'FFFF00'], // Background Kuning 
+                    'startColor' => ['argb' => 'FFFF00'],
                 ],
                 'alignment' => [
                     'horizontal' => Alignment::HORIZONTAL_CENTER,
+                    'vertical' => Alignment::VERTICAL_CENTER,
                 ],
             ],
-
-
-            'A1:K' . $lastRow => [
+            'A1:' . $lastColumn . $lastRow => [
                 'borders' => [
                     'allBorders' => [
                         'borderStyle' => Border::BORDER_THIN,
                         'color' => ['argb' => '000000'],
                     ],
+                ],
+                'alignment' => [
+                    'vertical' => Alignment::VERTICAL_CENTER,
                 ],
             ],
         ];
