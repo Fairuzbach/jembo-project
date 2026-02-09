@@ -176,21 +176,8 @@
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <div class="flex items-center gap-3 justify-end">
 
-                                {{-- 1. Tombol Detail --}}
-                                <button type="button"
-                                    @click="$dispatch('buka-detail', '{{ base64_encode(json_encode($item)) }}')"
-                                    class="text-slate-400 hover:text-blue-600 transition-colors" title="Lihat Detail">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                                        viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                    </svg>
-                                </button>
-
                                 {{-- ================================================= --}}
-                                {{-- LOGIKA HAK AKSES (PHP Logic)                      --}}
+                                {{-- LOGIKA HAK AKSES (PHP Logic) --}}
                                 {{-- ================================================= --}}
                                 @php
                                     $user = auth()->user();
@@ -203,23 +190,17 @@
                                     // --- A. CEK HAK AKSES EDIT ---
                                     $canEdit = false;
                                     if ($isGaAdmin) {
-                                        // GA Admin bisa edit jika status masih progress/pending
                                         $canEdit = in_array($ticketStatus, ['in_progress', 'pending']);
                                     }
 
-                                    // --- B. CEK HAK AKSES APPROVAL TEKNIS (BOSS LOKAL) ---
+                                    // --- B. CEK HAK AKSES APPROVAL TEKNIS ---
                                     $isTechnicalApprover = false;
-
-                                    // Cek hanya jika status waiting_approval
                                     if ($ticketStatus == 'waiting_approval') {
-                                        // 1. Logika MANAGER / SPV (Harus Satu Divisi)
                                         if (str_contains($currRole, 'manager') || str_contains($currRole, 'spv')) {
                                             if (trim($currDivisi) == trim($ticketDept)) {
                                                 $isTechnicalApprover = true;
                                             }
-                                        }
-                                        // 2. Logika ADMIN UNIT (Mapping Manual - Sesuai Kode Anda)
-                                        else {
+                                        } else {
                                             $targetRole = match (true) {
                                                 str_contains($ticketDept, 'facility') || $ticketDept == 'fh'
                                                     => 'fh.admin',
@@ -231,29 +212,16 @@
                                                 str_contains($ticketDept, 'maintenance') || $ticketDept == 'mt'
                                                     => 'mt.admin',
                                                 str_contains($ticketDept, 'marketing') => 'mkt.admin',
-                                                str_contains($ticketDept, 'plant a') ||
-                                                    str_contains($ticketDept, 'plant c') ||
-                                                    str_contains($ticketDept, 'low') ||
-                                                    $ticketDept == 'lv'
-                                                    => 'lv.admin',
-                                                str_contains($ticketDept, 'plant b') ||
-                                                    str_contains($ticketDept, 'plant d') ||
-                                                    str_contains($ticketDept, 'medium') ||
-                                                    $ticketDept == 'mv'
+                                                str_contains($ticketDept, 'low') || $ticketDept == 'lv' => 'lv.admin',
+                                                str_contains($ticketDept, 'medium') || $ticketDept == 'mv'
                                                     => 'mv.admin',
-                                                str_contains($ticketDept, 'plant e') ||
-                                                    str_contains($ticketDept, 'fiber') ||
-                                                    $ticketDept == 'fo'
-                                                    => 'fo.admin',
+                                                str_contains($ticketDept, 'fiber') || $ticketDept == 'fo' => 'fo.admin',
                                                 str_contains($ticketDept, 'quality') ||
-                                                    $ticketDept == 'qr' ||
-                                                    $ticketDept == 'qc'
+                                                    in_array($ticketDept, ['qr', 'qc'])
                                                     => 'qr.admin',
                                                 str_contains($ticketDept, 'sales 1') => 'sales1.admin',
                                                 str_contains($ticketDept, 'sales 2') => 'sales2.admin',
-                                                str_contains($ticketDept, 'sc') ||
-                                                    str_contains($ticketDept, 'support') ||
-                                                    $ticketDept == 'rm'
+                                                str_contains($ticketDept, 'sc') || str_contains($ticketDept, 'support')
                                                     => 'sc.admin',
                                                 str_contains($ticketDept, 'ss') || str_contains($ticketDept, 'gudang')
                                                     => 'ss.admin',
@@ -264,7 +232,6 @@
                                                     => 'fa.admin',
                                                 default => null,
                                             };
-
                                             if (
                                                 $targetRole &&
                                                 ($currRole === $targetRole || $currRole === 'super.admin')
@@ -274,41 +241,50 @@
                                         }
                                     }
 
-                                    // --- C. FINAL DECISION: SHOW APPROVE BUTTON? ---
+                                    // --- C. FINAL DECISION ---
                                     $showApproveButton = false;
-
-                                    // Skenario 1: Waiting Approval (Bisa Manager Dept ATAU GA Admin Bypass)
                                     if ($ticketStatus === 'waiting_approval') {
                                         if ($isTechnicalApprover || $isGaAdmin) {
                                             $showApproveButton = true;
                                         }
-                                    }
-                                    // Skenario 2: Waiting GA Approval (Hanya GA Admin)
-                                    elseif ($ticketStatus === 'waiting_approval_ga') {
+                                    } elseif ($ticketStatus === 'waiting_approval_ga') {
                                         if ($isGaAdmin) {
                                             $showApproveButton = true;
                                         }
                                     }
                                 @endphp
 
-                                {{-- 2. Tombol Edit --}}
-                                @if ($canEdit)
-                                    <button type="button" @click='openEditModal(@json($item))'
-                                        class="text-slate-400 hover:text-yellow-500 transition-colors"
-                                        title="Update / Edit">
+                                <div class="flex items-center gap-2">
+                                    {{-- 1. Tombol Detail (SATU SAJA - Menggunakan Logic yang Berfungsi) --}}
+                                    <button type="button"
+                                        @click="$dispatch('buka-detail', '{{ base64_encode(json_encode($item)) }}')"
+                                        class="text-slate-400 hover:text-blue-600 transition-colors"
+                                        title="Lihat Detail">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
                                             viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                         </svg>
                                     </button>
-                                @endif
 
-                                {{-- 3. Tombol Approval --}}
-                                @if ($showApproveButton)
-                                    <div class="flex gap-2">
+                                    {{-- 2. Tombol Edit (GA Admin Only) --}}
+                                    @if ($canEdit)
+                                        <button type="button"
+                                            @click="$dispatch('open-edit-modal', {{ json_encode($item) }})"
+                                            class="text-blue-600 hover:text-blue-900 font-bold" title="Update Status">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                                                viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                        </button>
+                                    @endif
 
-                                        {{-- FORM HIDDEN (Diperlukan untuk REJECT oleh siapapun, dan APPROVE oleh Manager) --}}
+                                    {{-- 3. Tombol Approval --}}
+                                    @if ($showApproveButton)
+                                        {{-- FORM HIDDEN --}}
                                         <form id="form-tech-{{ $item->id }}"
                                             action="{{ route('ga.approve-technical', $item->id) }}" method="POST"
                                             class="hidden">
@@ -317,34 +293,30 @@
                                             <input type="hidden" name="reason" id="input-reason-{{ $item->id }}">
                                         </form>
 
-                                        {{-- LOGIK A: GA ADMIN (Pakai Modal Validasi) --}}
+                                        {{-- JIKA GA ADMIN: Validasi --}}
                                         @if ($isGaAdmin)
                                             <button type="button"
-                                                @click="$dispatch('open-accept-modal', {{ json_encode($item) }})"
-                                                class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1 px-3 rounded text-[10px] shadow-sm transition-all hover:scale-105 active:scale-95"
-                                                title="Validasi & Klasifikasi">
-                                                Approve (GA)
+                                                @click="$dispatch('open-edit-modal', {{ json_encode($item) }})"
+                                                class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-3 rounded text-[10px] uppercase shadow-sm transition-all hover:scale-105 active:scale-95">
+                                                Validasi & Proses
                                             </button>
-
-                                            {{-- LOGIK B: MANAGER / DEPT ADMIN LAINNYA (Direct Submit via JS) --}}
+                                            {{-- JIKA MANAGER: Direct Approve --}}
                                         @else
                                             <button type="button"
                                                 onclick="confirmTechnicalAction('{{ $item->id }}', 'approve')"
-                                                class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1 px-3 rounded text-[10px] shadow-sm transition-all hover:scale-105 active:scale-95">
+                                                class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-3 rounded text-[10px] uppercase shadow-sm">
                                                 Approve
                                             </button>
                                         @endif
 
-                                        {{-- TOMBOL REJECT (Sama untuk Semua, menggunakan form hidden di atas) --}}
+                                        {{-- TOMBOL REJECT --}}
                                         <button type="button"
                                             onclick="confirmTechnicalAction('{{ $item->id }}', 'decline')"
-                                            class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-1 px-3 rounded text-[10px] shadow-sm transition-all hover:scale-105 active:scale-95">
+                                            class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-1.5 px-3 rounded text-[10px] uppercase shadow-sm transition-all hover:scale-105 active:scale-95">
                                             Reject
                                         </button>
-
-                                    </div>
-                                @endif
-
+                                    @endif
+                                </div>
                             </div>
                         </td>
                     </tr>
