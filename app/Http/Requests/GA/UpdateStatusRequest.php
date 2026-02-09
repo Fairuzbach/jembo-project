@@ -22,8 +22,8 @@ class UpdateStatusRequest extends FormRequest
             'start_date'        => ['nullable', 'date'],
             'target_date'       => ['nullable', 'date'],
             'department'        => ['nullable', 'string'],
-            'completion_photo'  => ['nullable', 'image', 'max:5120'],
-
+            'completion_photo'  => ['nullable', 'file', 'max:5120'],
+            'parameter_permintaan' => ['nullable', 'string'],
             // --- TAMBAHKAN BARIS INI ---
             'actual_completion_date' => ['nullable', 'date'],
             'completion_note'        => ['nullable', 'string'],

@@ -160,9 +160,12 @@
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Klasifikasi
                                     Jenis</label>
-                                <select name="parameter_permintaan" x-model="editForm.parameter_permintaan"
+                                <select name="parameter_permintaan" x-model="editForm.parameter_permintaan" required
                                     class="w-full border-slate-300 rounded-lg text-sm font-bold">
+
                                     <option value="">-- Pilih Klasifikasi --</option>
+
+                                    {{-- Loop Kategori --}}
                                     @php $modalCats = \App\Models\GeneralAffair\Category::where('status', 'active')->get(); @endphp
                                     @foreach ($modalCats as $cat)
                                         <option value="{{ $cat->name }}">{{ $cat->name }}</option>

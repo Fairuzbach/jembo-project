@@ -83,13 +83,18 @@ class WorkOrderService
     }
     public function updateStatus($id, array $data, ?UploadedFile $completionPhoto = null): void
     {
+        // dd($data);
         $ticket = WorkOrderGeneralAffair::findOrFail($id);
 
         $updateData = [
             'status' => $data['status'],
             'processed_by_name' => $data['processed_by_name'],
-            'category' => $data['category']
+            'category' => $data['category'],
         ];
+
+        if (!empty($data['parameter_permintaan'])) {
+            $updateData['parameter_permintaan'] = $data['parameter_permintaan'];
+        }
 
         // Logika Start Date
         if (!empty($data['start_date'])) {
