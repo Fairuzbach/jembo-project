@@ -278,18 +278,6 @@ class GeneralAffairController extends Controller
         }
     }
 
-    // public function approveByGa(Request $request, $id)
-    // {
-    //     try {
-    //         // Panggil logic di Service
-    //         // Pastikan Anda sudah punya method 'approveByGa' di GaService seperti pembahasan sebelumnya
-    //         $result = $this->gaService->approveByGa($request, $id);
-
-    //         return redirect()->back()->with('success', 'Tiket berhasil divalidasi dan diproses.');
-    //     } catch (\Exception $e) {
-    //         return redirect()->back()->with('error', 'Gagal memproses tiket: ' . $e->getMessage());
-    //     }
-    // }
 
     // --- UPDATE STATUS PROGRESS (OLEH GA ADMIN) ---
     public function updateStatus(UpdateStatusRequest $request, $id)
@@ -304,6 +292,12 @@ class GeneralAffairController extends Controller
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Terjadi Kesalahan: ' . $e->getMessage());
         }
+    }
+
+    public function show($id)
+    {
+        $ticket = WorkOrderGeneralAffair::with(['plantInfo', 'user'])->finOrFail($id);
+        return view('ga.show', compact('ticket'));
     }
 
     // =========================================================================

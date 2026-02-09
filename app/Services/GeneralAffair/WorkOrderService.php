@@ -143,7 +143,12 @@ class WorkOrderService
         $requesterPhone = $requester ? ($requester->no_hp ?? $requester->phone) : null;
 
         // 2. Siapkan Link & Pesan
-        // $ticketLink = url('/wo-ga/' . $ticket->id); // Sesuaikan URL
+        // [TAMBAHAN LINK]
+        try {
+            $ticketLink = route('ga.show', $ticket->id);
+        } catch (\Exception $e) {
+            $ticketLink = url('/ga/detail/' . $ticket->id);
+        }
         $waMessage = "";
 
         switch ($data['status']) {
@@ -156,6 +161,7 @@ class WorkOrderService
                     "📊 Status: *Sedang Dikerjakan*\n\n" .
                     "⚙️ Tim teknisi sedang menangani pekerjaan Anda.\n" .
                     "Kami akan memberikan update progress selanjutnya.\n\n" .
+                    "🔗 *Link Tiket:*\n$ticketLink\n\n" .
                     "━━━━━━━━━━━━━━━━━━━━━━\n" .
                     "_Terima kasih atas kesabaran Anda_ ⏳";
                 break;
@@ -171,8 +177,8 @@ class WorkOrderService
                     "🎉 Pekerjaan telah selesai!\n\n" .
                     "📝 *Catatan Penyelesaian:*\n" .
                     "_{$note}_\n\n" .
+                    "🔗 *Link Tiket (Cek Hasil):*\n$ticketLink\n\n" .
                     "━━━━━━━━━━━━━━━━━━━━━━\n" .
-                    "_Mohon cek hasil pekerjaan di link di atas_ 🔍\n" .
                     "_Terima kasih atas kerjasamanya!_ 🙏";
                 break;
 
@@ -186,6 +192,7 @@ class WorkOrderService
                     "📊 Status: *Dibatalkan*\n\n" .
                     "📝 *Alasan Pembatalan:*\n" .
                     "_{$reason}_\n\n" .
+                    "🔗 *Link Tiket:*\n$ticketLink\n\n" .
                     "━━━━━━━━━━━━━━━━━━━━━━\n" .
                     "_Untuk informasi lebih lanjut, silakan hubungi tim terkait_ 💬\n" .
                     "_Mohon maaf atas ketidaknyamanannya_ 🙏";
@@ -200,6 +207,7 @@ class WorkOrderService
                     "📊 Status: *Dalam Antrian*\n\n" .
                     "📌 Tiket Anda telah masuk dalam antrian pengerjaan.\n" .
                     "Tim teknisi akan segera menangani sesuai prioritas.\n\n" .
+                    "🔗 *Link Tiket:*\n$ticketLink\n\n" .
                     "━━━━━━━━━━━━━━━━━━━━━━\n" .
                     "_Anda akan menerima notifikasi saat pekerjaan dimulai_ 🔔";
                 break;
@@ -239,8 +247,6 @@ class WorkOrderService
 
         // =========================================================================
         // [MODIFIKASI UTAMA] TANGKAP DATA FORM DI AWAL
-        // Agar data klasifikasi (kategori, bobot, tanggal) selalu tersimpan
-        // jika yang melakukan action adalah GA Admin dan action-nya approve.
         // =========================================================================
         if ($isGaAdmin && !empty($data) && $action === 'approve') {
             $updateData['category'] = $data['category'] ?? $ticket->category;
@@ -254,15 +260,11 @@ class WorkOrderService
             $updateData['processed_by_name'] = $user->name;
         }
 
-        // --- SKENARIO 1: GA ADMIN BYPASS (Langsung Approve Tiket Baru) ---
-        // Jika tiket masih waiting_approval tapi yang approve GA Admin
+        // --- SKENARIO 1: GA ADMIN BYPASS ---
         if ($ticket->status === 'waiting_approval' && $action === 'approve' && $isGaAdmin) {
             $newStatus = 'pending';
             $desc = "Tiket diterima & diklasifikasikan langsung oleh GA Admin (Bypass Manager).";
 
-            // Note: Data updateData['category'] dll sudah ditangkap di blok atas
-
-            // Buat history khusus bypass
             WorkOrderGaHistory::create([
                 'work_order_id' => $ticket->id,
                 'user_id'       => $user->id,
@@ -286,12 +288,10 @@ class WorkOrderService
                 $emailType = 'rejected';
             } else {
                 if ($ticket->status === 'waiting_approval') {
-                    // TAHAP 1: Approval dari Manager Divisi (Bukan GA Admin)
+                    // TAHAP 1: Approval dari Manager Divisi
                     $newStatus = 'waiting_approval_ga';
                     $desc = "Disetujui oleh Manager ({$user->divisi}). Menunggu General Affair.";
 
-                    // Manager mengisi processed_by sementara (tahap 1)
-                    // Kita timpa updateData khusus untuk manager di sini
                     $updateData['processed_by'] = $user->id;
                     $updateData['processed_by_name'] = $user->name;
 
@@ -301,8 +301,6 @@ class WorkOrderService
                     if ($isGaAdmin) {
                         $newStatus = 'pending';
                         $desc = "Disetujui & Diklasifikasikan oleh GA. Masuk antrian pending.";
-
-                        // Note: Data updateData['category'] dll sudah ditangkap di blok paling atas
 
                         $alertData = [
                             'type' => 'warning',
@@ -314,7 +312,7 @@ class WorkOrderService
                         return ['status' => 'error', 'message' => 'Hanya GA Admin yang bisa approve di tahap ini!'];
                     }
                 } else {
-                    // Fallback Status (Pending / In Progress)
+                    // Fallback Status
                     if ($isGaAdmin) {
                         $newStatus = 'pending';
                         $desc = "Tiket diterima General Affair.";
@@ -329,11 +327,9 @@ class WorkOrderService
         }
 
         // 3. UPDATE DATABASE FINAL
-        // Gabungkan status baru dengan data form yang sudah ditangkap
         $finalUpdate = array_merge($updateData, [
             'status' => $newStatus,
             'rejection_reason' => ($action === 'reject') ? $reason : null,
-            // Fallback: jika processed_by belum di-set, pakai default user login
             'processed_by' => $updateData['processed_by'] ?? $user->id,
             'processed_by_name' => $updateData['processed_by_name'] ?? $user->name,
             'updated_at' => now()
@@ -349,6 +345,13 @@ class WorkOrderService
         Log::info("DEBUG WA: Memulai proses notifikasi untuk Tiket #{$ticket->ticket_num}");
         Log::info("DEBUG WA: Status Action: {$action}, EmailType: {$emailType}");
 
+        // [TAMBAHAN LINK]
+        try {
+            $ticketLink = route('ga.show', $ticket->id);
+        } catch (\Exception $e) {
+            $ticketLink = url('/ga/detail/' . $ticket->id);
+        }
+
         // A. SIAPKAN PESAN UNTUK REQUESTER
         $msgRequester = "";
 
@@ -363,6 +366,7 @@ class WorkOrderService
                 "📊 Status: *Menunggu Approval GA*\n\n" .
                 "⏳ Tiket Anda telah disetujui oleh Manager Divisi.\n" .
                 "Mohon menunggu verifikasi dari tim General Affair.\n\n" .
+                "🔗 *Link Tiket:*\n$ticketLink\n\n" .
                 "━━━━━━━━━━━━━━━━━━━━━━\n" .
                 "_Terima kasih atas kesabaran Anda_ 🙏";
         } elseif ($emailType === 'ga_approved') {
@@ -376,6 +380,7 @@ class WorkOrderService
                 "📊 Status: *Pending (Siap Dikerjakan)*\n\n" .
                 "🔧 Tiket Anda telah disetujui!\n" .
                 "Tim teknisi akan segera menindaklanjuti pekerjaan Anda.\n\n" .
+                "🔗 *Link Tiket:*\n$ticketLink\n\n" .
                 "━━━━━━━━━━━━━━━━━━━━━━\n" .
                 "_Mohon menunggu teknisi menghubungi Anda_ 📞";
         } elseif ($emailType === 'rejected') {
@@ -389,6 +394,7 @@ class WorkOrderService
                 "📊 Status: *Ditolak*\n\n" .
                 "📝 *Alasan Penolakan:*\n" .
                 "_{$reason}_\n\n" .
+                "🔗 *Link Tiket:*\n$ticketLink\n\n" .
                 "💬 Silakan hubungi tim terkait untuk informasi lebih lanjut.\n\n" .
                 "━━━━━━━━━━━━━━━━━━━━━━\n" .
                 "_Mohon maaf atas ketidaknyamanannya_ 🙏";
@@ -412,7 +418,6 @@ class WorkOrderService
         if ($emailType === 'manager_approved') {
             Log::info("DEBUG WA: Mencari GA Admin untuk notifikasi approval...");
 
-            // Cek data GA Admin di Database
             $gaAdmins = \App\Models\User::whereIn('role', ['ga.admin', 'super.ga.admin'])
                 ->whereNotNull('no_hp')
                 ->where('no_hp', '!=', '')
@@ -422,8 +427,6 @@ class WorkOrderService
 
             if ($gaAdmins->isEmpty()) {
                 Log::error("DEBUG WA: GAGAL! Tidak ada GA Admin yang memiliki No HP/Role yang sesuai.");
-                $adminsTanpaHp = \App\Models\User::whereIn('role', ['ga.admin', 'super.ga.admin'])->count();
-                Log::info("DEBUG WA: Total GA Admin di DB (termasuk yg tanpa HP): " . $adminsTanpaHp);
             }
 
             foreach ($gaAdmins as $admin) {
@@ -438,6 +441,7 @@ class WorkOrderService
                     "• Status: *Menunggu Approval GA*\n\n" .
                     "📝 *Deskripsi Pekerjaan:*\n" .
                     "_{$ticket->description}_\n\n" .
+                    "🔗 *Link Approval:*\n$ticketLink\n\n" .
                     "━━━━━━━━━━━━━━━━━━━━━━\n" .
                     "_Mohon segera review dan approve tiket ini_ ✅";
 
