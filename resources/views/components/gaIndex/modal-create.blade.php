@@ -6,10 +6,11 @@
         <div class="fixed inset-0 bg-slate-900/75 backdrop-blur-sm transition-opacity" @click="showCreateModal = false">
         </div>
 
-        <div class="flex min-h-full items-center justify-center p-4">
+        {{-- Container Utama: p-4 agar ada jarak dari tepi layar HP --}}
+        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
 
-            {{-- Wrapper Utama --}}
-            <div class="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden transform transition-all border border-slate-100"
+            {{-- Wrapper Modal --}}
+            <div class="relative w-full max-w-md md:max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden transform transition-all border border-slate-100 text-left my-8"
                 x-data="{
                     // 1. DATA PLANTS (Server Side)
                     plantsData: @js($plants),
@@ -134,7 +135,6 @@
                 
                     openConfirm() {
                         // VALIDASI DISEDERHANAKAN
-                        // Cukup cek Plant, Dept, dan Description
                         if (!this.formData.plant_id || !this.formData.description || !this.formData.department) {
                             Swal.fire({
                                 icon: 'warning',
@@ -161,15 +161,17 @@
                     <p class="text-slate-500 text-sm mt-1">Sedang membuat tiket Anda...</p>
                 </div>
 
-                {{-- Header --}}
+                {{-- Header (Responsive Padding) --}}
                 <div
-                    class="bg-gradient-to-r from-[#1E3A5F] to-slate-700 px-8 py-7 flex justify-between items-center relative z-10">
-                    <h3 class="text-xl font-bold text-white uppercase tracking-wide flex items-center gap-3">
-                        <span class="bg-yellow-400 text-slate-900 px-3 py-1.5 text-xs font-black rounded-lg">NEW</span>
+                    class="bg-gradient-to-r from-[#1E3A5F] to-slate-700 px-4 py-4 md:px-8 md:py-7 flex justify-between items-center relative z-10">
+                    <h3
+                        class="text-lg md:text-xl font-bold text-white uppercase tracking-wide flex items-center gap-2 md:gap-3">
+                        <span
+                            class="bg-yellow-400 text-slate-900 px-2 py-1 md:px-3 md:py-1.5 text-[10px] md:text-xs font-black rounded-lg">NEW</span>
                         Create Work Order
                     </h3>
                     <button @click="showCreateModal = false"
-                        class="text-white/60 hover:text-white rounded-full p-2.5 transition-all">
+                        class="text-white/60 hover:text-white rounded-full p-1 md:p-2.5 transition-all">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M6 18L18 6M6 6l12 12"></path>
@@ -183,19 +185,21 @@
                     action="{{ route('ga.store') }}" method="POST" enctype="multipart/form-data">
                     @csrf
 
-                    {{-- HIDDEN INPUTS (Agar Controller Tetap Menerima Data Default) --}}
+                    {{-- HIDDEN INPUTS --}}
                     <input type="hidden" name="category" value="RINGAN">
                     <input type="hidden" name="parameter_permintaan" value="-">
                     <input type="hidden" name="status_permintaan" value="OPEN">
 
-                    <div class="p-8 space-y-6">
+                    {{-- Responsive Padding Content (p-4 di HP, p-8 di PC) --}}
+                    <div class="p-4 md:p-8 space-y-4 md:space-y-6">
 
                         {{-- SECTION 1: IDENTITAS --}}
-                        <div class="bg-slate-50 p-5 rounded-sm border border-slate-200 mb-6">
+                        <div class="bg-slate-50 p-4 md:p-5 rounded-sm border border-slate-200 mb-4 md:mb-6">
                             <div class="flex justify-between items-center mb-4">
                                 <label
-                                    class="block text-xs font-black text-slate-400 uppercase tracking-widest">IDENTITAS
-                                    PELAPOR</label>
+                                    class="block text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-widest">
+                                    IDENTITAS PELAPOR
+                                </label>
                                 <button type="button" x-show="formData.nik !== currentUser.nik" @click="resetToMe()"
                                     class="text-[10px] bg-slate-200 hover:bg-slate-300 text-slate-600 px-2 py-1 rounded font-bold transition-colors flex items-center gap-1">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none"
@@ -203,10 +207,11 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                     </svg>
-                                    Reset ke Saya
+                                    Reset
                                 </button>
                             </div>
 
+                            {{-- Grid Responsive (1 kolom di HP, 2 kolom di PC) --}}
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {{-- INPUT NIK --}}
                                 <div>
@@ -229,7 +234,7 @@
                                     </div>
                                 </div>
 
-                                {{-- INPUT NAMA & DEPT (Readonly Visual) --}}
+                                {{-- INPUT NAMA & DEPT --}}
                                 <div>
                                     <label class="text-xs font-bold text-slate-700 uppercase mb-1">Nama & Dept</label>
                                     <input type="text"
@@ -237,18 +242,17 @@
                                             displayDept ? ' - ' + displayDept : '')) : '-'"
                                         readonly
                                         class="w-full bg-slate-200 border-2 border-slate-200 text-slate-500 font-bold text-sm h-11 px-3 cursor-not-allowed mb-2 focus:outline-none">
-
-                                    {{-- HIDDEN INPUTS UNTUK DIKIRIM KE CONTROLLER --}}
                                     <input type="hidden" name="requester_name" :value="formData.manual_requester_name">
                                 </div>
                             </div>
                         </div>
 
                         {{-- SECTION 2: AREA KERJA --}}
-                        <div class="bg-slate-50 p-5 rounded-sm border border-slate-200 mt-6">
-                            <label class="block text-xs font-black text-slate-400 uppercase mb-4 tracking-widest">Detail
+                        <div class="bg-slate-50 p-4 md:p-5 rounded-sm border border-slate-200 mt-4 md:mt-6">
+                            <label
+                                class="block text-[10px] md:text-xs font-black text-slate-400 uppercase mb-4 tracking-widest">Detail
                                 Lokasi</label>
-                            <div class="grid grid-cols-2 gap-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                                 {{-- 1. PILIH PLANT --}}
                                 <div>
@@ -256,7 +260,7 @@
                                         <span class="text-red-500">*</span></label>
                                     <select name="plant_id" x-model="formData.plant_id"
                                         @change="fetchDepartments($event.target.value)"
-                                        class="w-full border-2 border-slate-300 focus:border-slate-900 rounded-sm text-sm font-bold h-11"
+                                        class="w-full border-2 border-slate-300 focus:border-slate-900 rounded-sm text-sm font-bold h-11 bg-white"
                                         required>
                                         <option value="">-- PILIH LOKASI --</option>
                                         @foreach ($plants as $plant)
@@ -290,33 +294,36 @@
                             </div>
                         </div>
 
-                        {{-- SECTION 3: URAIAN & FOTO (Simplified) --}}
-                        <div class="mt-6">
+                        {{-- SECTION 3: URAIAN & FOTO --}}
+                        <div class="mt-4 md:mt-6">
                             <label class="text-xs font-bold text-slate-700 uppercase mb-1">Uraian Pekerjaan <span
                                     class="text-red-500">*</span></label>
                             <textarea name="description" x-model="formData.description" rows="4"
                                 class="w-full border-2 border-slate-300 focus:border-slate-900 rounded-sm text-sm font-medium p-3"
-                                placeholder="Jelaskan secara detail apa yang perlu dikerjakan atau diperbaiki..." required></textarea>
+                                placeholder="Jelaskan secara detail apa yang perlu dikerjakan..." required></textarea>
                         </div>
 
                         <div class="mt-4">
-                            <label class="text-xs font-bold text-slate-700 uppercase mb-1">Foto Bukti / Kondisi
+                            <label class="text-xs font-bold text-slate-700 uppercase mb-1">Foto Bukti
                                 (Opsional)</label>
                             <input type="file" accept="image/*, .pdf" name="photo"
-                                class="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-sm file:border-0 file:text-xs file:font-black file:uppercase file:bg-slate-900 file:text-white hover:file:bg-slate-700 cursor-pointer border border-slate-300 rounded-sm @error('photo') is-invalid @enderror">
-                            <p class="text-[10px] text-slate-400 mt-1 italic">*Lampirkan foto agar tim GA lebih mudah
-                                menganalisa.</p>
+                                class="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-sm file:border-0 file:text-xs file:font-black file:uppercase file:bg-slate-900 file:text-white hover:file:bg-slate-700 cursor-pointer border border-slate-300 rounded-sm">
+                            <p class="text-[10px] text-slate-400 mt-1 italic">*Mendukung Foto & PDF.</p>
                         </div>
 
-                        {{-- Footer --}}
-                        <div class="px-8 py-5 bg-slate-50 flex flex-row-reverse gap-3 border-t border-slate-200 mt-6">
-                            <button type="button" @click="openConfirm()"
-                                class="bg-gradient-to-br from-yellow-400 via-yellow-500 to-amber-500 text-slate-900 hover:from-yellow-500 px-8 py-3.5 rounded-xl font-bold uppercase tracking-wider shadow-lg hover:scale-105 active:scale-95 transition-all">
-                                Kirim Tiket
-                            </button>
+                        {{-- Footer (Responsive Buttons) --}}
+                        <div
+                            class="px-4 py-4 md:px-8 md:py-5 bg-slate-50 flex flex-row gap-3 border-t border-slate-200 mt-4 md:mt-6">
+                            {{-- Tombol Batal --}}
                             <button type="button" @click="showCreateModal = false"
-                                class="bg-white border-2 border-slate-200 text-slate-600 hover:border-slate-400 px-7 py-3.5 rounded-xl font-bold uppercase tracking-wide shadow-sm hover:shadow-md transition-all">
+                                class="flex-1 md:flex-none bg-white border-2 border-slate-200 text-slate-600 hover:border-slate-400 px-4 py-3.5 rounded-xl font-bold uppercase tracking-wide shadow-sm hover:shadow-md transition-all text-xs md:text-sm">
                                 Batal
+                            </button>
+
+                            {{-- Tombol Kirim --}}
+                            <button type="button" @click="openConfirm()"
+                                class="flex-1 md:flex-none bg-gradient-to-br from-yellow-400 via-yellow-500 to-amber-500 text-slate-900 hover:from-yellow-500 px-6 py-3.5 rounded-xl font-bold uppercase tracking-wider shadow-lg hover:scale-105 active:scale-95 transition-all text-xs md:text-sm">
+                                Kirim Tiket
                             </button>
                         </div>
                     </div>

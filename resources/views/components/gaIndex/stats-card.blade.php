@@ -14,23 +14,30 @@
     $isGAAdmin = $currentUserRole === 'ga.admin';
     $isTeknisAdmin = in_array($currentUserRole, ['mt.admin', 'fh.admin', 'eng.admin']);
 
-    // Tentukan grid class berdasarkan user role
-    // GA Admin: 6 cards (Total, Pending, Waiting GA, Progress, Rejected, Selesai)
-    // Teknis Admin: 6 cards (Total, Pending, Waiting SPV, Progress, Rejected, Selesai)
-    // Regular User: 5 cards (Total, Waiting Approval SPV, Progress, Rejected, Selesai)
+    // Tentukan grid class untuk DESKTOP (lg ke atas)
+    // Mobile kita set hardcode jadi grid-cols-2 agar lebih rapi
     if ($isGAAdmin || $isTeknisAdmin) {
-        $gridClass = 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6';
+        // 6 Cards
+        $desktopGrid = 'lg:grid-cols-3 xl:grid-cols-6';
     } else {
-        $gridClass = 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5';
+        // 5 Cards
+        $desktopGrid = 'lg:grid-cols-3 xl:grid-cols-5';
     }
 @endphp
 
-<div class="grid {{ $gridClass }} gap-6 mb-10">
+{{-- 
+    GRID RESPONSIVE:
+    - grid-cols-2 : Default Mobile (iPhone) agar hemat tempat
+    - md:grid-cols-3 : Tablet
+    - lg/xl : Sesuai logic PHP di atas
+--}}
+<div class="grid grid-cols-2 md:grid-cols-3 {{ $desktopGrid }} gap-3 md:gap-6 mb-6 md:mb-10">
 
     @php
         $cards = [
             [
-                'title' => 'Total Tiket',
+                'title' => 'Total', // Teks dipendekkan untuk Mobile
+                'full_title' => 'Total Tiket',
                 'value' => $countTotal,
                 'color' => 'gray',
                 'bg' => 'bg-gradient-to-br from-slate-100 to-slate-200',
@@ -44,10 +51,11 @@
             ],
         ];
 
-        // Untuk admin (GA Admin dan Teknis Admin), tampilkan Pending
+        // LOGIC KARTU (Sama seperti sebelumnya)
         if ($isGAAdmin || $isTeknisAdmin) {
             $cards[] = [
                 'title' => 'Pending',
+                'full_title' => 'Pending',
                 'value' => $countPending,
                 'color' => 'amber',
                 'bg' => 'bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600',
@@ -59,9 +67,9 @@
                 'icon_path' => 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
             ];
         } else {
-            // Untuk regular user, tampilkan Waiting Approval SPV
             $cards[] = [
-                'title' => 'Waiting Approval SPV',
+                'title' => 'Wait SPV',
+                'full_title' => 'Waiting Approval SPV',
                 'value' => $countWaitingApprovalSpv,
                 'color' => 'yellow',
                 'bg' => 'bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600',
@@ -74,11 +82,10 @@
             ];
         }
 
-        // Tambahkan waiting approval cards berdasarkan role admin
         if ($isGAAdmin) {
-            // GA Admin lihat Waiting Approval GA saja
             $cards[] = [
-                'title' => 'Waiting Approval GA',
+                'title' => 'Wait GA',
+                'full_title' => 'Waiting Approval GA',
                 'value' => $countWaitingApprovalGA,
                 'color' => 'red',
                 'bg' => 'bg-gradient-to-br from-[#dc2626] via-[#c81e1e] to-[#b91c1c]',
@@ -92,9 +99,9 @@
                 'show_approval' => true,
             ];
         } elseif ($isTeknisAdmin) {
-            // Admin teknis (mt.admin, fh.admin, eng.admin) lihat Waiting Approval SPV
             $cards[] = [
-                'title' => 'Waiting Approval SPV',
+                'title' => 'Wait SPV',
+                'full_title' => 'Waiting Approval SPV',
                 'value' => $countWaitingApprovalSpv,
                 'color' => 'yellow',
                 'bg' => 'bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600',
@@ -108,9 +115,9 @@
             ];
         }
 
-        // Tambahkan sisanya untuk semua user
         $cards[] = [
-            'title' => 'On Progress',
+            'title' => 'Progress',
+            'full_title' => 'On Progress',
             'value' => $countInProgress,
             'color' => 'blue',
             'bg' => 'bg-gradient-to-br from-[#1e40af] via-[#1e3a8a] to-[#1e3a8a]',
@@ -125,6 +132,7 @@
 
         $cards[] = [
             'title' => 'Rejected',
+            'full_title' => 'Rejected',
             'value' => $countRejected ?? 0,
             'color' => 'red',
             'bg' => 'bg-gradient-to-br from-red-500 via-red-600 to-red-700',
@@ -138,6 +146,7 @@
 
         $cards[] = [
             'title' => 'Selesai',
+            'full_title' => 'Selesai',
             'value' => $countCompleted,
             'color' => 'white',
             'bg' => 'bg-gradient-to-br from-white via-gray-50 to-gray-100',
@@ -151,62 +160,73 @@
     @endphp
 
     @foreach ($cards as $card)
+        {{-- Card Container --}}
         <div
-            class="status-card relative {{ $card['bg'] }} border-none rounded-2xl shadow-lg hover:shadow-2xl overflow-hidden group hover:-translate-y-2 transition-all duration-300 border {{ $card['border'] }}">
-            {{-- Gradient Background Accent --}}
+            class="status-card relative {{ $card['bg'] }} border-none rounded-xl md:rounded-2xl shadow-md md:shadow-lg hover:shadow-xl overflow-hidden group hover:-translate-y-1 md:hover:-translate-y-2 transition-all duration-300 border {{ $card['border'] }}">
+
+            {{-- Gradient Background Accent (Responsive Size) --}}
             <div
-                class="absolute top-0 right-0 w-32 h-32 {{ $card['accent'] }} rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-500">
+                class="absolute top-0 right-0 w-20 h-20 md:w-32 md:h-32 {{ $card['accent'] }} rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-500">
             </div>
 
-            {{-- Icon Pattern Background --}}
+            {{-- Icon Pattern Background (Sembunyikan di HP biar ga penuh, Muncul di Tablet+) --}}
             <div
-                class="absolute top-0 right-0 p-5 opacity-10 group-hover:opacity-20 group-hover:scale-110 transition-all duration-500">
+                class="hidden md:block absolute top-0 right-0 p-5 opacity-10 group-hover:opacity-20 group-hover:scale-110 transition-all duration-500">
                 <svg class="w-28 h-28 {{ $card['icon_color'] }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                         d="{{ $card['icon_path'] }}" />
                 </svg>
             </div>
 
-            <div class="p-7 relative z-10">
-                <div class="flex items-center justify-between mb-5">
+            {{-- Content Wrapper (Padding Kecil di HP, Besar di PC) --}}
+            <div class="p-4 md:p-7 relative z-10">
+
+                {{-- Header Card --}}
+                <div class="flex items-start md:items-center justify-between mb-2 md:mb-5">
+                    {{-- Title (Responsive Font) --}}
                     <h3
-                        class="text-xs font-bold {{ $card['text_color'] }} uppercase tracking-widest pl-3 border-l-4 {{ in_array($card['color'], ['white', 'gray']) ? 'border-gray-500' : 'border-white/70' }}">
-                        {{ $card['title'] }}
+                        class="text-[10px] md:text-xs font-bold {{ $card['text_color'] }} uppercase tracking-widest pl-2 md:pl-3 border-l-2 md:border-l-4 {{ in_array($card['color'], ['white', 'gray']) ? 'border-gray-500' : 'border-white/70' }} truncate max-w-[80%]">
+                        <span class="md:hidden">{{ $card['title'] }}</span> {{-- Short Title di HP --}}
+                        <span class="hidden md:inline">{{ $card['full_title'] }}</span> {{-- Full Title di PC --}}
                     </h3>
+
+                    {{-- Icon Box (Kecil di HP, Besar di PC) --}}
                     <div
-                        class="w-12 h-12 rounded-xl {{ $card['icon_bg'] }} flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 backdrop-blur-sm">
-                        <svg class="w-6 h-6 {{ $card['icon_color'] }}" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24">
+                        class="w-8 h-8 md:w-12 md:h-12 rounded-lg md:rounded-xl {{ $card['icon_bg'] }} flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 backdrop-blur-sm">
+                        <svg class="w-4 h-4 md:w-6 md:h-6 {{ $card['icon_color'] }}" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="{{ $card['icon_path'] }}" />
                         </svg>
                     </div>
                 </div>
 
-                <div class="flex items-baseline">
+                {{-- Value Number --}}
+                <div class="flex items-baseline mt-1 md:mt-0">
                     <span
-                        class="text-5xl font-black {{ $card['text_color'] }} tracking-tight drop-shadow-sm">{{ $card['value'] }}</span>
-                    <span class="ml-3 text-sm font-semibold {{ $card['text_color'] }} opacity-80">Tiket</span>
+                        class="text-3xl md:text-5xl font-black {{ $card['text_color'] }} tracking-tight drop-shadow-sm">
+                        {{ $card['value'] }}
+                    </span>
+                    <span
+                        class="ml-1 md:ml-3 text-[10px] md:text-sm font-semibold {{ $card['text_color'] }} opacity-80">
+                        Tiket
+                    </span>
                 </div>
 
-                {{-- Badge untuk Waiting Approval --}}
-                @if (isset($card['show_for']) && $card['value'] > 0)
-                    <div class="mt-3 pt-3 border-t border-white/20">
+                {{-- Badge 'Perlu Tindakan' (Hanya muncul jika value > 0 dan perlu approval) --}}
+                @if (isset($card['show_approval']) && $card['show_approval'] && $card['value'] > 0)
+                    <div class="mt-2 md:mt-3 pt-2 md:pt-3 border-t border-white/20">
                         <span
-                            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-sm text-[10px] font-bold {{ $card['text_color'] }} uppercase tracking-wide animate-pulse">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            class="inline-flex items-center gap-1 px-2 py-0.5 md:px-2.5 md:py-1 rounded-full bg-white/20 backdrop-blur-sm text-[8px] md:text-[10px] font-bold {{ $card['text_color'] }} uppercase tracking-wide animate-pulse">
+                            <svg class="w-2.5 h-2.5 md:w-3 md:h-3" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                             </svg>
-                            Perlu Tindakan
+                            Action
                         </span>
                     </div>
                 @endif
-            </div>
-
-            {{-- Shine effect on hover --}}
-            <div
-                class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-gradient-to-tr from-transparent via-white/10 to-transparent transform -translate-x-full group-hover:translate-x-full transition-transform duration-1000">
             </div>
         </div>
     @endforeach
