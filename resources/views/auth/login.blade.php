@@ -167,13 +167,7 @@
                 </button>
 
                 {{-- Register Link --}}
-                <div class="text-center">
-                    <span class="text-gray-600 text-sm">Belum punya akun? </span>
-                    <a class="text-sm font-bold text-red-600 hover:text-red-700 hover:underline transition-all decoration-2 underline-offset-2"
-                        href="{{ route('register') }}">
-                        {{ __('Daftar Sekarang') }}
-                    </a>
-                </div>
+
             </div>
         </form>
 
