@@ -148,7 +148,7 @@ class FacilitiesController extends Controller
         $pageIds = $workOrders->pluck('id')->toArray();
 
         // DATA PENDUKUNG
-        $excludedPlants = ['PE', 'QC FO', 'HC', 'Plant F', 'FA', 'IT', 'Sales', 'Marketing', 'RM Office', 'RM 1', 'RM 2', 'RM 3', 'RM 5', 'MT', 'FH', 'FO', 'QR', 'Plant Tools', 'Gudang Jadi', 'QC Lab', 'SS', 'Konstruksi'];
+        $excludedPlants = ['QC FO', 'HC', 'Plant F', 'FA', 'IT', 'Sales', 'Marketing', 'RM Office', 'RM 1', 'RM 2', 'RM 3', 'RM 5', 'MT', 'FH', 'FO', 'QR', 'Plant Tools', 'Gudang Jadi', 'QC Lab', 'Konstruksi', 'GA - JAKARTA', 'QC LV', 'QC MV', 'JEMBO ENERGINDO'];
         $listPlants = \App\Models\Engineering\Plant::whereNotIn('name', $excludedPlants)->get();
         $machines = \App\Models\Engineering\Machine::all();
         $technicians = \App\Models\FacilityTech::all();
