@@ -72,7 +72,7 @@ document.addEventListener('alpine:init', () => {
             'RM 1': 'PROCUREMENT', 'RM 2': 'PROCUREMENT', 'RM 3': 'PROCUREMENT', 'RM 5': 'PROCUREMENT', 'RM Office': 'PROCUREMENT',
             'Workshop Electric': 'MAINTENANCE', 'Konstruksi': 'FACILITY', 'Plant E': 'FIBER OPTIC',
             'Plant Tools': 'PROCESS ENGINEERING', 'Gudang Jadi': 'SALES SUPPORT', 'GA': 'GENERAL AFFAIR', 'FA': 'FINANCE',
-            'IT': 'INFORMATION TECHNOLOGY', 'HC': 'HUMAN CAPITAL', 'Sales': 'Sales', 'Marketing': 'Marketing', 'Plant A - Autowire': 'LOW VOLTAGE', 'Plant D - CCV': 'MEIDUM VOLTAGE'
+            'IT': 'INFORMATION TECHNOLOGY', 'HC': 'HUMAN CAPITAL', 'Sales': 'Sales', 'Marketing': 'Marketing', 'Plant A - Autowire': 'LOW VOLTAGE', 'Plant D - CCV': 'MEIDUM VOLTAGE','JEMBO ENERGINDO' : 'JEMBO ENERGINDO'
         },
 
         // --- METHODS ---

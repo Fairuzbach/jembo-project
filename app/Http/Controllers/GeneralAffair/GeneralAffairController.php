@@ -178,6 +178,9 @@ class GeneralAffairController extends Controller
                 case 'FA':
                     $specificDept = 'FINANCE';
                     break;
+                case 'JEMBO ENERGINDO':
+                    $specificDept = 'JEMBO ENERGINDO';
+                    break;
                 case 'Marketing':
                     $specificDept = 'MARKETING';
                     break;
