@@ -142,6 +142,7 @@
                                         <select name="department" x-model="editForm.department"
                                             class="w-full border-slate-300 rounded-lg text-sm h-10 md:h-11">
                                             <option value="">-- Pilih Department --</option>
+                                            <option value="JEMBO ENERGINDO">JEMBO ENERGINDO</option>
                                             <option value="FACILITY">FACILITY</option>
                                             <option value="GENERAL AFFAIR">GENERAL AFFAIR</option>
                                             <option value="INFORMATION TECHNOLOGY">IT</option>
