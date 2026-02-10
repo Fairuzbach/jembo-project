@@ -105,6 +105,21 @@
                                     $showApproveButton = true;
                                 }
                             }
+                            $cat = $item->category;
+
+                            // Tentukan Warna
+                            $badgeClass = match ($cat) {
+                                'HIGH' => 'text-red-700 bg-red-50 border-red-200',
+                                'MEDIUM' => 'text-yellow-700 bg-yellow-50 border-yellow-200',
+                                default => 'text-green-700 bg-green-50 border-green-200', // Default LOW
+                            };
+
+                            // Tentukan Teks
+                            $badgeText = match ($cat) {
+                                'HIGH' => 'BERAT',
+                                'MEDIUM' => 'SEDANG',
+                                default => 'RINGAN', // Default LOW
+                            };
                         @endphp
 
                         <tr
@@ -140,9 +155,8 @@
                                 {{ $item->parameter_permintaan ?? '-' }}</td>
                             <td class="px-6 py-4">
                                 <span
-                                    class="px-2 py-1 text-[10px] font-black rounded-sm border uppercase
-                                    {{ $item->category == 'HIGH' ? 'text-red-700 bg-red-50 border-red-200' : ($item->category == 'MEDIUM' ? 'text-yellow-700 bg-yellow-50 border-yellow-200' : 'text-green-700 bg-green-50 border-green-200') }}">
-                                    {{ $item->category == 'LOW' ? 'RINGAN' : ($item->category == 'MEDIUM' ? 'SEDANG' : 'BERAT') }}
+                                    class="px-2 py-1 text-[10px] font-black rounded-sm border uppercase {{ $badgeClass }}">
+                                    {{ $badgeText }}
                                 </span>
                             </td>
                             <td class="px-6 py-4 text-xs text-slate-500 max-w-xs truncate">
