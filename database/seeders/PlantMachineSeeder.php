@@ -272,6 +272,7 @@ class PlantMachineSeeder extends Seeder
             'PE' => [],
             'Plant Tools' => [],
             'PP' => [],
+            'PROCUREMENT' => [],
             'QC FO' => [],
             'QC Lab' => [],
             'QC LV' => [],
