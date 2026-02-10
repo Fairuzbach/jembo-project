@@ -257,6 +257,7 @@ class PlantMachineSeeder extends Seeder
                 'EX-90I',
                 'EX-90J'
             ],
+            'ACCOUNTING' => [],
             'FA' => [],
             'FH' => [],
             'FO' => [],
