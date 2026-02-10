@@ -89,8 +89,8 @@
         <div id="dashboard-content" class="max-w-8xl mx-auto sm:px-6 lg:px-8 p-4 bg-slate-50">
 
             {{-- 1. STATISTIK CARDS --}}
-            <x-gaDashboard.stats-card :countTotal="$countTotal" :countDelayed="$countDelayed ?? 0" :countInProgress="$countInProgress" :countCompleted="$countCompleted"
-                :countRejected="$countRejected ?? 0" />
+            <x-gaDashboard.stats-card :count-total="$countTotal" :count-in-progress="$countInProgress" :count-completed="$countCompleted" :count-rejected="$countRejected"
+                :count-cancelled="$countCancelled" :count-pending="$countPending" :count-waiting-approval-g-a="$countWaitingApprovalGA" />
 
             {{-- 2. GRID GRAFIK --}}
             <x-gaDashboard.graph-grid :filterMonth="$filterMonth" :perfPercentage="$perfPercentage" :perfTotal="$perfTotal" :perfCompleted="$perfCompleted" />
