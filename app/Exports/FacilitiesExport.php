@@ -2,7 +2,7 @@
 
 namespace App\Exports;
 
-use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\FromQuery; // Ganti FromCollection jadi FromQuery
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
@@ -13,18 +13,20 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
-class FacilitiesExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithStyles, WithTitle
+class FacilitiesExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSize, WithStyles, WithTitle
 {
-    protected $workOrders;
+    protected $query;
 
-    public function __construct($workOrders)
+    // Terima Query Builder dari Controller
+    public function __construct($query)
     {
-        $this->workOrders = $workOrders;
+        $this->query = $query;
     }
 
-    public function collection()
+    // Method Wajib untuk FromQuery
+    public function query()
     {
-        return $this->workOrders;
+        return $this->query;
     }
 
     public function headings(): array
@@ -38,35 +40,31 @@ class FacilitiesExport implements FromCollection, WithHeadings, WithMapping, Sho
             'Category',
             'Description',
             'Status',
-            'Technicians (PIC)',
-            'Start Date',
-            'Completion Date'
+            'Technicians (PIC)', // Kolom baru
         ];
     }
 
     public function map($wo): array
     {
-        // Gabungkan nama teknisi jadi satu string dipisah koma
+
         $techNames = $wo->technicians->pluck('name')->implode(', ');
 
         return [
             $wo->ticket_num,
-            $wo->report_date,
+            $wo->report_date ? \Carbon\Carbon::parse($wo->report_date)->format('d-m-Y') : '-',
             $wo->requester_name,
             $wo->plant,
             $wo->machine->name ?? '-',
             $wo->category,
             $wo->description,
             strtoupper(str_replace('_', ' ', $wo->status)),
-            $techNames ?: '-', // Jika kosong isi strip
-            $wo->start_date,
-            $wo->actual_completion_date
+            $techNames ?: '-',
         ];
     }
 
     public function styles(Worksheet $sheet)
     {
-        // Define border style
+        // 1. Define Style Array
         $borderStyle = [
             'borders' => [
                 'allBorders' => [
@@ -76,7 +74,6 @@ class FacilitiesExport implements FromCollection, WithHeadings, WithMapping, Sho
             ],
         ];
 
-        // Header styling
         $headerStyle = array_merge($borderStyle, [
             'font' => [
                 'bold' => true,
@@ -85,7 +82,7 @@ class FacilitiesExport implements FromCollection, WithHeadings, WithMapping, Sho
             ],
             'fill' => [
                 'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['rgb' => '1E3A5F'],
+                'startColor' => ['rgb' => '1E3A5F'], // Warna Navy Blue
             ],
             'alignment' => [
                 'horizontal' => Alignment::HORIZONTAL_CENTER,
@@ -94,55 +91,50 @@ class FacilitiesExport implements FromCollection, WithHeadings, WithMapping, Sho
             ],
         ]);
 
-        // Data row styling
         $dataStyle = array_merge($borderStyle, [
-            'font' => [
-                'size' => 11,
-            ],
+            'font' => ['size' => 11],
             'alignment' => [
                 'vertical' => Alignment::VERTICAL_TOP,
                 'wrapText' => true,
             ],
         ]);
 
-        // Get the highest row with data
+        // 2. Apply Header Style
+        $sheet->getStyle('1:1')->applyFromArray($headerStyle);
+        $sheet->getRowDimension(1)->setRowHeight(30);
+
+        // 3. Apply Data Styles (Zebra Striping)
         $highestRow = $sheet->getHighestRow();
 
-        // Apply header style to first row
-        $sheet->getStyle('1:1')->applyFromArray($headerStyle);
+        // Loop dari baris 2 sampai baris terakhir
+        if ($highestRow > 1) {
+            for ($row = 2; $row <= $highestRow; $row++) {
+                // Default style
+                $currentStyle = $dataStyle;
 
-        // Apply alternating row colors for data rows
-        for ($row = 2; $row <= $highestRow; $row++) {
-            if ($row % 2 == 0) {
-                // Even rows - light gray background
-                $sheet->getStyle($row . ':' . $row)->applyFromArray(array_merge($dataStyle, [
-                    'fill' => [
+                // Jika baris genap, kasih warna abu-abu muda
+                if ($row % 2 == 0) {
+                    $currentStyle['fill'] = [
                         'fillType' => Fill::FILL_SOLID,
                         'startColor' => ['rgb' => 'F3F4F6'],
-                    ],
-                ]));
-            } else {
-                // Odd rows - white background
-                $sheet->getStyle($row . ':' . $row)->applyFromArray($dataStyle);
+                    ];
+                }
+
+                $sheet->getStyle('A' . $row . ':' . 'I' . $row)->applyFromArray($currentStyle);
             }
         }
 
-        // Set row height for header
-        $sheet->getRowDimension(1)->setRowHeight(25);
-
-        // Set column widths
-        $sheet->getColumnDimension('A')->setWidth(15);
-        $sheet->getColumnDimension('B')->setWidth(12);
-        $sheet->getColumnDimension('C')->setWidth(15);
-        $sheet->getColumnDimension('D')->setWidth(12);
-        $sheet->getColumnDimension('E')->setWidth(15);
-        $sheet->getColumnDimension('F')->setWidth(12);
-        $sheet->getColumnDimension('G')->setWidth(25);
-        $sheet->getColumnDimension('H')->setWidth(15);
-        $sheet->getColumnDimension('I')->setWidth(18);
-        $sheet->getColumnDimension('J')->setWidth(12);
-        $sheet->getColumnDimension('K')->setWidth(12);
-
+        // 4. Atur Lebar Kolom Manual (Override ShouldAutoSize agar lebih rapi)
+        // Description biasanya panjang, jadi kita limit.
+        $sheet->getColumnDimension('A')->setWidth(15); // Ticket
+        $sheet->getColumnDimension('B')->setWidth(15); // Date
+        $sheet->getColumnDimension('C')->setWidth(20); // Requester
+        $sheet->getColumnDimension('D')->setWidth(20); // Plant
+        $sheet->getColumnDimension('E')->setWidth(20); // Machine
+        $sheet->getColumnDimension('F')->setWidth(15); // Category
+        $sheet->getColumnDimension('G')->setWidth(50); // Description (Lebar)
+        $sheet->getColumnDimension('H')->setWidth(20); // Status
+        $sheet->getColumnDimension('I')->setWidth(25); // Tech
         return [];
     }
 

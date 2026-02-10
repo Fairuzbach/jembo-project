@@ -5,14 +5,11 @@ namespace App\Http\Controllers\Facilities;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use App\Models\Facilities\WorkOrderFacilities;
-use App\Models\Engineering\Plant;
-use App\Models\Engineering\Machine;
-use App\Models\FacilityTech;
-use App\Models\User;
 use App\Services\Facility\FacilityService;
 use App\Http\Requests\Facility\StoreFacilityRequest;
+use App\Exports\FacilitiesExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class FacilitiesController extends Controller
 {
@@ -27,70 +24,47 @@ class FacilitiesController extends Controller
     {
         $user = auth()->user();
 
-        // 1. QUERY DASAR
+        // 1. QUERY DASAR & EAGER LOAD
         $query = WorkOrderFacilities::with(['user', 'machine', 'technicians']);
 
         // =================================================================
-        // LOGIKA HAK AKSES (VISIBILITY) - [FIXED]
+        // LOGIKA HAK AKSES (VISIBILITY)
         // =================================================================
 
-        // A. KELOMPOK FACILITY / ADMIN (Lihat Semua)
+        // A. KELOMPOK FACILITY / ADMIN
         $isFacilityOrAdmin = ($user->divisi === 'FACILITY') ||
             str_contains($user->role, 'fh.') ||
             ($user->role === 'super.admin');
 
         if ($isFacilityOrAdmin) {
-            // Admin Facility tidak perlu lihat draft yang belum disetujui atasan
             $query->where('status', '!=', 'waiting_approval');
         }
-
         // B. KELOMPOK USER (Manager, SPV, Staff)
         else {
-            $uDiv   = strtoupper(trim($user->divisi ?? '')); // Pastikan Trim & Upper
+            $uDiv = strtoupper(trim($user->divisi ?? ''));
 
-            // Cek Role Spesifik (Hasil diskusi sebelumnya)
             $isAutowireAdmin = $user->hasRole('autowire.admin');
             $isCcvAdmin      = $user->hasRole('ccv.admin');
-            $isLvAdmin       = $user->hasRole('lv.admin'); // Plant A General
-            $isMvAdmin       = $user->hasRole('mv.admin'); // Plant D General
+            $isLvAdmin       = $user->hasRole('lv.admin');
+            $isMvAdmin       = $user->hasRole('mv.admin');
 
-            // Cek Level Jabatan (String Match)
             $uLevel    = strtoupper($user->job_level ?? '');
             $isManager = str_contains($uLevel, 'MANAGER') || str_contains($uLevel, 'HEAD') || $isLvAdmin || $isMvAdmin;
             $isSpv     = str_contains($uLevel, 'SPV') || str_contains($uLevel, 'SUPERVISOR');
 
             $query->where(function ($q) use ($user, $uDiv, $isManager, $isSpv, $isAutowireAdmin, $isCcvAdmin) {
-
-                // 1. WAJIB: Selalu tampilkan tiket buatan sendiri
+                // User selalu bisa lihat tiket sendiri
                 $q->where('requester_id', $user->id);
 
-                // 2. LOGIC HAK AKSES AREA
-
-                // KASUS KHUSUS: AUTOWIRE ADMIN
                 if ($isAutowireAdmin) {
-                    // Kunci mati ke Autowire saja
                     $q->orWhere('plant', 'PLANT A - AUTOWIRE');
-                }
-
-                // KASUS KHUSUS: CCV ADMIN
-                elseif ($isCcvAdmin) {
-                    // Kunci mati ke CCV saja
+                } elseif ($isCcvAdmin) {
                     $q->orWhere('plant', 'PLANT D - CCV');
-                }
-
-                // KASUS MANAGER (General)
-                elseif ($isManager) {
-                    // Logic LIKE: "Plant A" bisa lihat "Plant A - Autowire"
-                    // "Plant D" bisa lihat "Plant D - CCV"
+                } elseif ($isManager) {
                     if (!empty($uDiv)) {
                         $q->orWhere('plant', 'LIKE', '%' . $uDiv . '%');
                     }
-                }
-
-                // KASUS SPV / STAFF LAINNYA
-                elseif ($isSpv) {
-                    // Logic STRICT (=): "PLANT A" HANYA lihat "PLANT A"
-                    // Tidak akan bocor ke Autowire
+                } elseif ($isSpv) {
                     if (!empty($uDiv)) {
                         $q->orWhere('plant', '=', $uDiv);
                     }
@@ -99,7 +73,14 @@ class FacilitiesController extends Controller
         }
 
         // =================================================================
-        // FILTER SEARCH & LAINNYA
+        // [PENTING] CLONE UNTUK STATISTIK DI SINI (SEBELUM FILTER APAPUN)
+        // =================================================================
+        // Kita simpan query yang sudah berisi Hak Akses, tapi BELUM ada filter status/search
+        // Agar angka di kartu atas tetap menunjukkan Total Global User tersebut.
+        $statsQuery = clone $query;
+
+        // =================================================================
+        // FILTER SEARCH & LAINNYA (Hanya mempengaruhi Tabel & Export)
         // =================================================================
 
         if ($request->filled('search')) {
@@ -122,36 +103,41 @@ class FacilitiesController extends Controller
             $query->where('category', $request->category);
         }
 
+        // Filter Status (Hanya untuk tabel, tidak boleh merusak statsQuery)
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
-        // =================================================================
-        // HITUNG STATISTIK (EFISIENSI)
-        // =================================================================
-        // Jangan tulis ulang logic visibility! Clone saja query utama yang sudah difilter di atas.
+        // EXPORT (Menggunakan query yang sudah difilter)
+        if ($request->boolean('export')) {
+            if ($request->filled('selected_ids')) {
+                $ids = explode(',', $request->selected_ids);
+                $query->whereIn('id', $ids); // Override query filter jika ada selected IDs
+            }
+            return Excel::download(new FacilitiesExport($query), 'work-orders-facility.xlsx');
+        }
 
-        $statsQuery = clone $query;
-        // Note: Query utama belum dipaginate, jadi aman di-clone untuk count.
+        // =================================================================
+        // HITUNG STATISTIK (MENGGUNAKAN $statsQuery YANG BERSIH)
+        // =================================================================
 
         $countTotal           = (clone $statsQuery)->count();
-        // Cek Typo Status di Database Anda: 'waiting_facility_approval' vs 'waiting_facilities_approval'
-        // Sesuaikan string di bawah ini dengan isi database:
         $countPending         = (clone $statsQuery)->where('status', 'waiting_approval')->count();
         $countWaitingApproval = (clone $statsQuery)->where('status', 'waiting_facility_approval')->count();
         $countProgress        = (clone $statsQuery)->where('status', 'in_progress')->count();
         $countDone            = (clone $statsQuery)->where('status', 'completed')->count();
 
-
-        // EKSEKUSI DATA (PAGINATION)
+        // =================================================================
+        // EKSEKUSI DATA TABEL (MENGGUNAKAN $query YANG TER-FILTER)
+        // =================================================================
         $workOrders = $query->latest()->paginate(10)->withQueryString();
-        $pageIds = $workOrders->pluck('id')->toArray();
+        $pageIds    = $workOrders->pluck('id')->toArray();
 
         // DATA PENDUKUNG
         $excludedPlants = ['pe', 'QC FO', 'HC', 'Plant F', 'FA', 'IT', 'Sales', 'Marketing', 'RM Office', 'RM 1', 'RM 2', 'RM 3', 'RM 5', 'MT', 'FH', 'FO', 'QR', 'Plant Tools', 'Gudang Jadi', 'QC Lab', 'Konstruksi', 'GA - JAKARTA', 'QC LV', 'QC MV', 'JEMBO ENERGINDO', 'ACCOUNTING'];
-        $listPlants = \App\Models\Engineering\Plant::whereNotIn('name', $excludedPlants)->get();
-        $machines = \App\Models\Engineering\Machine::all();
-        $technicians = \App\Models\FacilityTech::all();
+        $listPlants     = \App\Models\Engineering\Plant::whereNotIn('name', $excludedPlants)->get();
+        $machines       = \App\Models\Engineering\Machine::all();
+        $technicians    = \App\Models\FacilityTech::all();
 
         return view('Division.Facilities.index', compact(
             'workOrders',
