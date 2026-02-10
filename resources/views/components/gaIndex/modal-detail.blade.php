@@ -226,36 +226,118 @@
                                 </template>
                             </div>
                             {{-- 6. RIWAYAT AKTIVITAS (HISTORY) --}}
-                            <div class="border-t border-slate-100 pt-6"
-                                x-show="ticket.histories && ticket.histories.length > 0">
-                                <span class="text-xs font-bold text-slate-400 uppercase block mb-4">Riwayat
-                                    Aktivitas</span>
+                            <div class="border-t border-slate-200 pt-8 mt-8" x-show="ticket?.histories?.length > 0"
+                                x-transition:enter="transition ease-out duration-300"
+                                x-transition:enter-start="opacity-0 transform translate-y-4"
+                                x-transition:enter-end="opacity-100 transform translate-y-0">
 
-                                <div class="relative pl-2 border-l-2 border-slate-200 space-y-6 ml-1">
-                                    <template x-for="history in ticket.histories" :key="history.id">
-                                        <div class="relative pl-4">
-                                            {{-- Dot Indicator --}}
-                                            <div
-                                                class="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full bg-slate-50 border-2 border-slate-300">
+                                <div class="flex items-center gap-3 mb-6">
+                                    <div
+                                        class="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/30">
+                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </div>
+                                    <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wide">
+                                        Riwayat Aktivitas
+                                    </h3>
+                                </div>
+
+                                <div class="relative border-l-2 border-slate-200 space-y-6 ml-3 pb-2">
+                                    <template x-for="(history, index) in ticket.histories" :key="history.id">
+                                        <div class="relative ml-6 group"
+                                            x-transition:enter="transition ease-out duration-300 delay-[calc(var(--index)*50ms)]"
+                                            x-transition:enter-start="opacity-0 transform translate-x-4"
+                                            x-transition:enter-end="opacity-100 transform translate-x-0"
+                                            :style="`--index: ${index}`">
+
+                                            {{-- Animated Dot with Pulse Effect --}}
+                                            <div class="absolute -left-[33px] top-1">
+                                                <div class="relative">
+                                                    {{-- Outer pulse ring --}}
+                                                    <div
+                                                        class="absolute inset-0 w-4 h-4 rounded-full bg-indigo-400 opacity-0 group-hover:opacity-100 group-hover:animate-ping">
+                                                    </div>
+
+                                                    {{-- Main dot with gradient --}}
+                                                    <div
+                                                        class="relative w-4 h-4 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 border-2 border-white shadow-md group-hover:scale-110 transition-transform duration-200">
+                                                    </div>
+                                                </div>
                                             </div>
 
-                                            {{-- Isi History --}}
-                                            <div>
-                                                <div
-                                                    class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
-                                                    <span class="text-sm font-bold text-slate-800"
-                                                        x-text="history.user ? history.user.name : 'System'"></span>
+                                            {{-- Content Card --}}
+                                            <div
+                                                class="bg-white rounded-lg border border-slate-200 p-4 hover:shadow-md hover:border-indigo-200 transition-all duration-200 group-hover:-translate-y-0.5">
+
+                                                {{-- Header --}}
+                                                <div class="flex flex-wrap items-center gap-2 mb-3">
+                                                    {{-- User Avatar & Name --}}
+                                                    <div class="flex items-center gap-2">
+                                                        <div
+                                                            class="w-6 h-6 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center">
+                                                            <span class="text-[10px] font-bold text-slate-600"
+                                                                x-text="(history.user?.name ?? 'S')[0].toUpperCase()"></span>
+                                                        </div>
+                                                        <span class="text-sm font-semibold text-slate-800"
+                                                            x-text="history.user?.name ?? 'System'"></span>
+                                                    </div>
+
+                                                    {{-- Action Badge with Dynamic Colors --}}
                                                     <span
-                                                        class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-500 border border-slate-200"
+                                                        class="text-[10px] font-bold px-2.5 py-1 rounded-full border shadow-sm"
+                                                        :class="{
+                                                            'bg-emerald-50 text-emerald-700 border-emerald-200': history
+                                                                .action.toLowerCase().includes('dibuat') || history
+                                                                .action.toLowerCase().includes('selesai'),
+                                                            'bg-blue-50 text-blue-700 border-blue-200': history.action
+                                                                .toLowerCase().includes('diperbarui') || history.action
+                                                                .toLowerCase().includes('update'),
+                                                            'bg-amber-50 text-amber-700 border-amber-200': history
+                                                                .action.toLowerCase().includes('ditugaskan') || history
+                                                                .action.toLowerCase().includes('assign'),
+                                                            'bg-slate-50 text-slate-600 border-slate-200': !history
+                                                                .action.toLowerCase().includes('dibuat') && !history
+                                                                .action.toLowerCase().includes('diperbarui') && !history
+                                                                .action.toLowerCase().includes('ditugaskan')
+                                                        }"
                                                         x-text="history.action"></span>
-                                                    <span class="text-[10px] text-slate-400"
-                                                        x-text="new Date(history.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })"></span>
+
+                                                    {{-- Timestamp --}}
+                                                    <span class="text-[11px] text-slate-400 font-medium ml-auto"
+                                                        x-text="new Date(history.created_at.replace(' ', 'T')).toLocaleDateString('id-ID', { 
+                                  day: '2-digit', 
+                                  month: 'short', 
+                                  year: 'numeric', 
+                                  hour: '2-digit', 
+                                  minute: '2-digit' 
+                              })"></span>
                                                 </div>
-                                                <p class="text-xs text-slate-600 bg-slate-50 p-2 rounded border border-slate-100 inline-block w-full"
-                                                    x-text="history.description"></p>
+
+                                                {{-- Description with Icon --}}
+                                                <div class="flex gap-2">
+                                                    <svg class="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5"
+                                                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    <p class="text-xs text-slate-600 leading-relaxed flex-1"
+                                                        x-text="history.description"></p>
+                                                </div>
                                             </div>
                                         </div>
                                     </template>
+
+                                    {{-- End Marker --}}
+                                    <div class="relative ml-6">
+                                        <div
+                                            class="absolute -left-[33px] top-0 w-4 h-4 rounded-full bg-slate-200 border-2 border-white">
+                                        </div>
+                                        <span class="text-[10px] text-slate-400 font-medium">Awal riwayat</span>
+                                    </div>
                                 </div>
                             </div>
                             {{-- 6. FOOTER ACTION --}}
