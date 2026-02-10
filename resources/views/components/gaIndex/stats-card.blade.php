@@ -11,7 +11,7 @@
 
 @php
     $currentUserRole = Auth::user()->role ?? null;
-    $isGAAdmin = $currentUserRole === 'ga.admin';
+    $isGAAdmin = in_array($currentUserRole, ['ga.admin', 'super.ga.admin']);
     $isTeknisAdmin = in_array($currentUserRole, ['mt.admin', 'fh.admin', 'eng.admin']);
 
     // Tentukan grid class untuk DESKTOP (lg ke atas)
