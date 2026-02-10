@@ -121,18 +121,23 @@
                                 @php
                                     $currentUser = Auth::user();
                                     $status = $wo->status;
-
-                                    // Cek Admin Facility
-                                    $isFacilityAdmin = in_array($currentUser->role, [
+                                    $hasAdminRole = in_array($currentUser->role, [
                                         'fh.admin',
                                         'super.admin',
                                         'super.fh.admin',
                                     ]);
+                                    $userDivisi = strtoupper($currentUser->divisi ?? '');
+                                    $userLevel = strtoupper($currentUser->job_level ?? '');
 
-                                    // LOGIKA VISIBILITY (Sama seperti sebelumnya)
+                                    $isFacilitySpv =
+                                        $userDivisi === 'FACILITY' &&
+                                        (str_contains($userLevel, 'SUPERVISOR') ||
+                                            str_contains($userLevel, 'SPV') ||
+                                            str_contains($userLevel, 'MANAGER'));
+
+                                    $isFacilityAdmin = $hasAdminRole || $isFacilitySpv;
                                     $showSpvAction = $status === 'waiting_approval' && $wo->canApproveBy($currentUser);
                                     $showAdminAction = $status === 'waiting_facility_approval' && $isFacilityAdmin;
-
                                     $showActionButtons = $showSpvAction || $showAdminAction;
                                 @endphp
 
