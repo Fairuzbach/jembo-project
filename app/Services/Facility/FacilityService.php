@@ -508,6 +508,7 @@ class FacilityService
     {
         // 1. Cari User Admin/Manager FH
         $recipients = User::where('is_active', 1)
+            ->where('jabatan', 'NOT LIKE', '%HSE%')
             ->where(function ($q) {
                 // A. Cari berdasarkan Role Admin
                 $q->whereIn('role', ['fh.admin', 'fh.manager', 'super.admin'])
@@ -517,7 +518,7 @@ class FacilityService
                         $sub->where('divisi', 'Facility') // Atau 'FACILITY' sesuai database
                             ->where(function ($lvl) {
                                 $lvl->where('job_level', 'LIKE', '%MANAGER%')
-                                    ->orWhere('job_level', 'LIKE', '%HEAD%')
+                                    ->orWhere('job_level', 'LIKE', '%SUPERVISOR%')
                                     ->orWhere('job_level', 'LIKE', '%MGR%');
                             });
                     });
