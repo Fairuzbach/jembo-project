@@ -8,7 +8,20 @@
     if ($user->role === 'fh.admin') {
         $isAllowedFacility = true;
     } else {
-        $plants = ['facility', 'plant a', 'plant b', 'plant c', 'plant d', 'pp', 'plant e'];
+        $plants = [
+            'facility',
+            'plant a',
+            'plant b',
+            'plant c',
+            'plant d',
+            'pp',
+            'plant e',
+            'general affair',
+            'process engineering',
+            'sales support',
+            'procurement',
+            'production planning',
+        ];
         foreach ($plants as $plant) {
             if (str_contains($userDivisi, $plant)) {
                 $isAllowedFacility = true;
