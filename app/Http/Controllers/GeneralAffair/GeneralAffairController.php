@@ -32,10 +32,6 @@ class GeneralAffairController extends Controller
         protected DashboardService $dashboardService
     ) {}
 
-    // =========================================================================
-    // 1. HELPER & AJAX
-    // =========================================================================
-
     public function checkEmployee(Request $request)
     {
         $employee = \App\Models\User::where('nik', $request->nik)->first();
@@ -56,9 +52,6 @@ class GeneralAffairController extends Controller
         }
     }
 
-    // =========================================================================
-    // 2. MAIN PAGES (INDEX & DASHBOARD)
-    // =========================================================================
 
     public function index(Request $request)
     {
@@ -91,6 +84,7 @@ class GeneralAffairController extends Controller
     public function dashboard(Request $request)
     {
         $data = $this->dashboardService->getDashboardData($request);
+        // dd($data['countPending']);
         return view('Division.GeneralAffair.Dashboard', $data);
     }
 
