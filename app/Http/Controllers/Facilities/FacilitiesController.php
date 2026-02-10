@@ -35,7 +35,7 @@ class FacilitiesController extends Controller
         // =================================================================
 
         // A. KELOMPOK FACILITY / ADMIN (Lihat Semua)
-        $isFacilityOrAdmin = ($user->divisi === 'Facility') ||
+        $isFacilityOrAdmin = ($user->divisi === 'FACILITY') ||
             str_contains($user->role, 'fh.') ||
             ($user->role === 'super.admin');
 

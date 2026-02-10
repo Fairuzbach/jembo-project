@@ -144,12 +144,7 @@ class FacilityService
         if (!$ticket) return ['success' => false, 'message' => 'Tiket tidak ditemukan.'];
 
         $user = auth()->user();
-
-        // [PERUBAHAN VITAL]
-        // HAPUS role area (mv.admin, lv.admin, ga.admin, dll) dari sini!
-        // Hanya Admin Facility & Super Admin yang boleh dianggap "Dewa" (Bypass Matrix).
-        // Role lain (mv.admin, dll) dianggap sebagai "Manager" yang wajib tunduk pada Matrix Approval.
-        $isAdmin = in_array($user->role, ['fh.admin', 'super.admin', 'super.fh.admin']) || $user->divisi === 'Facility';
+        $isAdmin = in_array($user->role, ['fh.admin', 'super.admin', 'super.fh.admin']) || $user->divisi === 'FACILITY';
 
         // ------------------------------------------------------------------
         // CEK 0: STATUS PENDING
@@ -160,78 +155,39 @@ class FacilityService
                 'message' => 'Tiket ini SUDAH DISETUJI (Status Pending). Silakan gunakan tombol UPDATE/SELESAIKAN untuk memproses pekerjaan.'
             ];
         }
-
-        // ------------------------------------------------------------------
-        // CEK 0.5: SELF-APPROVAL (JERUK MAKAN JERUK)
-        // ------------------------------------------------------------------
-        // Jika User adalah Pembuat Tiket, DAN dia bukan Admin Facility -> TOLAK
         if ($ticket->requester_id == $user->id && !$isAdmin) {
             return [
                 'success' => false,
                 'message' => 'Anda tidak dapat menyetujui tiket yang Anda buat sendiri. Harap tunggu persetujuan atasan.'
             ];
         }
-
-        // ------------------------------------------------------------------
-        // KASUS 1: TAHAP VERIFIKASI (Tiket sudah diapprove SPV -> Cek Admin)
-        // ------------------------------------------------------------------
         if ($ticket->status == 'waiting_facility_approval') {
-
-            // Karena mv.admin sudah dihapus dari $isAdmin, maka Manager MV tidak bisa klik ini.
-            // Hanya Admin Facility yang bisa memverifikasi final.
             if ($isAdmin) {
                 $ticket->update(['status' => 'pending', 'updated_at' => now()]);
-
-                // Notif ke Requester
                 $this->notifyRequester($ticket, 'status_update');
-
                 \Log::info("✅ FACILITY VERIFIED: {$user->name} verified ticket {$ticket->ticket_num}");
-
                 return ['success' => true, 'message' => 'Tiket Terverifikasi (Pending). Siap dikerjakan Teknisi.'];
             } else {
                 return ['success' => false, 'message' => 'Hanya Admin Facility yang bisa memverifikasi di tahap ini.'];
             }
         }
 
-        // ------------------------------------------------------------------
-        // KASUS 2: TAHAP APPROVAL MANAGER (Tiket Baru)
-        // ------------------------------------------------------------------
         if ($ticket->status == 'waiting_approval') {
-
-            // A. BYPASS ADMIN (Hanya fh.admin / Super Admin)
             if ($isAdmin) {
                 $ticket->update(['status' => 'waiting_facility_approval', 'updated_at' => now()]);
-
                 $this->notifyRequester($ticket, 'status_update');
-                $this->notifyAdmins($ticket, 'fh_new'); // Info ke admin lain
-
+                $this->notifyAdmins($ticket, 'fh_new');
                 \Log::info("✅ APPROVE BYPASS: {$user->name} approved ticket {$ticket->ticket_num}");
-
                 return ['success' => true, 'message' => 'Disetujui Admin (Bypass). Menunggu Verifikasi Akhir.'];
             }
-
-            // B. LOGIC MATRIX (SPV/MANAGER AREA)
-            // mv.admin, lv.admin, user biasa, dll akan masuk ke sini.
-            // Di sinilah Logic "Plant D - CCV" vs "Plant D" diperiksa.
             if ($this->checkApprovalMatrix($ticket->plant, $user)) {
-
-                // 1. Update Status
                 $ticket->update(['status' => 'waiting_facility_approval', 'updated_at' => now()]);
-
-                // 2. Notif ke Requester
                 $this->notifyRequester($ticket, 'status_update');
-
-                // 3. Notif ke FACILITY ADMIN (Agar mereka tahu ada tiket masuk yg sudah diapprove bos)
                 $this->notifyAdmins($ticket, 'fh_new');
-
                 \Log::info("✅ APPROVE MATRIX: {$user->name} approved {$ticket->ticket_num} (Plant: {$ticket->plant})");
-
                 return ['success' => true, 'message' => 'Disetujui. Notifikasi telah dikirim ke Tim Facility.'];
             }
-
-            // GAGAL MATRIX
             \Log::warning("⛔ APPROVE FAIL: {$user->name} (Div: {$user->divisi}) tried to approve {$ticket->plant}");
-
             return [
                 'success' => false,
                 'message' => "Gagal. Divisi/Jabatan Anda tidak memiliki wewenang approval untuk area {$ticket->plant} (Khusus CCV/Autowire harus sesuai wewenang)."
@@ -665,9 +621,9 @@ class FacilityService
 
             $query->where(function ($q) use ($targetLevel) {
                 if ($targetLevel === 'SPV') {
-                    $q->whereIn('job_level', 'LIKE', '%SUPERVISOR%');
+                    $q->where('job_level', 'LIKE', '%SUPERVISOR%');
                 } else {
-                    $q->whereIn('job_level', 'LIKE', '%MANAGER%');
+                    $q->where('job_level', 'LIKE', '%MANAGER%');
                 }
             })->where(function ($q) use ($aliases) {
                 foreach ($aliases as $alias) {
