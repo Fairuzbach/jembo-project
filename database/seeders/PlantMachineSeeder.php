@@ -265,6 +265,7 @@ class PlantMachineSeeder extends Seeder
             'Gudang Jadi' => [],
             'HC' => [],
             'IT' => [],
+            'JEMBO ENERGINDO' => [],
             'Konstruksi' => [],
             'Marketing' => [],
             'MT' => [],
