@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }]
             },
             options: {
-                indexAxis: 'y',
+                indexAxis: 'x',
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
