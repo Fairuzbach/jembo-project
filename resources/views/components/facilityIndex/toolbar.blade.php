@@ -1,7 +1,8 @@
 @props([
-    'listPlants' => [], // Default array kosong jika lupa dikirim
+    'listPlants' => [],
     'selectedTickets' => [],
 ])
+
 <div
     class="bg-white rounded-[1.5rem] shadow-md border border-slate-100 p-6 hover:shadow-lg transition-shadow duration-300">
     <form action="{{ route('fh.index') }}" method="GET"
@@ -23,7 +24,7 @@
                 </div>
             </div>
 
-            {{-- [BARU] Filter Kategori --}}
+            {{-- Filter Kategori --}}
             <select name="category" onchange="this.form.submit()"
                 class="w-full lg:w-48 rounded-xl border border-slate-200 text-sm py-3 px-4 bg-slate-50 font-medium text-slate-600 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 cursor-pointer hover:bg-white shadow-sm hover:shadow-md transition-all duration-200 appearance-none bg-no-repeat bg-right pr-10"
                 style="background-image: url('data:image/svg+xml;utf8,<svg class=%22w-4 h-4%22 fill=%22none%22 stroke=%22%2364748b%22 viewBox=%220 0 24 24%22 xmlns=%22http://www.w3.org/2000/svg%22><path stroke-linecap=%22round%22 stroke-linejoin=%22round%22 stroke-width=%222%22 d=%22M19 9l-7 7-7-7%22></path></svg>'); background-position: right 0.75rem center; background-size: 1.25rem;">
@@ -35,19 +36,20 @@
                     Pemasangan Mesin
                 </option>
                 <option value="Pembongkaran Mesin" {{ request('category') == 'Pembongkaran Mesin' ? 'selected' : '' }}>
-                    Pembongkaran
-                    Mesin
+                    Pembongkaran Mesin
                 </option>
-                <option value="Relokasi Mesin" {{ request('category') == 'Relokasi Mesin' ? 'selected' : '' }}>Relokasi
-                    Mesin
+                <option value="Relokasi Mesin" {{ request('category') == 'Relokasi Mesin' ? 'selected' : '' }}>
+                    Relokasi Mesin
                 </option>
                 <option value="Perbaikan" {{ request('category') == 'Perbaikan' ? 'selected' : '' }}>
-                    Perbaikan</option>
+                    Perbaikan
+                </option>
                 <option value="Pembuatan Alat Baru"
-                    {{ request('category') == 'Pembuatan Alat Baru' ? 'selected' : '' }}>Pembuatan Alat
-                    Baru</option>
-                <option value="Rakit Steel Drum" {{ request('category') == 'Rakit Steel Drum' ? 'selected' : '' }}>Rakit
-                    Steel Drum
+                    {{ request('category') == 'Pembuatan Alat Baru' ? 'selected' : '' }}>
+                    Pembuatan Alat Baru
+                </option>
+                <option value="Rakit Steel Drum" {{ request('category') == 'Rakit Steel Drum' ? 'selected' : '' }}>
+                    Rakit Steel Drum
                 </option>
             </select>
 
@@ -56,13 +58,10 @@
                 class="w-full lg:w-40 rounded-xl border border-slate-200 text-sm py-3 px-4 bg-slate-50 font-medium text-slate-600 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 cursor-pointer hover:bg-white shadow-sm hover:shadow-md transition-all duration-200 appearance-none bg-no-repeat bg-right pr-10"
                 style="background-image: url('data:image/svg+xml;utf8,<svg class=%22w-4 h-4%22 fill=%22none%22 stroke=%22%2364748b%22 viewBox=%220 0 24 24%22 xmlns=%22http://www.w3.org/2000/svg%22><path stroke-linecap=%22round%22 stroke-linejoin=%22round%22 stroke-width=%222%22 d=%22M19 9l-7 7-7-7%22></path></svg>'); background-position: right 0.75rem center; background-size: 1.25rem;">
                 <option value="">All Status</option>
-                <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending
+                <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
+                <option value="in_progress" {{ request('status') == 'in_progress' ? 'selected' : '' }}>In Progress
                 </option>
-                <option value="in_progress" {{ request('status') == 'in_progress' ? 'selected' : '' }}>
-                    In
-                    Progress</option>
-                <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>
-                    Completed</option>
+                <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Completed</option>
             </select>
 
             {{-- Filter Plant --}}
@@ -77,7 +76,7 @@
                 @endforeach
             </select>
 
-            {{-- [BARU] Tombol Reset Filter --}}
+            {{-- Tombol Reset Filter --}}
             <a href="{{ route('fh.index') }}"
                 class="px-5 py-3 rounded-xl border border-slate-200 text-slate-600 text-sm font-bold hover:bg-rose-50 hover:text-rose-600 hover:border-rose-300 flex items-center justify-center gap-2 transition duration-200 shadow-sm hover:shadow-md bg-white"
                 title="Reset All Filters">
@@ -91,38 +90,22 @@
         </div>
 
         {{-- Action Buttons --}}
-        <div class="flex gap-3 w-full lg:w-auto">
-
-            {{-- Tombol Dashboard (Hanya Admin) --}}
-            @if (in_array(Auth::user()->role, ['fh.admin', 'super.admin']))
-                <a href="{{ route('fh.dashboard') }}"
-                    class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-bold hover:bg-slate-50 flex items-center gap-2 transition group"
-                    title="Open Analytics Dashboard">
-                    <svg class="w-5 h-5 text-slate-400 group-hover:text-blue-600 transition" fill="none"
-                        stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path>
-                    </svg>
-                    Dashboard
-                </a>
-            @endif
-
-            {{-- Tombol Export (Existing) --}}
+        <div class="flex flex-wrap gap-3 w-full lg:w-auto">
+            {{-- Tombol Export --}}
             <button type="button" @click="submitExport()"
                 class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-bold hover:bg-slate-50 flex items-center gap-2 transition hover:text-green-600">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
                 </svg>
-                Export <span x-show="selectedTickets.length > 0" class="text-xs bg-slate-200 px-1.5 rounded-full ml-1"
+                Export
+                <span x-show="selectedTickets.length > 0" class="text-xs bg-slate-200 px-1.5 rounded-full ml-1"
                     x-text="selectedTickets.length"></span>
             </button>
 
-            {{-- Tombol New Ticket (Existing) --}}
+            {{-- Tombol New Ticket - PAKAI STYLE YANG SAMA SEPERTI GA --}}
             <button type="button" @click="$dispatch('open-create-modal')"
-                class="px-6 py-2.5 bg-[#1E3A5F] hover:bg-[#162c46] text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-900/20 transition transform active:scale-95 flex items-center gap-2">
+                class="flex items-center justify-center gap-2 bg-[#1E3A5F] hover:bg-[#162c46] text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-all transform active:scale-95 shadow-sm">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                 </svg>
