@@ -71,7 +71,7 @@ document.addEventListener('alpine:init', () => {
             'QC LAB': 'QUALITY ASSURANCE & R D', 'QC LV': 'QUALITY ASSURANCE & R D', 'QC MV': 'QUALITY ASSURANCE & R D', 'QC FO': 'QUALITY ASSURANCE & R D',
             'RM 1': 'PROCUREMENT', 'RM 2': 'PROCUREMENT', 'RM 3': 'PROCUREMENT', 'RM 5': 'PROCUREMENT', 'RM Office': 'PROCUREMENT',
             'Workshop Electric': 'MAINTENANCE', 'Konstruksi': 'FACILITY', 'Plant E': 'FIBER OPTIC',
-            'Plant Tools': 'PROCESS ENGINEERING', 'Gudang Jadi': 'SALES SUPPORT', 'GA': 'GENERAL AFFAIR', 'FA': 'FINANCE',
+            'Plant Tools': 'PROCESS ENGINEERING', 'MT': 'MAINTENANCE','Gudang Jadi': 'SALES SUPPORT', 'GA': 'GENERAL AFFAIR', 'FA': 'FINANCE',
             'IT': 'INFORMATION TECHNOLOGY', 'HC': 'HUMAN CAPITAL', 'Sales': 'Sales', 'Marketing': 'Marketing', 'Plant A - Autowire': 'LOW VOLTAGE', 'Plant D - CCV': 'MEIDUM VOLTAGE','JEMBO ENERGINDO' : 'JEMBO ENERGINDO'
         },
 

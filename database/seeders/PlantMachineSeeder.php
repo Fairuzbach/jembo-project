@@ -286,6 +286,7 @@ class PlantMachineSeeder extends Seeder
             'RM 2' => [],
             'RM 3' => [],
             'RM 5' => [],
+            'Workshop Electric' =>  []
         ];
 
         foreach ($plantMachineData as $plantName => $machinesList) {
