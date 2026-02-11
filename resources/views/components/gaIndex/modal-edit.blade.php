@@ -99,30 +99,22 @@
                         @method('PUT')
 
                         <div class="space-y-4 md:space-y-6">
-
-                            {{-- Info Tiket --}}
                             <div
                                 class="flex flex-col md:flex-row md:justify-between md:items-center border-b pb-4 mb-2 gap-2">
                                 <div>
                                     <div class="font-mono font-black text-xl md:text-2xl text-slate-800"
                                         x-text="editForm.ticket_num"></div>
                                     <div class="text-xs text-slate-500 mt-1 md:hidden" x-text="ticketDetail.plantName">
-                                    </div> {{-- Muncul di HP --}}
+                                    </div>
                                 </div>
                                 <span
                                     class="hidden md:block text-sm font-bold text-slate-500 uppercase bg-slate-100 px-3 py-1 rounded border"
-                                    x-text="ticketDetail.plantName"></span> {{-- Muncul di Desktop --}}
+                                    x-text="ticketDetail.plantName"></span>
                             </div>
 
-                            {{-- GRID UTAMA: 
-                                 - Mobile: grid-cols-1 (1 Kolom ke bawah)
-                                 - Desktop: md:grid-cols-2 (2 Kolom Kanan Kiri - SEPERTI ASLINYA)
-                            --}}
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
 
-                                {{-- KIRI --}}
                                 <div class="space-y-4">
-                                    {{-- Status --}}
                                     <div>
                                         <label
                                             class="block text-xs font-bold text-slate-500 uppercase mb-1">Status</label>

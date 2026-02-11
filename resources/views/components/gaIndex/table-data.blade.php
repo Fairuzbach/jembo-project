@@ -56,7 +56,7 @@
 
                             $canEdit = false;
                             if ($isGaAdmin) {
-                                $canEdit = in_array($ticketStatus, ['in_progress', 'pending']);
+                                $canEdit = in_array($ticketStatus, ['in_progress', 'pending', 'completed']);
                             }
 
                             $isTechnicalApprover = false;
@@ -124,7 +124,6 @@
 
                         <tr
                             class="hover:bg-yellow-50/50 transition-colors duration-150 group {{ $index % 2 == 0 ? 'bg-white' : 'bg-slate-50/30' }}">
-                            {{-- ISI TABEL DESKTOP (BIARKAN SEPERTI KODE SEBELUMNYA) --}}
                             <td class="px-6 py-4"><input type="checkbox" value="{{ (string) $item->id }}"
                                     x-model="selected" class="rounded-sm border-slate-300"></td>
                             <td class="px-6 py-4">
@@ -180,7 +179,7 @@
                                     class="px-3 py-1 text-[10px] font-black uppercase rounded-sm border {{ $statusClass }} tracking-wider">{{ str_replace('_', ' ', $item->status) }}</span>
                             </td>
 
-                            {{-- KOLOM AKSI DESKTOP --}}
+
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <div class="flex items-center gap-2 justify-end">
                                     <button type="button"
