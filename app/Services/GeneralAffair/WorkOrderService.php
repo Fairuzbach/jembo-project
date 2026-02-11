@@ -6,7 +6,6 @@ use App\Models\User;
 use App\Services\GeneralAffair\GaWhatsappService;
 use App\Models\GeneralAffair\WorkOrderGeneralAffair;
 use App\Models\GeneralAffair\WorkOrderGaHistory;
-use App\Models\GeneralAffair\Category;
 use App\Mail\WorkOrderNotification;
 use App\Jobs\SendWorkOrderNotification;
 use Illuminate\Support\Facades\Auth;
@@ -16,6 +15,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
 class WorkOrderService
@@ -83,7 +83,7 @@ class WorkOrderService
     }
     public function updateStatus($id, array $data, ?UploadedFile $completionPhoto = null): void
     {
-        // dd($data);
+        // dd($id);
         $ticket = WorkOrderGeneralAffair::findOrFail($id);
 
         $updateData = [
@@ -96,127 +96,146 @@ class WorkOrderService
             $updateData['parameter_permintaan'] = $data['parameter_permintaan'];
         }
 
-        // Logika Start Date
+        // 1. Logika Start Date
         if (!empty($data['start_date'])) {
             $updateData['actual_start_date'] = $data['start_date'];
         } else if ($data['status'] === 'in_progress' && is_null($ticket->actual_start_date)) {
             $updateData['actual_start_date'] = now();
         }
 
-        // Logika Completed
+        // 2. Logika Completed
         if ($data['status'] === 'completed') {
             if ($completionPhoto) {
-                $updateData['photo_completed_path'] = $completionPhoto->store('wo_ga_completed', 'public');
+
+                if ($ticket->photo_completed_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($ticket->photo_completed_path)) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($ticket->photo_completed_path);
+                }
+                $uniqueName = 'wo_' . $ticket->id . '_' . time() . '.' . $completionPhoto->getClientOriginalExtension();
+
+                // 3. Simpan
+                $updateData['photo_completed_path'] = $completionPhoto->storeAs('wo_ga_completed', $uniqueName, 'public');
             }
+
             $updateData['actual_completion_date'] = $data['actual_completion_date'];
             $updateData['completion_note'] = $data['completion_note'] ?? null;
             $updateData['cancellation_note'] = null;
         }
 
-        // Logika Cancelled
+        // 3. Logika Cancelled
         if ($data['status'] === 'cancelled') {
+            // [FIX] Hapus file fisik bukti penyelesaian jika ada (karena dibatalkan)
+            if ($ticket->photo_completed_path && Storage::disk('public')->exists($ticket->photo_completed_path)) {
+                Storage::disk('public')->delete($ticket->photo_completed_path);
+            }
+
             $updateData['cancellation_note'] = $data['cancellation_note'] ?? null;
             $updateData['actual_completion_date'] = null;
             $updateData['completion_note'] = null;
             $updateData['photo_completed_path'] = null;
         }
 
-        // Update Optional Fields
+        // 4. Update Optional Fields
         if (!empty($data['department'])) $updateData['department'] = $data['department'];
         if (!empty($data['target_date'])) $updateData['target_completion_date'] = $data['target_date'];
 
         // EKSEKUSI UPDATE
         $ticket->update($updateData);
 
-        // Kirim Email (Existing)
+        // Kirim Email
         $this->sendStatusChangeEmail($ticket, $data['status']);
 
         // Log History
         $this->logHistory($ticket->id, 'Status Update', 'Status diubah menjadi: ' . ucfirst($data['status']));
 
         // ==========================================================
-        // [BARU] LOGIKA NOTIFIKASI WHATSAPP STATUS UPDATE
+        // NOTIFIKASI WHATSAPP
         // ==========================================================
 
-        // 1. Ambil Data Requester
         $requester = \App\Models\User::where('nik', $ticket->requester_nik)->first();
-        $requesterPhone = $requester ? ($requester->no_hp ?? $requester->phone) : null;
 
-        // 2. Siapkan Link & Pesan
-        // [TAMBAHAN LINK]
-        $ticketLink = route('ga.index');
-        $waMessage = "";
+        // [FIX] Cek apakah requester ada untuk mencegah Error
+        if ($requester) {
+            $requesterPhone = $requester->no_hp ?? $requester->phone;
+            $requesterName = $requester->name; // Simpan nama di variabel
 
-        switch ($data['status']) {
-            case 'in_progress':
-                $waMessage = "🎫 *WORK ORDER GENERAL AFFAIR*\n" .
-                    "━━━━━━━━━━━━━━━━━━━━━━\n\n" .
-                    "Halo *{$requester->name}* 👋\n\n" .
-                    "🛠️ *STATUS UPDATE: ON PROGRESS*\n\n" .
-                    "📋 Ticket: *#{$ticket->ticket_num}*\n" .
-                    "📊 Status: *Sedang Dikerjakan*\n\n" .
-                    "⚙️ Tim teknisi sedang menangani pekerjaan Anda.\n" .
-                    "Kami akan memberikan update progress selanjutnya.\n\n" .
-                    "🔗 *Link Tiket:*\n$ticketLink\n\n" .
-                    "━━━━━━━━━━━━━━━━━━━━━━\n" .
-                    "_Terima kasih atas kesabaran Anda_ ⏳";
-                break;
+            // [FIX] Link lebih spesifik (bisa tambahkan parameter search ID agar langsung ketemu)
+            // Contoh: url/ga/index?search=WO-2024-001
+            $ticketLink = route('ga.index', ['search' => $ticket->ticket_num]);
 
-            case 'completed':
-                $note = $data['completion_note'] ?? '-';
-                $waMessage = "🎫 *WORK ORDER GENERAL AFFAIR*\n" .
-                    "━━━━━━━━━━━━━━━━━━━━━━\n\n" .
-                    "Halo *{$requester->name}* 👋\n\n" .
-                    "✅ *STATUS UPDATE: COMPLETED*\n\n" .
-                    "📋 Ticket: *#{$ticket->ticket_num}*\n" .
-                    "📊 Status: *Selesai Dikerjakan*\n\n" .
-                    "🎉 Pekerjaan telah selesai!\n\n" .
-                    "📝 *Catatan Penyelesaian:*\n" .
-                    "_{$note}_\n\n" .
-                    "🔗 *Link Tiket (Cek Hasil):*\n$ticketLink\n\n" .
-                    "━━━━━━━━━━━━━━━━━━━━━━\n" .
-                    "_Terima kasih atas kerjasamanya!_ 🙏";
-                break;
+            $waMessage = "";
 
-            case 'cancelled':
-                $reason = $data['cancellation_note'] ?? '-';
-                $waMessage = "🎫 *WORK ORDER GENERAL AFFAIR*\n" .
-                    "━━━━━━━━━━━━━━━━━━━━━━\n\n" .
-                    "Halo *{$requester->name}* 👋\n\n" .
-                    "🚫 *STATUS UPDATE: CANCELLED*\n\n" .
-                    "📋 Ticket: *#{$ticket->ticket_num}*\n" .
-                    "📊 Status: *Dibatalkan*\n\n" .
-                    "📝 *Alasan Pembatalan:*\n" .
-                    "_{$reason}_\n\n" .
-                    "🔗 *Link Tiket:*\n$ticketLink\n\n" .
-                    "━━━━━━━━━━━━━━━━━━━━━━\n" .
-                    "_Untuk informasi lebih lanjut, silakan hubungi tim terkait_ 💬\n" .
-                    "_Mohon maaf atas ketidaknyamanannya_ 🙏";
-                break;
+            switch ($data['status']) {
+                case 'in_progress':
+                    $waMessage = "🎫 *WORK ORDER GENERAL AFFAIR*\n" .
+                        "━━━━━━━━━━━━━━━━━━━━━━\n\n" .
+                        "Halo *{$requesterName}* 👋\n\n" .
+                        "🛠️ *STATUS UPDATE: ON PROGRESS*\n\n" .
+                        "📋 Ticket: *#{$ticket->ticket_num}*\n" .
+                        "📊 Status: *Sedang Dikerjakan*\n\n" .
+                        "⚙️ Tim teknisi sedang menangani pekerjaan Anda.\n" .
+                        "Kami akan memberikan update progress selanjutnya.\n\n" .
+                        "🔗 *Link Tiket:*\n$ticketLink\n\n" .
+                        "━━━━━━━━━━━━━━━━━━━━━━\n" .
+                        "_Terima kasih atas kesabaran Anda_ ⏳";
+                    break;
 
-            case 'pending':
-                $waMessage = "🎫 *WORK ORDER GENERAL AFFAIR*\n" .
-                    "━━━━━━━━━━━━━━━━━━━━━━\n\n" .
-                    "Halo *{$requester->name}* 👋\n\n" .
-                    "⏳ *STATUS UPDATE: PENDING*\n\n" .
-                    "📋 Ticket: *#{$ticket->ticket_num}*\n" .
-                    "📊 Status: *Dalam Antrian*\n\n" .
-                    "📌 Tiket Anda telah masuk dalam antrian pengerjaan.\n" .
-                    "Tim teknisi akan segera menangani sesuai prioritas.\n\n" .
-                    "🔗 *Link Tiket:*\n$ticketLink\n\n" .
-                    "━━━━━━━━━━━━━━━━━━━━━━\n" .
-                    "_Anda akan menerima notifikasi saat pekerjaan dimulai_ 🔔";
-                break;
-        }
+                case 'completed':
+                    $note = $data['completion_note'] ?? '-';
+                    $waMessage = "🎫 *WORK ORDER GENERAL AFFAIR*\n" .
+                        "━━━━━━━━━━━━━━━━━━━━━━\n\n" .
+                        "Halo *{$requesterName}* 👋\n\n" .
+                        "✅ *STATUS UPDATE: COMPLETED*\n\n" .
+                        "📋 Ticket: *#{$ticket->ticket_num}*\n" .
+                        "📊 Status: *Selesai Dikerjakan*\n\n" .
+                        "🎉 Pekerjaan telah selesai!\n\n" .
+                        "📝 *Catatan Penyelesaian:*\n" .
+                        "_{$note}_\n\n" .
+                        "🔗 *Link Tiket (Cek Hasil):*\n$ticketLink\n\n" .
+                        "━━━━━━━━━━━━━━━━━━━━━━\n" .
+                        "_Terima kasih atas kerjasamanya!_ 🙏";
+                    break;
 
-        // 3. Eksekusi Kirim WA
-        if (!empty($waMessage) && !empty($requesterPhone)) {
-            try {
-                GaWhatsappService::send($requesterPhone, $waMessage);
-                \Log::info("WA Status Update ({$data['status']}) terkirim ke {$requester->name}");
-            } catch (\Exception $e) {
-                \Log::error("Gagal kirim WA Status Update: " . $e->getMessage());
+                case 'cancelled':
+                    $reason = $data['cancellation_note'] ?? '-';
+                    $waMessage = "🎫 *WORK ORDER GENERAL AFFAIR*\n" .
+                        "━━━━━━━━━━━━━━━━━━━━━━\n\n" .
+                        "Halo *{$requesterName}* 👋\n\n" .
+                        "🚫 *STATUS UPDATE: CANCELLED*\n\n" .
+                        "📋 Ticket: *#{$ticket->ticket_num}*\n" .
+                        "📊 Status: *Dibatalkan*\n\n" .
+                        "📝 *Alasan Pembatalan:*\n" .
+                        "_{$reason}_\n\n" .
+                        "🔗 *Link Tiket:*\n$ticketLink\n\n" .
+                        "━━━━━━━━━━━━━━━━━━━━━━\n" .
+                        "_Untuk informasi lebih lanjut, silakan hubungi tim terkait_ 💬";
+                    break;
+
+                case 'pending':
+                    $waMessage = "🎫 *WORK ORDER GENERAL AFFAIR*\n" .
+                        "━━━━━━━━━━━━━━━━━━━━━━\n\n" .
+                        "Halo *{$requesterName}* 👋\n\n" .
+                        "⏳ *STATUS UPDATE: PENDING*\n\n" .
+                        "📋 Ticket: *#{$ticket->ticket_num}*\n" .
+                        "📊 Status: *Dalam Antrian*\n\n" .
+                        "📌 Tiket Anda telah masuk dalam antrian pengerjaan.\n" .
+                        "Tim teknisi akan segera menangani sesuai prioritas.\n\n" .
+                        "🔗 *Link Tiket:*\n$ticketLink\n\n" .
+                        "━━━━━━━━━━━━━━━━━━━━━━\n" .
+                        "_Anda akan menerima notifikasi saat pekerjaan dimulai_ 🔔";
+                    break;
             }
+
+            // Eksekusi Kirim WA
+            if (!empty($waMessage) && !empty($requesterPhone)) {
+                try {
+                    GaWhatsappService::send($requesterPhone, $waMessage);
+                    \Log::info("WA Status Update ({$data['status']}) terkirim ke {$requesterName}");
+                } catch (\Exception $e) {
+                    \Log::error("Gagal kirim WA Status Update: " . $e->getMessage());
+                }
+            }
+        } else {
+            \Log::warning("Requester dengan NIK {$ticket->requester_nik} tidak ditemukan, WA tidak terkirim.");
         }
     }
 

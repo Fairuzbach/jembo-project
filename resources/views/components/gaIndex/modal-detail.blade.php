@@ -185,45 +185,38 @@
                                 </template>
 
                                 {{-- 2. FOTO PENYELESAIAN (AKHIR) --}}
-                                {{-- Perhatikan nama variabel: pastikan sesuai database (photo_completion_path atau photo_completed_path) --}}
-                                <template x-if="ticket.photo_completed_path || ticket.photo_completion_path">
-                                    <div>
-                                        <span class="text-xs font-bold text-emerald-600 uppercase block mb-2">Bukti
-                                            Penyelesaian</span>
 
-                                        {{-- Variabel helper untuk mengambil path yang tidak null --}}
-                                        <div x-data="{ path: ticket.photo_completed_path || ticket.photo_completion_path }">
+                                {{-- GUNAKAN INI HANYA JIKA MODAL ADA DI LUAR LOOP --}}
+                                <div x-data>
+                                    {{-- Ambil path langsung dari object ticket di AlpineJS --}}
+                                    <template x-if="ticket.photo_completed_path || ticket.photo_completion_path">
+                                        <div>
+                                            <span class="text-xs font-bold text-emerald-600 uppercase block mb-2">Bukti
+                                                Penyelesaian</span>
 
-                                            {{-- LOGIKA: JIKA PDF --}}
-                                            <template x-if="path.toLowerCase().endsWith('.pdf')">
-                                                <a :href="'/storage/' + path" target="_blank"
-                                                    class="flex flex-col items-center justify-center h-48 border-2 border-emerald-200 border-dashed rounded-lg bg-emerald-50 hover:bg-emerald-100 transition-colors p-4 text-center cursor-pointer group">
-                                                    <svg class="w-12 h-12 text-red-500 mb-2 group-hover:scale-110 transition-transform"
-                                                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            stroke-width="2"
-                                                            d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z">
-                                                        </path>
-                                                    </svg>
-                                                    <span class="text-xs font-black text-emerald-800 uppercase">Dokumen
-                                                        PDF</span>
-                                                    <span class="text-[10px] text-emerald-600">Klik untuk
-                                                        membuka</span>
-                                                </a>
-                                            </template>
+                                            {{-- Simpan path ke variabel lokal biar pendek --}}
+                                            <div x-data="{ get path() { return ticket.photo_completed_path || ticket.photo_completion_path } }">
 
-                                            {{-- LOGIKA: JIKA GAMBAR --}}
-                                            <template x-if="!path.toLowerCase().endsWith('.pdf')">
-                                                <a :href="'/storage/' + path" target="_blank">
-                                                    <img :src="'/storage/' + path"
-                                                        class="w-full h-48 object-cover rounded-lg border-2 border-emerald-400 hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
-                                                        alt="Foto Selesai">
-                                                </a>
-                                            </template>
+                                                {{-- PDF --}}
+                                                <template x-if="path.toLowerCase().endsWith('.pdf')">
+                                                    <a :href="'/storage/' + path" target="_blank" class="...">
+                                                        ... (Icon PDF) ...
+                                                    </a>
+                                                </template>
 
+                                                {{-- Image --}}
+                                                <template x-if="!path.toLowerCase().endsWith('.pdf')">
+                                                    <a :href="'/storage/' + path" target="_blank">
+                                                        {{-- PENTING: Gunakan :src agar dinamis --}}
+                                                        <img :src="'/storage/' + path"
+                                                            class="w-full h-48 object-cover rounded-lg border-2 border-emerald-400"
+                                                            alt="Foto Selesai">
+                                                    </a>
+                                                </template>
+                                            </div>
                                         </div>
-                                    </div>
-                                </template>
+                                    </template>
+                                </div>
                             </div>
                             {{-- 6. RIWAYAT AKTIVITAS (HISTORY) --}}
                             <div class="border-t border-slate-200 pt-8 mt-8" x-show="ticket?.histories?.length > 0"
