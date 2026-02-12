@@ -136,7 +136,11 @@ class WorkOrderService
 
         // 4. Update Optional Fields
         if (!empty($data['department'])) $updateData['department'] = $data['department'];
-        if (!empty($data['target_date'])) $updateData['target_completion_date'] = $data['target_date'];
+        if (!empty($data['target_date'])) {
+            $updateData['target_completion_date'] = $data['target_date'];
+        } elseif (!empty($data['target_completion_date'])) {
+            $updateData['target_completion_date'] = $data['target_completion_date'];
+        }
 
         // EKSEKUSI UPDATE
         $ticket->update($updateData);

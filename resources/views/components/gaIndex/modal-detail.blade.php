@@ -96,11 +96,25 @@
                                 </div>
 
                                 {{-- Baris 4: Tanggal --}}
+                                <div>
+                                    <span class="text-xs font-bold text-slate-400 uppercase block mb-1">Dibuat
+                                        Pada</span>
+                                    <p class="font-bold text-slate-800"
+                                        x-text="new Date(ticket.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric'})">
+                                    </p>
+                                </div>
                                 <div x-show="ticket.target_completion_date">
                                     <span class="text-xs font-bold text-slate-400 uppercase block mb-1">Target
                                         Selesai</span>
                                     <p class="font-bold text-slate-800"
                                         x-text="new Date(ticket.target_completion_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })">
+                                    </p>
+                                </div>
+                                <div x-show="ticket.actual_start_date">
+                                    <span class="text-xs font-bold text-slate-400 uppercase block mb-1">Mulai
+                                        Pengerjaan</span>
+                                    <p class="font-bold text-blue-600"
+                                        x-text="new Date(ticket.actual_start_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric'})">
                                     </p>
                                 </div>
                                 <div x-show="ticket.actual_completion_date">

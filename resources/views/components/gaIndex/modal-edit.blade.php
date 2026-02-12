@@ -189,8 +189,7 @@
                                     <div>
                                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Target
                                             Selesai</label>
-                                        <input type="date" name="target_completion_date"
-                                            x-model="editForm.target_date"
+                                        <input type="date" name="target_date" x-model="editForm.target_date"
                                             class="w-full border-slate-300 rounded-lg text-sm font-bold h-11">
                                     </div>
 
