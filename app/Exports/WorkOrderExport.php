@@ -9,18 +9,21 @@ use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithStyles;
+use Maatwebsite\Excel\Concerns\WithDrawings;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use Carbon\Carbon;
 
-class WorkOrderExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithStyles, WithEvents
+class WorkOrderExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithStyles, WithEvents, WithDrawings
 {
     protected $data;
-
+    protected $collection;
     public function __construct($data)
     {
         $this->data = $data;
+        $this->collection = $data->get();
     }
 
     public function collection()
@@ -46,6 +49,8 @@ class WorkOrderExport implements FromCollection, WithHeadings, WithMapping, Shou
             'TANGGAL DIBUAT',
             'TANGGAL TARGET',
             'TANGGAL SELESAI',
+            'FOTO BEFORE',
+            'FOTO AFTER',
         ];
     }
 
@@ -81,7 +86,68 @@ class WorkOrderExport implements FromCollection, WithHeadings, WithMapping, Shou
             $tglDibuat,
             $tglTarget,
             $tglSelesai,
+            '',
+            '',
         ];
+    }
+
+    public function drawings()
+    {
+        $drawings = [];
+        // Daftar ekstensi yang diizinkan oleh Excel
+        $validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp'];
+
+        foreach ($this->collection as $index => $ticket) {
+            $rowIndex = $index + 2;
+
+            // ==========================================================
+            // 1. FOTO BEFORE (Laporan)
+            // ==========================================================
+            if ($ticket->photo_path) {
+                $path1 = public_path('storage/' . $ticket->photo_path);
+
+                // Ambil ekstensi file (misal: jpg, pdf, png)
+                $ext1 = strtolower(pathinfo($path1, PATHINFO_EXTENSION));
+
+                // CEK: File harus ADA di folder DAN formatnya harus GAMBAR
+                if (file_exists($path1) && in_array($ext1, $validExtensions)) {
+                    $drawing = new \PhpOffice\PhpSpreadsheet\Worksheet\Drawing();
+                    $drawing->setName('Foto Before');
+                    $drawing->setDescription('Foto Before');
+                    $drawing->setPath($path1);
+                    $drawing->setHeight(150);
+                    $drawing->setCoordinates('O' . $rowIndex);
+                    $drawing->setOffsetX(10);
+                    $drawing->setOffsetY(10);
+                    $drawings[] = $drawing;
+                }
+            }
+
+            // ==========================================================
+            // 2. FOTO AFTER (Penyelesaian)
+            // ==========================================================
+            if ($ticket->photo_completed_path) {
+                $path2 = public_path('storage/' . $ticket->photo_completed_path);
+
+                // Ambil ekstensi file
+                $ext2 = strtolower(pathinfo($path2, PATHINFO_EXTENSION));
+
+                // CEK: File harus ADA di folder DAN formatnya harus GAMBAR
+                if (file_exists($path2) && in_array($ext2, $validExtensions)) {
+                    $drawing2 = new \PhpOffice\PhpSpreadsheet\Worksheet\Drawing();
+                    $drawing2->setName('Foto After');
+                    $drawing2->setDescription('Foto After');
+                    $drawing2->setPath($path2);
+                    $drawing2->setHeight(150);
+                    $drawing2->setCoordinates('P' . $rowIndex);
+                    $drawing2->setOffsetX(10);
+                    $drawing2->setOffsetY(10);
+                    $drawings[] = $drawing2;
+                }
+            }
+        }
+
+        return $drawings;
     }
 
     // 3. REGISTER EVENTS
@@ -93,11 +159,21 @@ class WorkOrderExport implements FromCollection, WithHeadings, WithMapping, Shou
                 $lastColumn = $sheet->getHighestColumn();
                 $lastRow = $sheet->getHighestRow();
 
+                // Style Dasar
                 $sheet->setAutoFilter('A1:' . $lastColumn . $lastRow);
                 $sheet->freezePane('A2');
-
-                // Wrap Text untuk Uraian Pekerjaan (Kolom G)
                 $sheet->getStyle('G2:G' . $lastRow)->getAlignment()->setWrapText(true);
+
+                // [PENTING] Set Tinggi Baris agar Gambar Muat
+                // Loop dari baris 2 sampai akhir
+                for ($i = 2; $i <= $lastRow; $i++) {
+                    // Set tinggi baris jadi 90 (sedikit lebih besar dari tinggi gambar 80)
+                    $sheet->getRowDimension($i)->setRowHeight(160);
+                }
+
+                // Set Lebar Kolom Foto biar rapi
+                $sheet->getColumnDimension('O')->setWidth(70);
+                $sheet->getColumnDimension('P')->setWidth(70);
             },
         ];
     }
