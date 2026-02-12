@@ -86,8 +86,8 @@
 
                                 {{-- Baris 3: Teknis & Kategori --}}
                                 <div>
-                                    <span class="text-xs font-bold text-slate-400 uppercase block mb-1">Approved
-                                        By</span>
+                                    <span class="text-xs font-bold text-slate-400 uppercase block mb-1">PIC /
+                                        Teknisi</span>
                                     <p class="font-bold text-slate-800">
                                         {{-- Tampilkan: Nama PIC (Divisi PIC) --}}
                                         <span
