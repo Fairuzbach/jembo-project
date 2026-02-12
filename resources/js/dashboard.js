@@ -150,46 +150,61 @@ document.addEventListener('DOMContentLoaded', function () {
     // 4. CHART PARAMETER (Doughnut)
     // ============================================================
     const paramId = 'paramChart';
-    if (document.getElementById(paramId) && config.param) {
-        destroyChartIfExists(paramId);
-        new Chart(document.getElementById(paramId).getContext('2d'), {
-            type: 'doughnut',
-            data: {
-                labels: config.param.labels,
-                datasets: [{
-                    data: config.param.values,
-                    backgroundColor: ['#36a2eb', '#ff6384', '#4bc0c0', '#ff9f40', '#9966ff'],
-                    borderWidth: 1,
-                    borderColor: '#fff'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { 
-                        position: 'bottom',
-                        labels: {
-                            padding: 10,
-                            font: { size: 10 }
+if (document.getElementById(paramId) && config.param) {
+    destroyChartIfExists(paramId);
+    
+    // Generate dynamic colors based on number of data points
+    const generateColors = (count) => {
+        const colors = [
+            '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8',
+            '#F7DC6F', '#BB8FCE', '#85C1E2', '#F8B739', '#52B788',
+            '#E63946', '#A8DADC', '#457B9D', '#F1FAEE', '#E76F51',
+            '#2A9D8F', '#E9C46A', '#F4A261', '#E76F51', '#264653',
+            '#8338EC', '#FF006E', '#FB5607', '#FFBE0B', '#3A86FF'
+        ];
+        return colors.slice(0, count);
+    };
+    
+    new Chart(document.getElementById(paramId).getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: config.param.labels,
+            datasets: [{
+                data: config.param.values,
+                backgroundColor: generateColors(config.param.values.length),
+                borderWidth: 1,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 10,
+                        font: {
+                            size: 10
                         }
+                    }
+                },
+                datalabels: {
+                    color: '#fff',
+                    font: {
+                        weight: 'bold',
+                        size: 11
                     },
-                    datalabels: {
-                        color: '#fff',
-                        font: { 
-                            weight: 'bold', 
-                            size: 11 
-                        },
-                        formatter: (value, ctx) => {
-                            let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                            let percentage = (value * 100 / sum).toFixed(0) + "%";
-                            return value > 0 ? percentage : '';
-                        }
+                    formatter: (value, ctx) => {
+                        let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                        let percentage = (value * 100 / sum).toFixed(0) + "%";
+                        return value > 0 ? percentage : '';
                     }
                 }
             }
-        });
-    }
+        }
+    });
+}
 
     // ============================================================
     // 5. CHART BOBOT (Pie)
