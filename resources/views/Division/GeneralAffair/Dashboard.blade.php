@@ -91,6 +91,7 @@
             {{-- 1. STATISTIK CARDS --}}
             <x-gaDashboard.stats-card :count-total="$countTotal" :count-in-progress="$countInProgress" :count-completed="$countCompleted" :count-rejected="$countRejected"
                 :count-cancelled="$countCancelled" :count-pending="$countPending" :count-waiting-approval-g-a="$countWaitingApprovalGA" />
+            <x-gaDashboard.date-range />
 
             {{-- 2. GRID GRAFIK --}}
             <x-gaDashboard.graph-grid :filterMonth="$filterMonth" :perfPercentage="$perfPercentage" :perfTotal="$perfTotal" :perfCompleted="$perfCompleted" />
@@ -98,7 +99,6 @@
             {{-- 3. PIE CHART & DATE RANGE --}}
 
             <x-gaDashboard.pie-chart />
-            <x-gaDashboard.date-range />
 
             {{-- 4. GANTT CHART  --}}
 
