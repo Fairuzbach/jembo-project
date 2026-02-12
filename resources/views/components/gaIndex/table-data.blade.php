@@ -34,7 +34,7 @@
                                 :checked="pageIds.length > 0 && pageIds.every(id => selected.includes(String(id)))"
                                 class="rounded-sm border-slate-600 bg-slate-700 text-yellow-400 focus:ring-offset-slate-900 focus:ring-yellow-400 cursor-pointer">
                         </th>
-                        @foreach (['Tiket', 'Pelapor', 'Lokasi / Dept', 'Parameter', 'Bobot', 'Uraian', 'Diterima Oleh', 'Status', 'Aksi'] as $head)
+                        @foreach (['Tiket', 'Pelapor', 'Lokasi / Dept', 'Parameter', 'Bobot', 'Uraian', 'PIC / Teknisi', 'Status', 'Aksi'] as $head)
                             <th
                                 class="px-6 py-4 text-left text-[11px] font-black text-white uppercase tracking-widest {{ $head == 'Tiket' ? 'text-yellow-400' : '' }}">
                                 {{ $head }}
