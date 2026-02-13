@@ -271,6 +271,7 @@ class DatabaseSeeder extends Seeder
             'GA - TANGERANG' => [],
             'GA - JAKARTA' => [],
             'Gudang Jadi' => [],
+            'Gudang Scrap' => [],
             'HC' => [],
             'IT' => [],
             'Konstruksi' => [],
