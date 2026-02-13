@@ -264,6 +264,7 @@ class PlantMachineSeeder extends Seeder
             'GA - TANGERANG' => [],
             'GA - JAKARTA' => [],
             'Gudang Jadi' => [],
+            'Gudang Scrap' => [],
             'HC' => [],
             'IT' => [],
             'JEMBO ENERGINDO' => [],
