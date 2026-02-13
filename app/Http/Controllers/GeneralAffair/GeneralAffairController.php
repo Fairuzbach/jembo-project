@@ -148,7 +148,7 @@ class GeneralAffairController extends Controller
                     $specificDept = 'QUALITY ASSURANCE & R D';
                     break;
                 case 'Konstruksi':
-                    $specificDept = 'FACILITY';
+                    $specificDept = 'FH';
                     break;
                 case 'Workshop Electric':
                 case 'MT':
