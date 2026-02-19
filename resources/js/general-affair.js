@@ -68,9 +68,9 @@ document.addEventListener('alpine:init', () => {
         locationMap: {
             'Plant A': 'LOW VOLTAGE', 'Plant B': 'MEIDUM VOLTAGE', 'Plant C': 'LOW VOLTAGE',
             'Plant D': 'MEIDUM VOLTAGE', 'Autowire': 'LOW VOLTAGE', 'MC Cable': 'LOW VOLTAGE',
-            'QC LAB': 'QUALITY ASSURANCE & R D', 'QC LV': 'QUALITY ASSURANCE & R D', 'QC MV': 'QUALITY ASSURANCE & R D', 'QC FO': 'QUALITY ASSURANCE & R D',
-            'RM 1': 'PROCUREMENT', 'RM 2': 'PROCUREMENT', 'RM 3': 'PROCUREMENT', 'RM 5': 'PROCUREMENT', 'RM Office': 'PROCUREMENT',
-            'Workshop Electric': 'MAINTENANCE', 'Konstruksi': 'FACILITY', 'Plant E': 'FIBER OPTIC',
+            'QC LAB': 'QUALITY ASSURANCE', 'QC LV': 'QUALITY ASSURANCE', 'QC MV': 'QUALITY ASSURANCE', 'QC FO': 'QUALITY ASSURANCE',
+            'RM 1': 'SUPPLY CHAIN', 'RM 2': 'SUPPLY CHAIN', 'RM 3': 'SUPPLY CHAIN', 'RM 5': 'SUPPLY CHAIN', 'RM Office': 'SUPPLY CHAIN',
+            'Workshop Electric': 'MAINTENANCE', 'Konstruksi': 'FH', 'Plant E': 'FIBER OPTIC',
             'Plant Tools': 'PROCESS ENGINEERING', 'MT': 'MAINTENANCE','Gudang Jadi': 'SALES SUPPORT', 'GA': 'GENERAL AFFAIR', 'FA': 'FINANCE',
             'IT': 'INFORMATION TECHNOLOGY', 'HC': 'HUMAN CAPITAL', 'Sales': 'Sales', 'Marketing': 'Marketing', 'Plant A - Autowire': 'LOW VOLTAGE', 'Plant D - CCV': 'MEIDUM VOLTAGE','JEMBO ENERGINDO' : 'JEMBO ENERGINDO'
         },
