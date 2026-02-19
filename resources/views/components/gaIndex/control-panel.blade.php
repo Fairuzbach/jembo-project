@@ -91,7 +91,7 @@
                 @endphp
 
                 @foreach ([
-        'department' => ['HUMAN CAPITAL', 'ACCOUNTING', 'FINANCE', 'FH', 'GENERAL AFFAIR', 'FIBER OPTIC', 'INFORMATION TECHNOLOGY', 'MAINTENANCE', 'MEDIUM VOLTAGE', 'PROCESS ENGINEERING', 'PRODUCTION PLANNING', 'QUALITY ASSURANCE', 'SALES 1', 'SALES 2', 'SUPPLY CHAIN', 'SALES SUPPORT', 'RESEARCH & DEVELOPMENT', 'JEMBO ENERGINDO'],
+        'department' => ['HUMAN CAPITAL', 'ACCOUNTING', 'FINANCE', 'FH', 'GENERAL AFFAIR', 'FIBER OPTIC', 'INFORMATION TECHNOLOGY', 'MAINTENANCE', 'MEDIUM VOLTAGE', 'LOW VOLTAGE', 'PROCESS ENGINEERING', 'PRODUCTION PLANNING', 'QUALITY ASSURANCE', 'SALES 1', 'SALES 2', 'SUPPLY CHAIN', 'SALES SUPPORT', 'RESEARCH & DEVELOPMENT', 'JEMBO ENERGINDO'],
         'status' => ['pending', 'in_progress', 'completed', 'cancelled', 'waiting_approval', 'waiting_approval_ga', 'rejected'],
         'category' => ['BERAT', 'SEDANG', 'RINGAN'],
         'parameter' => $parameterData,
