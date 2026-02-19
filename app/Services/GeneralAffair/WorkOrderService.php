@@ -249,7 +249,11 @@ class WorkOrderService
         // dd($data);
         $ticket = WorkOrderGeneralAffair::findOrFail($id);
         $user = Auth::user();
-
+        \Log::info("Memproses Tiket #{$ticket->ticket_num}", [
+            'action_received' => $action,
+            'current_status' => $ticket->status,
+            'user' => $user->name
+        ]);
         // Ambil Data Requester untuk Notif (WA)
         $requester = \App\Models\User::where('nik', $ticket->requester_nik)->first();
         $requesterPhone = $requester ? ($requester->no_hp ?? $requester->phone) : null;
@@ -687,7 +691,7 @@ class WorkOrderService
             // Langsung pakai $targetDept karena di DB sudah sama-sama "PE"
             // Pastikan parameter kedua 'MANAGER' (sesuai job_level di DB)
             $targets = ['MANAGER', 'SUPERVISOR'];
-            $approvers = $this->getApproversForDeptLevel($targetDept, $targets);
+            $approvers = $this->getApproversForDept($targetDept, $targets);
 
             if ($approvers->isEmpty()) {
                 Log::warning("WO GA: Tidak ada Manager ditemukan untuk dept: $targetDept");
@@ -729,36 +733,56 @@ class WorkOrderService
     }
 
     /**
-     * Mencari User Approver berdasarkan Departemen Tujuan
-     * Logic dari 
+     * Mencari Approver (Manager/Supervisor) berdasarkan Keyword Departemen
+     * Logika: Mencari kata kunci departemen di dalam kolom JABATAN user.
      */
-    private function getApproversForDept(string $targetDept): Collection
+    private function getApproversForDept(string $targetDept): \Illuminate\Support\Collection
     {
-        $roleMap = $this->getRoleMapping();
+        // 1. Bersihkan Keyword (Hapus spasi berlebih & Ubah ke Huruf Besar)
+        // Contoh: "Low Voltage " -> "LOW VOLTAGE"
+        $keyword = strtoupper(trim($targetDept));
 
-        $targetRole = null;
+        // 2. [FIX OPTIK vs OPTIC] Sesuaikan ejaan input dengan database
+        // Data User ID 21 pakai "OPTIC", Input Tiket mungkin "OPTIK"
+        $keyword = str_replace('OPTIK', 'OPTIC', $keyword);
 
-        // 1. Cari Role Admin berdasarkan Mapping (Opsional, jika ada admin khusus divisi)
-        foreach ($roleMap as $role => $departments) {
-            if (in_array($targetDept, $departments)) {
-                $targetRole = $role;
-                break;
-            }
-        }
+        \Log::info("🔍 Mencari Approver via Jabatan. Keyword: '{$keyword}'");
 
-        // 2. Ambil User dengan Role Admin tersebut (Jika ada)
-        if ($targetRole) {
-            $approvers = User::where('role', $targetRole)->get();
-            if ($approvers->isNotEmpty()) {
-                return $approvers;
-            }
-        }
+        // 3. Query Database User
+        $approvers = \App\Models\User::query()
+            // FILTER UTAMA: Cari User yang JABATAN-nya mengandung kata kunci
+            // Logika: JABATAN LIKE '%LOW VOLTAGE%' akan menemukan "LOW VOLTAGE MANAGER (LV)"
+            ->where('jabatan', 'LIKE', "%{$keyword}%")
 
-        // 3. Fallback: Cari MANAGER & SUPERVISOR di Divisi tersebut
-        // [FIXED] Menggunakan kolom 'job_level' dan Array ['MANAGER', 'SUPERVISOR']
-        return User::where('divisi', $targetDept)
-            ->whereIn('job_level', ['MANAGER', 'SUPERVISOR']) // <-- Perbaikan disini
+            // FILTER KEDUA: Pastikan Level-nya Manager atau Supervisor
+            // Ini untuk membuang Admin/Staff/Foreman (seperti ID 47, 76, 144 di JSON Anda)
+            ->whereIn('job_level', ['MANAGER', 'SUPERVISOR'])
+
+            // FILTER TAMBAHAN: Hindari User Quality Assurance jika yang dicari bukan QA
+            // Karena ada jabatan "FOREMAN QC FIBER OPTIC" (ID 43, 132), kita harus hindari itu
+            ->when($keyword !== 'QUALITY ASSURANCE' && $keyword !== 'QA', function ($q) {
+                $q->where('divisi', '!=', 'QUALITY ASSURANCE');
+            })
             ->get();
+
+        // 4. Cek Hasil & Log
+        if ($approvers->isEmpty()) {
+            \Log::warning("⚠️ GAGAL: Tidak ditemukan Manager/SPV dengan jabatan mengandung: '{$keyword}'");
+
+            // [OPSIONAL] Fallback Terakhir: Cari berdasarkan kolom 'divisi' (jika data user normal)
+            // Berguna untuk departemen lain yang datanya rapi (misal: HRGA, SECURITY)
+            $approvers = \App\Models\User::where('divisi', $keyword)
+                ->whereIn('job_level', ['MANAGER', 'SUPERVISOR'])
+                ->get();
+
+            if ($approvers->isNotEmpty()) {
+                \Log::info("✅ SUKSES (via Kolom Divisi): " . $approvers->pluck('name'));
+            }
+        } else {
+            \Log::info("✅ SUKSES (via Kolom Jabatan): " . $approvers->pluck('name'));
+        }
+
+        return $approvers;
     }
 
     /**
