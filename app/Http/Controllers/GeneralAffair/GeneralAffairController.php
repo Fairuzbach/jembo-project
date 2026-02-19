@@ -63,7 +63,7 @@ class GeneralAffairController extends Controller
         $stats = $this->gaService->getIndexStats(Auth::user());
 
         // Filter plant agar list tidak terlalu panjang (Sesuai kode asli Anda)
-        $plants = Plant::whereNotIn('name', ['QC', 'FO', 'PE', 'QR', 'SS', 'FH', 'RM', 'Plant F'])->get();
+        $plants = Plant::whereNotIn('name', ['PROCUREMENT', 'QC', 'FO', 'PE', 'QR', 'SS', 'FH', 'RM', 'Plant F'])->get();
         $pageIds = $workOrders->pluck('id')->toArray();
         $categoriesDB = Category::where('status', 'active')->get();
 
