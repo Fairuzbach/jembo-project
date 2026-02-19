@@ -141,7 +141,7 @@
                                             <option value="LOW VOLTAGE">LOW VOLTAGE</option>
                                             <option value="MEDIUM VOLTAGE">MEDIUM VOLTAGE</option>
                                             <option value="FIBER OPTIC">FIBER OPTIC</option>
-                                            <option value="PROCUREMENT">PROCUREMENT</option>
+                                            <option value="SUPPLY CHAIN">SUPPLY CHAIN</option>
                                             <option value="QUALITY ASSURANCE">QUALITY ASSURANCE</option>
                                             <option value="MAINTENANCE">MAINTENANCE</option>
                                             <option value="SALES SUPPORT">SALES SUPPORT</option>
