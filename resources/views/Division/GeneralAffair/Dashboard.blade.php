@@ -102,7 +102,7 @@
 
             {{-- 4. GANTT CHART  --}}
 
-            <x-gaDashboard.gantt-chart :tasks="$tasks" />
+            <x-gaDashboard.gantt-chart :ganttData="$tasks" />
 
         </div>
     </div>

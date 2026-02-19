@@ -1,4 +1,4 @@
-@props(['tasks'])
+@props(['ganttData'])
 
 <div class="bg-gradient-to-br from-white to-slate-50 p-6 rounded-lg shadow-xl border border-slate-200 mb-8">
 
@@ -53,14 +53,7 @@
                 </div>
 
                 {{-- Action Buttons --}}
-                <button type="button" onclick="gantt.exportToPDF()"
-                    class="px-4 py-2 text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 rounded-lg border border-slate-200 transition-all duration-200 shadow-sm hover:shadow">
-                    <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Export PDF
-                </button>
+                {{-- Disabled: gantt.exportToPDF() is not available in DHTMLX Gantt standard --}}
 
                 <button type="button" onclick="gantt.render()"
                     class="px-4 py-2 text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 rounded-lg border border-slate-200 transition-all duration-200 shadow-sm hover:shadow">
@@ -414,22 +407,42 @@
             if (task.type !== 'project') {
                 total++;
 
-                const endDate = gantt.date.parseDate(task.end_date, "xml_date");
+                try {
+                    // Calculate end_date from start_date + duration
+                    // start_date bisa berupa string (Y-m-d) atau Date object
+                    let startDate = task.start_date;
+                    if (typeof startDate === 'string') {
+                        startDate = new Date(startDate);
+                    }
 
-                if (task.progress >= 1) {
-                    completed++;
-                } else if (endDate < today && task.progress < 1) {
-                    delayed++;
-                } else {
-                    inProgress++;
+                    const duration = parseInt(task.duration) || 0;
+                    const endDate = new Date(startDate);
+                    endDate.setDate(endDate.getDate() + duration);
+
+                    const progress = parseFloat(task.progress) || 0;
+
+                    if (progress >= 1) {
+                        completed++;
+                    } else if (endDate < today && progress < 1) {
+                        delayed++;
+                    } else {
+                        inProgress++;
+                    }
+                } catch (e) {
+                    console.warn('Error calculating stats for task:', task, e);
                 }
             }
         });
 
-        document.getElementById('total-tasks').textContent = total;
-        document.getElementById('progress-tasks').textContent = inProgress;
-        document.getElementById('completed-tasks').textContent = completed;
-        document.getElementById('delayed-tasks').textContent = delayed;
+        const elTotal = document.getElementById('total-tasks');
+        const elProgress = document.getElementById('progress-tasks');
+        const elCompleted = document.getElementById('completed-tasks');
+        const elDelayed = document.getElementById('delayed-tasks');
+
+        if (elTotal) elTotal.textContent = total;
+        if (elProgress) elProgress.textContent = inProgress;
+        if (elCompleted) elCompleted.textContent = completed;
+        if (elDelayed) elDelayed.textContent = delayed;
     }
 
     document.addEventListener("DOMContentLoaded", function() {
@@ -498,6 +511,9 @@
 
         // --- KONFIGURASI DASAR ---
         gantt.config.date_format = "%Y-%m-%d";
+        gantt.config.xml_date = "%Y-%m-%d";
+        gantt.config.auto_types = true; // Auto-detect task types
+
         gantt.config.readonly = true;
         gantt.config.bar_height = 28;
         gantt.config.row_height = 40;
@@ -513,7 +529,32 @@
             quick_info: true
         });
 
-        // --- CONTEXT MENU CONFIGURATION ---
+        // Hook untuk validasi task sebelum ditambahkan
+        gantt.attachEvent("onBeforeTaskAdd", function(id, task) {
+            // console.log('Adding task:', task);
+            // Ensure critical fields exist
+            if (!task.start_date) {
+                console.warn('Task missing start_date, setting default:', task);
+                task.start_date = new Date();
+            }
+            if (!task.type) task.type = 'task';
+            if (task.duration === undefined || task.duration === null) task.duration = 1;
+            return true;
+        });
+
+        // Hook untuk menangani parsing error
+        gantt.attachEvent("onParse", function(data) {
+            // console.log('✅ Gantt parse complete');
+
+            // Add missing end_date for project tasks if needed
+            gantt.eachTask(function(task) {
+                if (!task.end_date) {
+                    let endDate = new Date(task.start_date);
+                    endDate.setDate(endDate.getDate() + (task.duration || 1));
+                    task.end_date = endDate;
+                }
+            });
+        });
         gantt.attachEvent("onContextMenu", function(taskId, linkId, event) {
             event.preventDefault();
 
@@ -541,8 +582,13 @@
             menu.style.zIndex = '10000';
 
             const progress = Math.round(task.progress * 100);
+
+            // Calculate end date from start_date + duration
+            let endDateCalc = new Date(task.start_date);
+            endDateCalc.setDate(endDateCalc.getDate() + (parseInt(task.duration) || 0));
+
             const status = progress >= 100 ? 'Completed' :
-                (new Date(task.end_date) < new Date() && progress < 100 ? 'Delayed' : 'In Progress');
+                (endDateCalc < new Date() && progress < 100 ? 'Delayed' : 'In Progress');
 
             menu.innerHTML = `
                 <div class="menu-header">
@@ -606,7 +652,11 @@
 
             const progress = Math.round(task.progress * 100);
             const startDate = gantt.date.date_to_str("%d %F %Y")(task.start_date);
-            const endDate = gantt.date.date_to_str("%d %F %Y")(task.end_date);
+
+            // Calculate end date from start_date + duration
+            const endDateObj = new Date(task.start_date);
+            endDateObj.setDate(endDateObj.getDate() + (parseInt(task.duration) || 0));
+            const endDate = gantt.date.date_to_str("%d %F %Y")(endDateObj);
 
             // Get division name
             let divisionName = "-";
@@ -673,7 +723,11 @@
             const task = gantt.getTask(taskId);
             const progress = Math.round(task.progress * 100);
             const startDate = gantt.date.date_to_str("%d-%m-%Y")(task.start_date);
-            const endDate = gantt.date.date_to_str("%d-%m-%Y")(task.end_date);
+
+            // Calculate end date from start_date + duration
+            const endDateObj = new Date(task.start_date);
+            endDateObj.setDate(endDateObj.getDate() + (parseInt(task.duration) || 0));
+            const endDate = gantt.date.date_to_str("%d-%m-%Y")(endDateObj);
 
             const taskData = {
                 id: task.id,
@@ -704,7 +758,11 @@
 
             const progress = Math.round(task.progress * 100);
             const startDate = gantt.date.date_to_str("%d %F %Y")(task.start_date);
-            const endDate = gantt.date.date_to_str("%d %F %Y")(task.end_date);
+
+            // Calculate end date from start_date + duration
+            const endDateObj = new Date(task.start_date);
+            endDateObj.setDate(endDateObj.getDate() + (parseInt(task.duration) || 0));
+            const endDate = gantt.date.date_to_str("%d %F %Y")(endDateObj);
 
             // Get division name
             let divisionName = "-";
@@ -963,21 +1021,57 @@
         });
 
         // --- LOAD DATA ---
-        const tasks = @json($tasks ?? ['data' => [], 'links' => []]);
+        window.gaGanttData = @json($ganttData);
 
-        if (tasks.data && tasks.data.length > 0) {
-            gantt.parse(tasks);
-            updateStats(tasks);
+        // console.log('📊 Raw Gantt Data:', window.gaGanttData);
+
+        // Clean and validate data before parsing
+        if (window.gaGanttData && window.gaGanttData.data) {
+            window.gaGanttData.data = window.gaGanttData.data.map(task => {
+                // Ensure start_date is valid string
+                if (task.start_date && !(typeof task.start_date === 'string')) {
+                    if (task.start_date instanceof Date) {
+                        task.start_date = task.start_date.toISOString().split('T')[0];
+                    } else {
+                        task.start_date = String(task.start_date);
+                    }
+                }
+
+                // Remove any invalid date fields that might cause parseDate to fail
+                if (!task.start_date) {
+                    console.warn('⚠️ Task missing start_date:', task);
+                    task.start_date = new Date().toISOString().split('T')[0];
+                }
+
+                // Ensure essential fields exist
+                if (!task.id) task.id = 'task_' + Math.random();
+                if (!task.text) task.text = 'Untitled';
+                if (task.duration === undefined || task.duration === null) task.duration = 1;
+                if (task.progress === undefined || task.progress === null) task.progress = 0;
+                if (task.type === undefined || task.type === null) task.type = 'task';
+
+                return task;
+            }).filter(task => task && task.id && task.start_date);
+
+            // console.log('✅ Cleaned Gantt Data:', window.gaGanttData);
+        }
+
+        if (window.gaGanttData && window.gaGanttData.data && window.gaGanttData.data.length > 0) {
+            try {
+                gantt.parse(window.gaGanttData);
+
+                if (typeof updateStats === 'function') {
+                    updateStats(window.gaGanttData);
+                }
+            } catch (parseError) {
+                console.error("❌ Error parsing gantt data:", parseError);
+                console.error("Error details:", parseError.message, parseError.stack);
+                document.getElementById('gantt_here').innerHTML =
+                    '<div style="padding: 20px; color: #dc2626; font-weight: bold;">Error loading Gantt chart. Check console for details.</div>';
+            }
         } else {
             document.getElementById('gantt_here').innerHTML =
-                '<div class="flex items-center justify-center h-full text-slate-500">' +
-                '<div class="text-center loading-pulse">' +
-                '<svg class="w-16 h-16 mx-auto mb-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>' +
-                '</svg>' +
-                '<p class="font-semibold text-lg">No Timeline Data Available</p>' +
-                '<p class="text-sm mt-2">Add tasks to see the Gantt chart</p>' +
-                '</div></div>';
+                '<div style="padding: 20px; text-align: center; color: #9ca3af;">No timeline data available</div>';
         }
 
         // Custom CSS for task types

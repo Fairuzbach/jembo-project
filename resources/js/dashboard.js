@@ -365,3 +365,8 @@ window.exportToPDF = function () {
         });
     });
 };
+
+// NOTE: Gantt parsing sudah ditangani di gantt-chart.blade.php component
+// Jangan parse di sini untuk menghindari duplicate parsing dan error
+// const tasks = window.gaGanttData || { data: [], links: [] };
+// gantt.parse(tasks);

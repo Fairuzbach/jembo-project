@@ -26,11 +26,16 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class GeneralAffairController extends Controller
 {
+    protected $gaService;
+    protected $dashboardService;
     // Constructor injection 
     public function __construct(
-        protected WorkOrderService $gaService,
-        protected DashboardService $dashboardService
-    ) {}
+        WorkOrderService $gaService,
+        DashboardService $dashboardService
+    ) {
+        $this->gaService = $gaService;
+        $this->dashboardService = $dashboardService;
+    }
 
     public function checkEmployee(Request $request)
     {
@@ -60,9 +65,18 @@ class GeneralAffairController extends Controller
             Auth::user()
         );
 
-        $stats = $this->gaService->getIndexStats(Auth::user());
+        $ganttStartDate = $request->start_date ?? now()->subMonths(2)->format('Y-m-d');
 
-        // Filter plant agar list tidak terlalu panjang (Sesuai kode asli Anda)
+        $rawGanttTickets = WorkOrderGeneralAffair::query()
+            ->whereIn('status', ['waiting_approval', 'waiting_approval_ga', 'pending', 'in_progress', 'completed'])
+            ->where('created_at', '>=', $ganttStartDate)
+            ->latest()
+            ->limit(50)
+            ->get();
+
+        $ganttData = $this->dashboardService->prepareGanttChart($rawGanttTickets);
+
+        $stats = $this->gaService->getIndexStats(Auth::user());
         $plants = Plant::whereNotIn('name', ['PROCUREMENT', 'QC', 'FO', 'PE', 'QR', 'SS', 'FH', 'RM', 'Plant F'])->get();
         $pageIds = $workOrders->pluck('id')->toArray();
         $categoriesDB = Category::where('status', 'active')->get();
@@ -71,6 +85,7 @@ class GeneralAffairController extends Controller
         return view('Division.GeneralAffair.GeneralAffair', array_merge(
             [
                 'workOrders' => $workOrders,
+                'ganttData' => $ganttData,
                 'plants' => $plants,
                 'pageIds' => $pageIds,
                 'parameters' => config('workorder.parameters'),

@@ -63,7 +63,7 @@ class DashboardService
         ], $groupedStats, $perfStats);
     }
 
-    private function prepareGanttChart($tickets)
+    public function prepareGanttChart($tickets)
     {
         $data = [];
         $links = [];
@@ -73,11 +73,20 @@ class DashboardService
 
         foreach ($groupedByDivision as $divisionName => $divisionTickets) {
             $divisionId = 'div_' . preg_replace('/[^a-zA-Z0-9]/', '_', strtolower($divisionName));
+
+            $firstTicket = $divisionTickets->sortBy(function ($t) {
+                return $t->actual_start_date ?? $t->created_at;
+            })->first();
+            $projectStartDate = $firstTicket
+                ? Carbon::parse($firstTicket->actual_start_date ?? $firstTicket->created_at)
+                : Carbon::now();
+
             $data[] = [
                 'id' => $divisionId,
                 'text' => $divisionName,
                 'type' => 'project',
                 'open' => true,
+                'start_date' => $projectStartDate->toDateString(),
             ];
 
             foreach ($divisionTickets as $ticket) {
@@ -122,6 +131,7 @@ class DashboardService
                     'progress' => $progress,
                     'parent' => $divisionId,
                     'color' => $color,
+                    'type' => 'task',
 
                     'owner' => $ticket->user->name ?? 'N/A',
                     'division' => $divisionName,
@@ -138,6 +148,7 @@ class DashboardService
                 'text' => 'Tidak ada data untuk ditampilkan',
                 'type' => 'project',
                 'open' => true,
+                'start_date' => Carbon::now()->format('Y-m-d'),
             ];
         }
 
@@ -185,7 +196,7 @@ class DashboardService
         // ---------------------------------------------------------
         // 4. STATISTIK BOBOT (CATEGORY)
         // ---------------------------------------------------------
-        $catGroup = $tickets->groupBy('category')->map->count();
+        $catGroup = $tickets->groupBy(fn($item) => strtoupper($item->category))->map->count();
         $chartBobotValues = [
             $catGroup['HIGH'] ?? $catGroup['BERAT'] ?? 0,
             $catGroup['MEDIUM'] ?? $catGroup['SEDANG'] ?? 0,
@@ -217,22 +228,29 @@ class DashboardService
     {
         $year  = substr($filterMonth, 0, 4);
         $month = substr($filterMonth, 5, 2);
-        $query = WorkOrderGeneralAffair::query()
+
+        // Ambil data dalam satu kali query aggregate
+        $stats = WorkOrderGeneralAffair::query()
             ->where(function ($q) use ($year, $month) {
                 $q->whereYear('target_completion_date', $year)
                     ->whereMonth('target_completion_date', $month)
+                    // Fallback jika target null, gunakan created_at
                     ->orWhere(function ($sub) use ($year, $month) {
                         $sub->whereNull('target_completion_date')
                             ->whereYear('created_at', $year)
                             ->whereMonth('created_at', $month);
                     });
-            });
-        $total = $query->count();
-        $completed = (clone $query)->where('status', 'completed')->count();
+            })
+            ->selectRaw('COUNT(*) as total, SUM(CASE WHEN status = "completed" THEN 1 ELSE 0 END) as completed')
+            ->first();
+
+        $total = $stats->total ?? 0;
+        $completed = $stats->completed ?? 0; // Hasil SUM bisa null jika total 0, jadi perlu coalescing
         $percentage = $total > 0 ? round(($completed / $total) * 100) : 0;
+
         return [
             'perfTotal'      => $total,
-            'perfCompleted'  => $completed,
+            'perfCompleted'  => (int) $completed,
             'perfPercentage' => $percentage,
         ];
     }
