@@ -108,5 +108,81 @@
 
         </div> {{-- End max-w container --}}
     </div> {{-- AKHIR DIV x-data="gaData" --}}
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("✅ SYSTEM APPROVAL READY (Event Delegation Mode)");
 
+            // KITA PASANG TELINGA DI DOCUMENT BODY
+            document.body.addEventListener('click', function(e) {
+
+                // 1. Cek apakah yang diklik adalah tombol action kita?
+                const button = e.target.closest('.js-action-btn');
+
+                // Jika bukan tombol kita, abaikan
+                if (!button) return;
+
+                // 2. Ambil Data dari Tombol
+                const id = button.getAttribute('data-id');
+                const action = button.getAttribute('data-action');
+                const viewType = button.getAttribute('data-view');
+
+                console.log("🔥 TOMBOL DIKLIK:", {
+                    id,
+                    action,
+                    viewType
+                });
+
+                // 3. Logic Form & SweetAlert (Sama seperti sebelumnya)
+                const formId = `form-tech-${viewType}-${id}`;
+                const actionInputId = `input-action-${viewType}-${id}`;
+                const reasonInputId = `input-reason-${viewType}-${id}`;
+
+                const formEl = document.getElementById(formId);
+                const actionEl = document.getElementById(actionInputId);
+                const reasonEl = document.getElementById(reasonInputId);
+
+                if (!formEl) {
+                    console.error(`❌ Form ID ${formId} tidak ditemukan.`);
+                    alert("Error: Form tidak ditemukan. Coba Refresh.");
+                    return;
+                }
+
+                // Mencegah klik ganda / default action
+                e.preventDefault();
+
+                if (action === 'approve') {
+                    Swal.fire({
+                        title: 'Setujui Tiket?',
+                        text: "Tiket akan diproses ke tahap selanjutnya.",
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonColor: '#10b981',
+                        confirmButtonText: 'Ya, Setujui'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            actionEl.value = 'approve';
+                            formEl.submit();
+                        }
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Tolak Tiket?',
+                        input: 'textarea',
+                        inputPlaceholder: 'Wajib isi alasan...',
+                        showCancelButton: true,
+                        confirmButtonColor: '#e11d48',
+                        confirmButtonText: 'Tolak',
+                        inputValidator: (value) => !value && 'Wajib diisi!'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            actionEl.value = 'reject';
+                            if (reasonEl) reasonEl.value = result.value;
+                            formEl.submit();
+                        }
+                    });
+                }
+            });
+        });
+    </script>
 </x-app-layout>

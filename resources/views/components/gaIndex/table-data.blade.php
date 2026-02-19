@@ -44,12 +44,13 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-slate-100">
                     @forelse ($workOrders as $index => $item)
-                        {{-- INCLUDE LOGIC HAK AKSES DISINI AGAR BISA DIPAKAI DI TABLE --}}
                         @php
-                            // LOGIC HAK AKSES (SAMA SEPERTI SEBELUMNYA)
                             $user = auth()->user();
                             $currRole = strtolower($user->role ?? '');
                             $currDivisi = strtolower($user->divisi ?? '');
+                            $currJabatan = strtolower($user->jabatan ?? '');
+                            $userJobLevel = strtoupper($user->job_level ?? '');
+
                             $ticketDept = strtolower($item->department ?? '');
                             $ticketStatus = $item->status;
                             $isGaAdmin = in_array($currRole, ['ga.admin', 'super.ga.admin']);
@@ -60,12 +61,42 @@
                             }
 
                             $isTechnicalApprover = false;
+
                             if ($ticketStatus == 'waiting_approval') {
-                                if (str_contains($currRole, 'manager') || str_contains($currRole, 'spv')) {
-                                    if (trim($currDivisi) == trim($ticketDept)) {
+                                $isUserLevelManager =
+                                    str_contains($currRole, 'manager') ||
+                                    str_contains($currRole, 'spv') ||
+                                    $userJobLevel == 'MANAGER' ||
+                                    $userJobLevel == 'SUPERVISOR' ||
+                                    str_contains($currJabatan, 'manager') ||
+                                    str_contains($currJabatan, 'head');
+
+                                if ($isUserLevelManager) {
+                                    $cleanUserDiv = trim($currDivisi);
+                                    $cleanUserJab = trim($currJabatan);
+                                    $cleanTicketDept = trim($ticketDept);
+
+                                    if ($cleanTicketDept == 'qa') {
+                                        $cleanTicketDept = 'quality assurance';
+                                    }
+                                    if ($cleanTicketDept == 'lv') {
+                                        $cleanTicketDept = 'low voltage';
+                                    }
+                                    if ($cleanTicketDept == 'mv') {
+                                        $cleanTicketDept = 'medium voltage';
+                                    }
+                                    if (str_contains($cleanTicketDept, 'optik')) {
+                                        $cleanTicketDept = 'fiber optic';
+                                    }
+
+                                    if ($cleanUserDiv === $cleanTicketDept) {
+                                        $isTechnicalApprover = true;
+                                    } elseif (str_contains($cleanUserJab, $cleanTicketDept)) {
                                         $isTechnicalApprover = true;
                                     }
-                                } else {
+                                }
+
+                                if (!$isTechnicalApprover) {
                                     $targetRole = match (true) {
                                         str_contains($ticketDept, 'facility') || $ticketDept == 'fh' => 'fh.admin',
                                         str_contains($ticketDept, 'general') || $ticketDept == 'ga' => 'ga.admin',
@@ -76,8 +107,8 @@
                                         str_contains($ticketDept, 'low') || $ticketDept == 'lv' => 'lv.admin',
                                         str_contains($ticketDept, 'medium') || $ticketDept == 'mv' => 'mv.admin',
                                         str_contains($ticketDept, 'fiber') || $ticketDept == 'fo' => 'fo.admin',
-                                        str_contains($ticketDept, 'quality') || in_array($ticketDept, ['qr', 'qc'])
-                                            => 'qr.admin',
+                                        str_contains($ticketDept, 'quality') || in_array($ticketDept, ['qa', 'qc'])
+                                            => 'qa.admin',
                                         str_contains($ticketDept, 'sales 1') => 'sales1.admin',
                                         str_contains($ticketDept, 'sales 2') => 'sales2.admin',
                                         str_contains($ticketDept, 'sc') || str_contains($ticketDept, 'support')
@@ -105,20 +136,17 @@
                                     $showApproveButton = true;
                                 }
                             }
-                            $cat = $item->category;
 
-                            // Tentukan Warna
+                            $cat = $item->category;
                             $badgeClass = match ($cat) {
                                 'HIGH' => 'text-red-700 bg-red-50 border-red-200',
                                 'MEDIUM' => 'text-yellow-700 bg-yellow-50 border-yellow-200',
-                                default => 'text-green-700 bg-green-50 border-green-200', // Default LOW
+                                default => 'text-green-700 bg-green-50 border-green-200',
                             };
-
-                            // Tentukan Teks
                             $badgeText = match ($cat) {
                                 'HIGH' => 'BERAT',
                                 'MEDIUM' => 'SEDANG',
-                                default => 'RINGAN', // Default LOW
+                                default => 'RINGAN',
                             };
                         @endphp
 
@@ -126,6 +154,7 @@
                             class="hover:bg-yellow-50/50 transition-colors duration-150 group {{ $index % 2 == 0 ? 'bg-white' : 'bg-slate-50/30' }}">
                             <td class="px-6 py-4"><input type="checkbox" value="{{ (string) $item->id }}"
                                     x-model="selected" class="rounded-sm border-slate-300"></td>
+
                             <td class="px-6 py-4">
                                 <div class="text-sm font-black text-slate-900 font-mono">{{ $item->ticket_num }}</div>
                                 <div class="text-[10px] text-slate-400 font-bold mt-0.5 uppercase">
@@ -201,23 +230,37 @@
                                             </svg></button>
                                     @endif
                                     @if ($showApproveButton)
-                                        <form id="form-tech-desktop-{{ $item->id }}"
-                                            action="{{ route('ga.approve-technical', $item->id) }}" method="POST"
-                                            class="hidden">@csrf<input type="hidden" name="action"
-                                                id="input-action-desktop-{{ $item->id }}"><input type="hidden"
-                                                name="reason" id="input-reason-desktop-{{ $item->id }}"></form>
-                                        @if ($isGaAdmin)
+                                        <div class="flex gap-1 justify-end mt-2 items-center">
+                                            <form id="form-tech-desktop-{{ $item->id }}"
+                                                action="{{ route('ga.approve-technical', $item->id) }}" method="POST"
+                                                style="display: none;">
+                                                @csrf
+                                                <input type="hidden" name="action"
+                                                    id="input-action-desktop-{{ $item->id }}">
+                                                <input type="hidden" name="reason"
+                                                    id="input-reason-desktop-{{ $item->id }}">
+                                            </form>
+                                            @if ($isGaAdmin)
+                                                <button type="button"
+                                                    @click="$dispatch('open-accept-modal', {{ json_encode($item->load('plantInfo')) }})"
+                                                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded text-[10px] uppercase shadow-sm">
+                                                    Validasi
+                                                </button>
+                                            @else
+                                                <button type="button"
+                                                    class="js-action-btn bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1 px-2 rounded text-[10px] uppercase shadow-sm"
+                                                    data-id="{{ $item->id }}" data-action="approve"
+                                                    data-view="desktop">
+                                                    Approve
+                                                </button>
+                                            @endif
                                             <button type="button"
-                                                @click="$dispatch('open-accept-modal', {{ json_encode($item->load('plantInfo')) }})"
-                                                class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1 px-2 rounded text-[10px] uppercase shadow-sm">Validasi</button>
-                                        @else
-                                            <button type="button"
-                                                onclick="confirmTechnicalAction('{{ $item->id }}', 'approve', 'desktop')"
-                                                class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1 px-2 rounded text-[10px] uppercase shadow-sm">Approve</button>
-                                        @endif
-                                        <button type="button"
-                                            onclick="confirmTechnicalAction('{{ $item->id }}', 'decline', 'desktop')"
-                                            class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-1 px-2 rounded text-[10px] uppercase shadow-sm">Reject</button>
+                                                class="js-action-btn bg-rose-600 hover:bg-rose-700 text-white font-bold py-1 px-2 rounded text-[10px] uppercase shadow-sm"
+                                                data-id="{{ $item->id }}" data-action="decline"
+                                                data-view="desktop">
+                                                Reject
+                                            </button>
+                                        </div>
                                     @endif
                                 </div>
                             </td>
@@ -388,55 +431,3 @@
         {{ $workOrders->appends(request()->all())->links() }}
     </div>
 </div>
-
-{{-- SCRIPT TAMBAHAN UNTUK HANDLE FORM ID MOBILE vs DESKTOP --}}
-<script>
-    function confirmTechnicalAction(id, action, viewType = 'desktop') {
-        // Sesuaikan ID form berdasarkan tampilan (desktop/mobile)
-        let formId = viewType === 'mobile' ? `form-tech-mobile-${id}` : `form-tech-desktop-${id}`;
-        let actionId = viewType === 'mobile' ? `input-action-mobile-${id}` : `input-action-desktop-${id}`;
-        let reasonId = viewType === 'mobile' ? `input-reason-mobile-${id}` : `input-reason-desktop-${id}`;
-
-        if (action === 'approve') {
-            Swal.fire({
-                title: 'Setujui Tiket?',
-                text: "Tiket akan diteruskan ke proses selanjutnya.",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#10b981',
-                cancelButtonColor: '#6b7280',
-                confirmButtonText: 'Ya, Setujui!'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    document.getElementById(actionId).value = 'approve';
-                    document.getElementById(formId).submit();
-                }
-            })
-        } else if (action === 'decline') {
-            Swal.fire({
-                title: 'Tolak Tiket?',
-                input: 'textarea',
-                inputLabel: 'Alasan Penolakan',
-                inputPlaceholder: 'Tulis alasan penolakan...',
-                inputAttributes: {
-                    'aria-label': 'Tulis alasan penolakan'
-                },
-                showCancelButton: true,
-                confirmButtonText: 'Tolak Tiket',
-                confirmButtonColor: '#e11d48',
-                cancelButtonColor: '#6b7280',
-                inputValidator: (value) => {
-                    if (!value) {
-                        return 'Anda harus menulis alasan penolakan!'
-                    }
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    document.getElementById(actionId).value = 'reject';
-                    document.getElementById(reasonId).value = result.value;
-                    document.getElementById(formId).submit();
-                }
-            })
-        }
-    }
-</script>
