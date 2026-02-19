@@ -118,6 +118,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // --- E. MODULE ENGINEERING (ENG) ---
     // URL Asli: /eng (User dilempar ke sini dari /wo-eng)
     Route::prefix('eng')->name('eng.')->group(function () {
+        Route::post('/compound', [WorkOrderEngineeringController::class, 'storeCompound'])->name('storeCompound');
         Route::get('/', [WorkOrderEngineeringController::class, 'index'])->name('index');
         Route::get('/export', [WorkOrderEngineeringController::class, 'export'])->name('export');
         Route::post('/store', [WorkOrderEngineeringController::class, 'store'])->name('store');

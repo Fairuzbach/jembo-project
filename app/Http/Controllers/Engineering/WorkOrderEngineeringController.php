@@ -74,6 +74,7 @@ class WorkOrderEngineeringController extends Controller
         ));
     }
 
+    public function storeCompound(Request $request) {}
     public function store(Request $request)
     {
         $request->validate([
