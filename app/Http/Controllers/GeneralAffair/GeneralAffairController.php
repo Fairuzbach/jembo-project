@@ -138,14 +138,14 @@ class GeneralAffairController extends Controller
                 case 'RM 3':
                 case 'RM 5':
                 case 'RM Office':
-                    $specificDept = 'PROCUREMENT';
+                    $specificDept = 'SUPPLY CHAIN';
                     break;
                 case 'QC FO':
                 case 'QC LAB':
                 case 'QC LV':
                 case 'QC MV':
                 case 'QR':
-                    $specificDept = 'QUALITY ASSURANCE & R D';
+                    $specificDept = 'QUALITY ASSURANCE';
                     break;
                 case 'Konstruksi':
                     $specificDept = 'FH';
@@ -202,7 +202,7 @@ class GeneralAffairController extends Controller
                 $specificDept,
                 'ACCOUNTING',
                 'FINANCE',
-                'FACILITY',
+                'FH',
                 'FIBER OPTIC',
                 'GENERAL AFFAIR',
                 'HUMAN CAPITAL',
@@ -213,10 +213,10 @@ class GeneralAffairController extends Controller
                 'MEDIUM VOLTAGE',
                 'PROCESS ENGINEERING',
                 'PRODUCTION PLANNING',
-                'QUALITY ASSURANCE & R D',
+                'QUALITY ASSURANCE',
                 'SALES 1',
                 'SALES 2',
-                'PROCUREMENT',
+                'SUPPLY CHAIN',
                 'SALES SUPPORT',
                 'RESEARCH & DEVELOPMENT'
             ];
@@ -259,6 +259,7 @@ class GeneralAffairController extends Controller
     // --- ACTION APPROVE OLEH ADMIN DIVISI LAIN (TECHNICAL) ---
     public function approveByTechnical(Request $request, $id)
     {
+        \Log::Emergency("Koneksi Masuk ke Controller! ID: " . $id);
         $action = ($request->action === 'decline') ? 'reject' : 'approve';
 
         try {
