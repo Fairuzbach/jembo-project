@@ -91,7 +91,7 @@
                 @endphp
 
                 @foreach ([
-        'department' => ['PLANT A', 'PLANT A - AUTOWIRE', 'PLANT B', 'PLANT C', 'PLANT D', 'PLANT D - CCV', 'PLANT E', 'PLANT TOOLS', 'MT', 'GUDANG JADI', 'QC LAB', 'QC LV', 'QC MV', 'QC FO', 'RM 1', 'RM 2', 'RM 3', 'RM 5', 'RM OFFICE', 'WORKSHOP ELECTRIC', 'KONSTRUKSI', 'JEMBO ENERGINDO', 'GA - TANGERANG', 'GA - JAKARTA', 'HC', 'GUDANG SCRAP', 'SALES', 'MARKETING', 'IT', 'FA', 'ACCOUNTING', 'PP', 'FH'],
+        'department' => ['HUMAN CAPITAL', 'ACCOUNTING', 'FINANCE', 'FH', 'GENERAL AFFAIR', 'FIBER OPTIC', 'INFORMATION TECHNOLOGY', 'MAINTENANCE', 'MEDIUM VOLTAGE', 'PROCESS ENGINEERING', 'PRODUCTION PLANNING', 'QUALITY ASSURANCE', 'SALES 1', 'SALES 2', 'SUPPLY CHAIN', 'SALES SUPPORT', 'RESEARCH & DEVELOPMENT', 'JEMBO ENERGINDO'],
         'status' => ['pending', 'in_progress', 'completed', 'cancelled', 'waiting_approval', 'waiting_approval_ga', 'rejected'],
         'category' => ['BERAT', 'SEDANG', 'RINGAN'],
         'parameter' => $parameterData,
