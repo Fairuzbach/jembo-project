@@ -65,7 +65,18 @@
 
                 // 3. DATA HOLDER
                 ticket: {},
-                allPlants: {{ Js::from($plants) }},
+                allPlants: {{ Js::from($plants) }}.filter(plant => {
+                    const allowedPlants = [
+                        'plant a',
+                        'plant a - autowire',
+                        'plant b',
+                        'plant c',
+                        'plant d',
+                        'plant d - ccv',
+                        'plant e'
+                    ];
+                    return allowedPlants.includes(plant.name.toLowerCase());
+                }),
                 allTechnicians: {{ Js::from($technicians) }},
 
                 // 4. FORM VARIABLES
