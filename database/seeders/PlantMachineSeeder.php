@@ -69,7 +69,10 @@ class PlantMachineSeeder extends Seeder
                 'AR-21',
                 'REW-AR-72B-1',
                 'REW-AR-72B-2',
-                'AR-72B'
+                'AR-72B',
+                'QDMD Deyang',
+                'MULTI 2 SAMP',
+                'MULTI 1 SAMP'
             ],
             'Plant A - Autowire' => [
                 'MULTI DRAWING-3',
