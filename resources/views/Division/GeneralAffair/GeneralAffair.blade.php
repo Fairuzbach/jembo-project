@@ -68,13 +68,64 @@
     {{-- MULAI SCOPE ALPINE JS --}}
     <div class="py-12 min-h-screen font-sans bg-slate-100 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9IiNjYmQ1ZTEiIGZpbGwtb3BhY2l0eT0iMC4zIi8+PC9zdmc+')] bg-fixed"
         x-data="gaData" @buka-detail.window="openDetail($event.detail)" x-cloak>
+        {{-- PENGUMUMAN PENTING (Hilang permanen jika di-close oleh user) --}}
+
 
         <div class="max-w-[95%] mx-auto px-4 sm:px-6 lg:px-8">
 
             {{-- 1. STATISTIK --}}
             <x-gaIndex.stats-card :countTotal="$countTotal" :countPending="$countPending" :countInProgress="$countInProgress" :countCompleted="$countCompleted"
                 :countWaitingApproval="$countWaitingApproval" :countWaitingApprovalSpv="$countWaitingApprovalSpv ?? 0" :countWaitingApprovalGA="$countWaitingApprovalGA ?? 0" :countRejected="$countRejected ?? 0" />
+            <div x-data="{ showAnnouncement: !localStorage.getItem('hide_export_bug_notice') }" x-show="showAnnouncement" style="display: none;"
+                x-transition:enter="transition ease-out duration-500"
+                x-transition:enter-start="opacity-0 -translate-y-4" x-transition:enter-end="opacity-100 translate-y-0"
+                class="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-md shadow-sm relative">
 
+                <div class="flex items-start">
+                    {{-- Icon Info --}}
+                    <div class="flex-shrink-0 mt-0.5">
+                        <svg class="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+
+                    <div class="ml-3 pr-8">
+                        <h3 class="text-sm font-bold text-blue-800 uppercase tracking-wide">Informasi Pembaruan &
+                            Pemeliharaan Sistem</h3>
+                        <div class="mt-2 text-sm text-blue-700 leading-relaxed space-y-2">
+                            <p>
+                                Kemarin pada tanggal 19 Februari 2026 terjadi kendala (bug) pada fitur export yang
+                                mengharuskan kami melakukan
+                                beberapa
+                                penyesuaian mendesak pada arsitektur penyimpanan sistem.
+                            </p>
+                            <p>
+                                Imbas dari penyesuaian tersebut, <strong>foto lampiran (bukti/penyelesaian) pada
+                                    beberapa
+                                    laporan terdahulu mengalami kehilangan data dan tidak dapat dibuka</strong>,
+                                dikarenakan
+                                belum tersedianya *backup* untuk direktori foto tersebut sebelum perbaikan dilakukan.
+                            </p>
+                            <p class="font-semibold mt-2">
+                                Kami memohon maaf yang sebesar-besarnya atas ketidaknyamanan ini. Saat ini, sistem
+                                penyimpanan telah diperbarui dan dijamin jauh lebih aman untuk seluruh pelaporan
+                                selanjutnya.
+                            </p>
+                        </div>
+                    </div>
+
+                    {{-- Tombol Close (Menyimpan status ke Local Storage) --}}
+                    <button @click="showAnnouncement = false; localStorage.setItem('hide_export_bug_notice', 'true')"
+                        title="Tutup pemberitahuan"
+                        class="absolute top-4 right-4 text-blue-400 hover:text-blue-700 hover:bg-blue-100 p-1 rounded transition">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
             {{-- 2. CONTROL PANEL --}}
             <x-gaIndex.control-panel :filterOptions="[
                 'status' => [
