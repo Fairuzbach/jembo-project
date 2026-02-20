@@ -69,11 +69,8 @@
                     const allowedPlants = [
                         'plant a',
                         'plant a - autowire',
-                        'plant b',
-                        'plant c',
-                        'plant d',
-                        'plant d - ccv',
-                        'plant e'
+                        // 'plant b',
+                        // 'plant c',
                     ];
                     return allowedPlants.includes(plant.name.toLowerCase());
                 }),
