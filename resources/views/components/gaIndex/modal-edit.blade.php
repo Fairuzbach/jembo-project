@@ -13,7 +13,7 @@
         status: '',
         pic: '',
         department: '',
-        category: 'LOW',
+        category: 'RINGAN',
         parameter_permintaan: '',
         start_date: '',
         target_date: '',
@@ -179,9 +179,9 @@
                                             Pekerjaan</label>
                                         <select name="category" x-model="editForm.category"
                                             class="w-full border-slate-300 rounded-lg text-sm h-11">
-                                            <option value="LOW">RINGAN (Low)</option>
-                                            <option value="MEDIUM">SEDANG (Medium)</option>
-                                            <option value="HIGH">BERAT (High)</option>
+                                            <option value="RINGAN">RINGAN (Low)</option>
+                                            <option value="SEDANG">SEDANG (Medium)</option>
+                                            <option value="BERAT">BERAT (High)</option>
                                         </select>
                                     </div>
 

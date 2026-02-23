@@ -596,34 +596,33 @@ class WorkOrderService
     private function applyFilters(Builder $query, $request)
     {
         // 1. Search Logic
-        $query->when($request->search, function ($q) use ($request) {
-            $q->where(function ($sub) use ($request) {
-                $sub->where('ticket_num', 'LIKE', "%{$request->search}%")
-                    ->orWhere('requester_name', 'LIKE', "%{$request->search}%")
-                    ->orWhere('description', 'LIKE', "%{$request->search}%")
-                    ->orWhere('category', 'like', "%{$request->search}%")
-                    ->orWhere('processed_by_name', 'like', "%{$request->search}%");
+        $query->when($request->filled('search'), function ($q) use ($request) {
+            $search = $request->search;
+            $q->where(function ($sub) use ($search) {
+                $sub->where('ticket_num', 'LIKE', "%{$search}%")
+                    ->orWhere('requester_name', 'LIKE', "%{$search}%")
+                    ->orWhere('description', 'LIKE', "%{$search}%")
+                    ->orWhere('category', 'LIKE', "%{$search}%")
+                    ->orWhere('processed_by_name', 'LIKE', "%{$search}%");
             });
         });
 
         // 2. Filter Status & Category
-        $query->when($request->filled('status') && $request->status !== 'all', fn($q) => $q->where('status', $request->status));
-        $query->when($request->filled('category') && $request->category !== 'all', fn($q) => $q->where('category', $request->category));
+        $query->when($request->filled('status'), fn($q) => $q->where('status', $request->status));
+        $query->when($request->filled('category'), fn($q) => $q->where('category', $request->category));
 
-        // 3. [FIX] Filter Parameter (Jenis Permintaan)
-        // Pastikan input name='parameter' di view memfilter kolom 'parameter_permintaan' di DB
-        $query->when($request->filled('parameter') && $request->parameter !== 'all', fn($q) => $q->where('parameter_permintaan', $request->parameter));
+        // 3. Filter Parameter (Jenis Permintaan)
+        $query->when($request->filled('parameter'), fn($q) => $q->where('parameter_permintaan', $request->parameter));
 
         // 4. Filter Plant
-        $query->when($request->filled('plant_id') && $request->plant_id !== 'all', fn($q) => $q->where('plant', $request->plant_id));
+        $query->when($request->filled('plant_id'), fn($q) => $q->where('plant', $request->plant_id));
 
-        // 5. [BARU] Filter Department (Yang sebelumnya tidak jalan)
-        // Filter berdasarkan 'requester_department' (Departemen si Pemohon)
-        $query->when($request->filled('department') && $request->department !== 'all', fn($q) => $q->where('requester_department', $request->department));
+        // 5. Filter Department
+        $query->when($request->filled('department'), fn($q) => $q->where('department', $request->department));
 
         // 6. Date Range
-        if ($request->filled('start_date')) $query->whereDate('created_at', '>=', $request->start_date);
-        if ($request->filled('end_date')) $query->whereDate('created_at', '<=', $request->end_date);
+        $query->when($request->filled('start_date'), fn($q) => $q->whereDate('created_at', '>=', $request->start_date));
+        $query->when($request->filled('end_date'), fn($q) => $q->whereDate('created_at', '<=', $request->end_date));
     }
     /**
      * Generate Nomor Tiket Otomatis (GA-YYYYMMDD-XXXX)
