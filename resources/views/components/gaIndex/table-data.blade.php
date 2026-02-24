@@ -139,8 +139,8 @@
 
                             $cat = $item->category;
                             $badgeClass = match ($cat) {
-                                'HIGH' => 'text-red-700 bg-red-50 border-red-200',
-                                'MEDIUM' => 'text-yellow-700 bg-yellow-50 border-yellow-200',
+                                'BERAT' => 'text-red-700 bg-red-50 border-red-200',
+                                'SEDANG' => 'text-yellow-700 bg-yellow-50 border-yellow-200',
                                 default => 'text-green-700 bg-green-50 border-green-200',
                             };
                             $badgeText = match ($cat) {
