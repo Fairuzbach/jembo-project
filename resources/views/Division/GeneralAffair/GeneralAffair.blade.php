@@ -76,49 +76,44 @@
             {{-- 1. STATISTIK --}}
             <x-gaIndex.stats-card :countTotal="$countTotal" :countPending="$countPending" :countInProgress="$countInProgress" :countCompleted="$countCompleted"
                 :countWaitingApproval="$countWaitingApproval" :countWaitingApprovalSpv="$countWaitingApprovalSpv ?? 0" :countWaitingApprovalGA="$countWaitingApprovalGA ?? 0" :countRejected="$countRejected ?? 0" />
-            <div x-data="{ showAnnouncement: !localStorage.getItem('hide_export_bug_notice') }" x-show="showAnnouncement" style="display: none;"
+            {{-- 2. PENGUMUMAN UPDATE KATEGORI (Warna Emerald/Hijau) --}}
+            {{-- PENGUMUMAN UPDATE KATEGORI & FILTER (Warna Emerald/Hijau) --}}
+            <div x-data="{ showCategoryUpdate: !localStorage.getItem('hide_ga_category_update_notice') }" x-show="showCategoryUpdate" style="display: none;"
                 x-transition:enter="transition ease-out duration-500"
                 x-transition:enter-start="opacity-0 -translate-y-4" x-transition:enter-end="opacity-100 translate-y-0"
-                class="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-md shadow-sm relative">
+                class="mb-6 bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-md shadow-sm relative">
 
                 <div class="flex items-start">
-                    {{-- Icon Info --}}
+                    {{-- Icon Check / Update --}}
                     <div class="flex-shrink-0 mt-0.5">
-                        <svg class="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg class="h-6 w-6 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
 
                     <div class="ml-3 pr-8">
-                        <h3 class="text-sm font-bold text-blue-800 uppercase tracking-wide">Informasi Pembaruan &
-                            Pemeliharaan Sistem</h3>
-                        <div class="mt-2 text-sm text-blue-700 leading-relaxed space-y-2">
+                        <h3 class="text-sm font-bold text-emerald-800 uppercase tracking-wide">Pembaruan Sistem:
+                            Perbaikan Filter Kategori Tiket</h3>
+                        <div class="mt-2 text-sm text-emerald-700 leading-relaxed space-y-2">
                             <p>
-                                Kemarin pada tanggal 19 Februari 2026 terjadi kendala (bug) pada fitur export yang
-                                mengharuskan kami melakukan
-                                beberapa
-                                penyesuaian mendesak pada arsitektur penyimpanan sistem.
+                                Sebelumnya, filter bobot/kategori prioritas pada halaman ini tidak bisa digunakan karena
+                                adanya ketidaksamaan <em>value</em> antara sistem pencarian dan <em>database</em>.
                             </p>
                             <p>
-                                Imbas dari penyesuaian tersebut, <strong>foto lampiran (bukti/penyelesaian) pada
-                                    beberapa
-                                    laporan terdahulu mengalami kehilangan data dan tidak dapat dibuka</strong>,
-                                dikarenakan
-                                belum tersedianya *backup* untuk direktori foto tersebut sebelum perbaikan dilakukan.
-                            </p>
-                            <p class="font-semibold mt-2">
-                                Kami memohon maaf yang sebesar-besarnya atas ketidaknyamanan ini. Saat ini, sistem
-                                penyimpanan telah diperbarui dan dijamin jauh lebih aman untuk seluruh pelaporan
-                                selanjutnya.
+                                Saat ini kendala tersebut telah diperbaiki. Nilai (<em>value</em>) yang sebelumnya
+                                menggunakan bahasa Inggris (<em>HIGH, MEDIUM, LOW</em>) kini telah diseragamkan
+                                sepenuhnya menjadi bahasa Indonesia: <strong>BERAT, SEDANG, dan RINGAN</strong>. Seluruh
+                                data tiket terdahulu juga telah kami sesuaikan secara otomatis.
                             </p>
                         </div>
                     </div>
 
-                    {{-- Tombol Close (Menyimpan status ke Local Storage) --}}
-                    <button @click="showAnnouncement = false; localStorage.setItem('hide_export_bug_notice', 'true')"
+                    {{-- Tombol Close --}}
+                    <button
+                        @click="showCategoryUpdate = false; localStorage.setItem('hide_ga_category_update_notice', 'true')"
                         title="Tutup pemberitahuan"
-                        class="absolute top-4 right-4 text-blue-400 hover:text-blue-700 hover:bg-blue-100 p-1 rounded transition">
+                        class="absolute top-4 right-4 text-emerald-400 hover:text-emerald-700 hover:bg-emerald-100 p-1 rounded transition">
                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M6 18L18 6M6 6l12 12" />
