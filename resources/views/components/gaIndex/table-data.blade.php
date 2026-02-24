@@ -144,8 +144,8 @@
                                 default => 'text-green-700 bg-green-50 border-green-200',
                             };
                             $badgeText = match ($cat) {
-                                'HIGH' => 'BERAT',
-                                'MEDIUM' => 'SEDANG',
+                                'BERAT' => 'BERAT',
+                                'SEDANG' => 'SEDANG',
                                 default => 'RINGAN',
                             };
                         @endphp

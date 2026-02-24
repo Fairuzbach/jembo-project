@@ -179,9 +179,9 @@
                                             Pekerjaan</label>
                                         <select name="category" x-model="editForm.category"
                                             class="w-full border-slate-300 rounded-lg text-sm h-11">
-                                            <option value="RINGAN">RINGAN (Low)</option>
-                                            <option value="SEDANG">SEDANG (Medium)</option>
-                                            <option value="BERAT">BERAT (High)</option>
+                                            <option value="RINGAN">RINGAN</option>
+                                            <option value="SEDANG">SEDANG</option>
+                                            <option value="BERAT">BERAT</option>
                                         </select>
                                     </div>
 
