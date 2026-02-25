@@ -262,6 +262,30 @@
                                             </button>
                                         </div>
                                     @endif
+                                    @if (auth()->id() == $item->requester_id &&
+                                            in_array($item->status, ['waiting_approval', 'waiting_approval_ga', 'pending']))
+                                        <form action="{{ route('ga.update-status', $item->id) }}" method="POST"
+                                            class="inline-block">
+                                            @csrf
+                                            @method('PUT')
+
+                                            {{-- Input hidden penanda aksi cancel --}}
+                                            <input type="hidden" name="action" value="cancel">
+
+                                            <button type="submit"
+                                                onclick="return confirm('Apakah Anda yakin ingin membatalkan request ini?')"
+                                                class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-md text-xs font-bold shadow-sm transition-all flex items-center gap-1">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z">
+                                                    </path>
+                                                </svg>
+                                                Cancel Request
+                                            </button>
+                                        </form>
+                                    @endif
                                 </div>
                             </td>
                         </tr>

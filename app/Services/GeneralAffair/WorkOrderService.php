@@ -81,16 +81,26 @@ class WorkOrderService
             ];
         });
     }
-    public function updateStatus($id, array $data, ?UploadedFile $completionPhoto = null): void
+    public function updateStatus($id, array $data, ?UploadedFile $completionPhoto = null)
     {
         // dd($id);
         $ticket = WorkOrderGeneralAffair::findOrFail($id);
 
+        if (request()->has('action') && request()->input('action') == 'cancel') {
+            $user = auth()->user();
+            if ($ticket->requester_id == $user->id && in_array($ticket->status, ['waiting_approval', 'waiting_approval_ga', 'pending'])) {
+                $ticket->status = 'CANCELLED';
+                $ticket->save();
+                return redirect()->back()->with('success', 'Request anda berhasil dibatalkan!');
+            }
+            return redirect()->back()->with('error', 'Request tidak bisa dibatalkan karena sedang di proses atau ini bukan tiket Anda');
+        }
         $updateData = [
             'status' => $data['status'],
             'processed_by_name' => $data['processed_by_name'],
             'category' => $data['category'],
         ];
+
 
         if (!empty($data['parameter_permintaan'])) {
             $updateData['parameter_permintaan'] = $data['parameter_permintaan'];

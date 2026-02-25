@@ -15,6 +15,9 @@ class UpdateStatusRequest extends FormRequest
 
     public function rules(): array
     {
+        if (request('action') === 'cancel') {
+            return [];
+        }
         $rules = [
             'status'            => ['required', 'string'],
             'processed_by_name' => ['required', 'string'],
