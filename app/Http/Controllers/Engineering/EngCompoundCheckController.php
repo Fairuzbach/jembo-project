@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Engineering;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Models\Engineering\Plant;
 use App\Models\Engineering\EngCompoundCheck;
 use App\Models\Engineering\EngCompoundStandard;
@@ -22,28 +23,19 @@ class EngCompoundCheckController extends Controller
 
     public function storeCompound(Request $request)
     {
-
         $request->validate([
             'plant' => 'required|in:Plant A,Autowire',
         ]);
-
         $plantName = $request->plant;
         $keterangan = $request->keterangan;
-
-
         $diperiksaOleh = $request->nama_pemeriksa;
         if (!$diperiksaOleh || $diperiksaOleh == '........................' || $diperiksaOleh == 'DATA TIDAK DITEMUKAN') {
             $diperiksaOleh = auth()->user()->name;
         }
-
-
         $namaForeman = auth()->user()->name;
-
-
         $plantId = ($plantName === 'Plant A') ? 1 : 2;
 
         DB::beginTransaction();
-
         try {
             if ($plantName === 'Plant A') {
                 $machineMap = [
@@ -54,15 +46,12 @@ class EngCompoundCheckController extends Controller
                     'bak_5' => 54,
                     'bak_6' => 2,
                 ];
-
                 $tanggal = $request->plant_a_tanggal;
                 $dataBak = $request->plant_a;
 
                 foreach ($dataBak as $bakKey => $data) {
-
                     $hasDrawing = collect($data)->only(['draw_type', 'draw_supplier', 'draw_warna', 'draw_konsentrasi', 'draw_ph', 'draw_temp'])->filter(fn($val) => $val !== null && $val !== '')->isNotEmpty();
                     $hasAnnealing = collect($data)->only(['ann_type', 'ann_supplier', 'ann_warna', 'ann_konsentrasi', 'ann_ph', 'ann_temp'])->filter(fn($val) => $val !== null && $val !== '')->isNotEmpty();
-
                     if (!$hasDrawing && !$hasAnnealing) continue;
 
                     // $dataYangAkanDisimpan = [
@@ -102,7 +91,6 @@ class EngCompoundCheckController extends Controller
             } elseif ($plantName === 'Autowire') {
                 $autowireMachineId = 55;
                 $dataCek = $request->autowire;
-
                 foreach ($dataCek as $cekKey => $data) {
                     if (empty($data['tanggal'])) continue;
 
@@ -142,7 +130,6 @@ class EngCompoundCheckController extends Controller
     public function editCompound($plant_id, $tanggal)
     {
         $plant = Plant::findOrFail($plant_id);
-
         // Ambil semua data pengecekan pada tanggal dan plant tersebut
         $checksData = EngCompoundCheck::where('plant_id', $plant_id)
             ->whereDate('tanggal_cek', $tanggal)
@@ -197,9 +184,7 @@ class EngCompoundCheckController extends Controller
         DB::beginTransaction();
 
         try {
-            // ==========================================
             // LOGIKA UPDATE: PLANT A
-            // ==========================================
             if ($plantName === 'Plant A') {
 
                 // 1. PASTIKAN ID MESIN SAMA PERSIS DENGAN FUNGSI STORE
@@ -351,5 +336,130 @@ class EngCompoundCheckController extends Controller
             Log::error("Error Update Compound: " . $e->getMessage());
             return redirect()->back()->with('error', 'Terjadi kesalahan sistem saat mengupdate data.');
         }
+    }
+
+    public function statistics(Request $request)
+    {
+        $filter = $request->query('filter', 'monthly');
+        $mode = $request->query('mode', 'avg');
+        $plant = $request->query('plant', 'Plant A');
+        $plantId = ($plant === 'Autowire') ? 2 : 1;
+        $machineId = $request->query('machine', 'all');
+
+        $query = \App\Models\Engineering\EngCompoundCheck::where('plant_id', $plantId)
+            ->where(function ($q) {
+                $q->whereNotNull('draw_ph')->orWhereNotNull('ann_ph');
+            });
+
+        if ($plant === 'Plant A' && $machineId !== 'all') {
+            $query->where('machine_id', $machineId);
+        }
+
+        if ($mode === 'raw') {
+            $groupBy = 'tanggal_cek';
+            $selectLabel = "CONCAT('Minggu ', WEEK(MIN(tanggal_cek), 1), ' - ', YEAR(MIN(tanggal_cek))) as label";
+        } else {
+            switch ($filter) {
+                case 'weekly':
+                    $groupBy = 'YEARWEEK(tanggal_cek, 1)';
+                    $selectLabel = "CONCAT('Minggu ', WEEK(MIN(tanggal_cek), 1), ' - ', YEAR(MIN(tanggal_cek))) as label";
+                    break;
+                case 'quarterly':
+                    $groupBy = 'CONCAT(YEAR(tanggal_cek), "-", QUARTER(tanggal_cek))';
+                    $selectLabel = "CONCAT('Q', QUARTER(MIN(tanggal_cek)), ' ', YEAR(MIN(tanggal_cek))) as label";
+                    break;
+                case 'semester':
+                    $groupBy = 'CONCAT(YEAR(tanggal_cek), "-", IF(MONTH(tanggal_cek)<=6, 1, 2))';
+                    $selectLabel = "CONCAT('Semester ', IF(MONTH(MIN(tanggal_cek))<=6, 1, 2), ' ', YEAR(MIN(tanggal_cek))) as label";
+                    break;
+                case 'yearly':
+                    $groupBy = 'YEAR(tanggal_cek)';
+                    $selectLabel = "YEAR(MIN(tanggal_cek)) as label";
+                    break;
+                case 'monthly':
+                default:
+                    $groupBy = 'DATE_FORMAT(tanggal_cek, "%Y-%m")';
+                    $selectLabel = "DATE_FORMAT(MIN(tanggal_cek), '%M %Y') as label";
+                    break;
+            }
+        }
+        $stats = $query->selectRaw("
+                $selectLabel,
+                AVG(draw_ph) as avg_draw_ph,
+                AVG(ann_ph) as avg_ann_ph,
+                AVG(CAST(REPLACE(draw_konsentrasi, '%', '') AS DECIMAL(10,2))) as avg_draw_kons,
+                AVG(CAST(REPLACE(ann_konsentrasi, '%', '') AS DECIMAL(10,2))) as avg_ann_kons,
+                AVG(CAST(REPLACE(draw_temp, '°C', '') AS DECIMAL(10,2))) as avg_draw_temp,
+                AVG(CAST(REPLACE(ann_temp, '°C', '') AS DECIMAL(10,2))) as avg_ann_temp
+            ")
+            ->groupByRaw($groupBy)
+            ->orderByRaw('MIN(tanggal_cek) ASC')
+            ->get();
+
+        $labels = $stats->pluck('label');
+        $drawPhData = $stats->pluck('avg_draw_ph')->map(fn($val) => round($val, 2));
+        $annPhData  = $stats->pluck('avg_ann_ph')->map(fn($val) => round($val, 2));
+        $drawKonsData = $stats->pluck('avg_draw_kons')->map(fn($val) => round($val, 2));
+        $annKonsData  = $stats->pluck('avg_ann_kons')->map(fn($val) => round($val, 2));
+        $drawTempData = $stats->pluck('avg_draw_temp')->map(fn($val) => round($val, 2));
+        $annTempData  = $stats->pluck('avg_ann_temp')->map(fn($val) => round($val, 2));
+
+        $stdDraw = null;
+        $stdAnn = null;
+
+        if ($plant === 'Autowire') {
+            $stdDraw = \App\Models\Engineering\EngCompoundStandard::where('plant', 'Autowire')->where('proses', 'drawing')->first();
+            $stdAnn = \App\Models\Engineering\EngCompoundStandard::where('plant', 'Autowire')->where('proses', 'annealing')->first();
+        } elseif ($plant === 'Plant A' && $machineId !== 'all') {
+            $stdDraw = \App\Models\Engineering\EngCompoundStandard::where('plant', 'Plant A')->where('kode_mesin', 'bak_' . $machineId)->where('proses', 'drawing')->first();
+            $stdAnn = \App\Models\Engineering\EngCompoundStandard::where('plant', 'Plant A')->where('kode_mesin', 'bak_' . $machineId)->where('proses', 'annealing')->first();
+        }
+
+        $parseStdRange = function ($val) {
+            if (!$val) return ['min' => null, 'max' => null];
+            preg_match_all('/[0-9]+(?:\.[0-9]+)?/', $val, $matches);
+            if (empty($matches[0])) return ['min' => null, 'max' => null];
+            $numbers = array_map('floatval', $matches[0]);
+            if (count($numbers) >= 2) {
+                return ['min' => min($numbers), 'max' => max($numbers)];
+            } else {
+                return ['min' => $numbers[0], 'max' => null];
+            }
+        };
+
+        $stdValues = [
+            'draw_ph'   => $stdDraw ? $parseStdRange($stdDraw->std_ph) : ['min' => null, 'max' => null],
+            'ann_ph'    => $stdAnn ? $parseStdRange($stdAnn->std_ph) : ['min' => null, 'max' => null],
+            'draw_kons' => $stdDraw ? $parseStdRange($stdDraw->std_konsentrasi) : ['min' => null, 'max' => null],
+            'ann_kons'  => $stdAnn ? $parseStdRange($stdAnn->std_konsentrasi) : ['min' => null, 'max' => null],
+            'draw_temp' => $stdDraw ? $parseStdRange($stdDraw->std_temp) : ['min' => null, 'max' => null],
+            'ann_temp'  => $stdAnn ? $parseStdRange($stdAnn->std_temp) : ['min' => null, 'max' => null],
+        ];
+
+        $plantAMachines = [
+            'all' => 'Gabungan (Semua BAK)',
+            1 => 'BAK 1 (HD 10 C)',
+            3 => 'BAK 2 (MD 1)',
+            52 => 'BAK 3 (QDMD)',
+            53 => 'BAK 4 (Multi 2 Samp)',
+            54 => 'BAK 5 (Multi 1 Samp)',
+            2 => 'BAK 6 (Twin RBD Cu)',
+        ];
+
+        return view('Division.Engineering.compound-stats', compact(
+            'labels',
+            'filter',
+            'drawPhData',
+            'annPhData',
+            'drawKonsData',
+            'annKonsData',
+            'drawTempData',
+            'annTempData',
+            'mode',
+            'plant',
+            'machineId',
+            'plantAMachines',
+            'stdValues'
+        ));
     }
 }
