@@ -8,7 +8,7 @@ use App\Models\Engineering\EngCompoundStandard;
 
 class EngCompoundStandardController extends Controller
 {
-    public function standardsIndex()
+    public function index()
     {
         // Mengambil semua data standar, diurutkan berdasarkan Plant dan Mesin
         $standards = EngCompoundStandard::orderBy('plant', 'asc')
@@ -20,7 +20,7 @@ class EngCompoundStandardController extends Controller
     }
 
     // Fungsi untuk mengupdate data standar ke database
-    public function standardsUpdate(Request $request, $id)
+    public function update(Request $request, $id)
     {
         $standard = EngCompoundStandard::findOrFail($id);
 
