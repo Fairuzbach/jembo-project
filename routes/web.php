@@ -124,6 +124,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/store', [WorkOrderEngineeringController::class, 'store'])->name('store');
         Route::put('/{workOrder}', [WorkOrderEngineeringController::class, 'update'])->name('update');
         Route::put('/{id}/update-status', [WorkOrderEngineeringController::class, 'updateStatus'])->name('updateStatus');
+        Route::get('/compound/edit/{plant_id}/{tanggal}', [WorkOrderEngineeringController::class, 'editCompound'])->name('compound.edit');
+        Route::put('/compound/update/{plant_id}/{tanggal}', [WorkOrderEngineeringController::class, 'updateCompound'])->name('compound.update');
+        Route::get('/compound/standards', [WorkOrderEngineeringController::class, 'standardsIndex'])->name('compound.standards');
+        Route::put('/compound/standards/{id}', [WorkOrderEngineeringController::class, 'standardsUpdate'])->name('compound.standards.update');
+        Route::get('/operator/search', [WorkOrderEngineeringController::class, 'searchOperator'])->name('operator.search');
+        Route::post('/operator/import', [WorkOrderEngineeringController::class, 'importOperator'])->name('operator.import');
     });
 
 
