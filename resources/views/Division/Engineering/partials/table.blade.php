@@ -242,8 +242,8 @@
                         <tr>
                             <th class="p-4">Tanggal & Plant</th>
                             <th class="p-4">Mesin</th>
-                            <th class="p-4">Petugas (Op & Foreman)</th>
-                            <th class="p-4 text-center">Status</th>
+                            <th class="p-4">Operator</th>
+                            <th class="p-4 text-center">Foreman</th>
                             <th class="p-4 text-right">Aksi</th>
                         </tr>
                     </thead>
@@ -261,45 +261,41 @@
                                 </td>
 
                                 {{-- Kolom Mesin (Perbaikan N/A) --}}
-                                {{-- Kolom Mesin --}}
                                 <td class="p-4">
-                                    @if ($check->machine)
-                                        <div class="text-sm font-bold text-slate-700">{{ $check->machine->name }}
+                                    <div class="flex items-center gap-2">
+                                        <div
+                                            class="w-8 h-8 rounded bg-blue-50 flex items-center justify-center text-blue-600 font-black text-xs border border-blue-100">
+                                            {{ $check->jumlah_mesin }}
                                         </div>
-                                        <div class="text-[10px] text-slate-400">ID: #{{ $check->machine_id }}</div>
-                                    @else
-                                        {{-- Jika relasi machine() gagal, kita munculkan ID mentahnya saja untuk pengecekan --}}
-                                        <div class="text-xs text-red-500 font-bold italic">N/A (Cek ID:
-                                            {{ $check->machine_id ?? 'NULL' }})</div>
-                                    @endif
+                                        <div>
+                                            <div class="text-sm font-bold text-slate-700">Mesin/Bak Dicek</div>
+                                            <div class="text-[10px] text-slate-400">Total Pengecekan Area</div>
+                                        </div>
+                                    </div>
                                 </td>
 
                                 {{-- Kolom Petugas --}}
                                 <td class="p-4">
                                     <div class="flex items-center gap-3">
-                                        <div
-                                            class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-[10px] text-white font-bold">
-                                            OP</div>
                                         <div>
                                             <div class="text-xs font-bold text-slate-800 uppercase">
                                                 {{ $check->diperiksa_oleh ?? 'Tanpa Nama' }}</div>
-                                            {{-- Menampilkan nama foreman yang baru saja kita simpan sebagai string --}}
-                                            <div class="text-[9px] text-slate-400 italic">Fm:
-                                                {{ $check->diketahui_oleh ?? 'Kosong' }}</div>
                                         </div>
                                     </div>
                                 </td>
 
-                                {{-- Kolom Status --}}
+                                {{-- Kolom Foreman --}}
                                 <td class="p-4">
-                                    <div class="flex justify-center">
-                                        @if ($check->status == 'approved')
-                                            <span
-                                                class="px-3 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-600 border border-emerald-200 uppercase tracking-wider">Approved</span>
-                                        @else
-                                            <span
-                                                class="px-3 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-600 border border-amber-200 uppercase tracking-wider">Waiting</span>
-                                        @endif
+                                    <div class="flex flex-col items-center justify-center text-center">
+                                        <span
+                                            class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Diketahui
+                                            Oleh:</span>
+                                        <span
+                                            class="text-xs font-bold text-slate-800 uppercase">{{ $check->diketahui_oleh ?? '-' }}</span>
+                                        <span
+                                            class="text-[9px] font-medium text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full mt-1 border border-indigo-100">
+                                            Foreman
+                                        </span>
                                     </div>
                                 </td>
 
