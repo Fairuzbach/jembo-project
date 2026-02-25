@@ -340,6 +340,9 @@ class EngCompoundCheckController extends Controller
 
     public function statistics(Request $request)
     {
+        if (auth()->user()->role !== 'eng.admin') {
+            abort(403, 'Akses Ditolak. Halaman ini khusus untuk Engineering Admin.');
+        }
         $filter = $request->query('filter', 'monthly');
         $mode = $request->query('mode', 'avg');
         $plant = $request->query('plant', 'Plant A');
