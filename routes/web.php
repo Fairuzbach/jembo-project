@@ -9,6 +9,9 @@ use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Facilities\FacilitiesController;
 use App\Http\Controllers\GeneralAffair\GeneralAffairController;
 use App\Http\Controllers\Engineering\WorkOrderEngineeringController;
+use App\Http\Controllers\Engineering\EngCompoundCheckController;
+use App\Http\Controllers\Engineering\EngCompoundStandardController;
+use App\Http\Controllers\Engineering\OperatorController;
 use App\Http\Controllers\ChangePasswordController;
 use App\Models\Employee;
 
@@ -118,18 +121,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // --- E. MODULE ENGINEERING (ENG) ---
     // URL Asli: /eng (User dilempar ke sini dari /wo-eng)
     Route::prefix('eng')->name('eng.')->group(function () {
-        Route::post('/compound', [WorkOrderEngineeringController::class, 'storeCompound'])->name('storeCompound');
+        Route::post('/compound', [EngCompoundCheckController::class, 'storeCompound'])->name('storeCompound');
         Route::get('/', [WorkOrderEngineeringController::class, 'index'])->name('index');
         Route::get('/export', [WorkOrderEngineeringController::class, 'export'])->name('export');
         Route::post('/store', [WorkOrderEngineeringController::class, 'store'])->name('store');
         Route::put('/{workOrder}', [WorkOrderEngineeringController::class, 'update'])->name('update');
         Route::put('/{id}/update-status', [WorkOrderEngineeringController::class, 'updateStatus'])->name('updateStatus');
-        Route::get('/compound/edit/{plant_id}/{tanggal}', [WorkOrderEngineeringController::class, 'editCompound'])->name('compound.edit');
-        Route::put('/compound/update/{plant_id}/{tanggal}', [WorkOrderEngineeringController::class, 'updateCompound'])->name('compound.update');
-        Route::get('/compound/standards', [WorkOrderEngineeringController::class, 'standardsIndex'])->name('compound.standards');
-        Route::put('/compound/standards/{id}', [WorkOrderEngineeringController::class, 'standardsUpdate'])->name('compound.standards.update');
-        Route::get('/operator/search', [WorkOrderEngineeringController::class, 'searchOperator'])->name('operator.search');
-        Route::post('/operator/import', [WorkOrderEngineeringController::class, 'importOperator'])->name('operator.import');
+        Route::get('/compound/edit/{plant_id}/{tanggal}', [EngCompoundCheckController::class, 'editCompound'])->name('compound.edit');
+        Route::put('/compound/update/{plant_id}/{tanggal}', [EngCompoundCheckController::class, 'updateCompound'])->name('compound.update');
+        Route::get('/compound/standards', [EngCompoundStandardController::class, 'index'])->name('compound.standards');
+        Route::put('/compound/standards/{id}', [EngCompoundStandardController::class, 'update'])->name('compound.standards.update');
+        Route::get('/operator/search', [OperatorController::class, 'searchOperator'])->name('operator.search');
+        Route::post('/operator/import', [OperatorController::class, 'importOperator'])->name('operator.import');
+        Route::get('/compound/statistics', [EngCompoundCheckController::class, 'statistics'])->name('compound.stats');
     });
 
 

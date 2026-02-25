@@ -558,13 +558,12 @@
                                     class="w-full rounded-lg border-slate-300 shadow-sm focus:ring-indigo-500 text-sm">{{ $checks->first()->keterangan ?? '' }}</textarea>
                             </div>
                             <div class="flex flex-col items-end">
-                                <div class="w-64 border-2 border-slate-800 bg-white shadow-sm">
-                                    <div
-                                        class="p-2 border-b-2 border-slate-800 bg-slate-50 text-[10px] font-bold text-slate-500 uppercase">
-                                        Diperiksa Oleh:
+                                <div class="flex">
+                                    <div class="w-1/2 p-2 border">
+                                        Diperiksa Oleh: <strong>{{ $operatorName }}</strong>
                                     </div>
-                                    <div class="p-3 text-sm font-black text-center uppercase truncate text-slate-800">
-                                        {{ $checks->first()->pemeriksa->name ?? auth()->user()->name }}
+                                    <div class="w-1/2 p-2 border">
+                                        Diketahui Oleh: <strong>{{ $foremanName }}</strong>
                                     </div>
                                 </div>
                                 <p class="text-[10px] text-slate-400 mt-2 font-bold">Terakhir diperbarui:
