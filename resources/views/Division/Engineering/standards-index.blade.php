@@ -127,7 +127,7 @@
                     x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                     class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-xl w-full">
 
-                    <form :action="`/compound/standards/${editData.id}`" method="POST">
+                    <form :action="`/eng/compound/standards/${editData.id}`" method="POST">
                         @csrf
                         @method('PUT')
 
