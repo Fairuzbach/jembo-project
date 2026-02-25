@@ -39,7 +39,7 @@
                 </svg>
                 Compound Parameter Checking
             </button>
-            <button @click="showSpkModal = true" type="button"
+            {{-- <button @click="showSpkModal = true" type="button"
                 class="group bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-5 rounded-lg text-sm transition-all shadow-md hover:shadow-lg flex items-center gap-2 w-full md:w-auto justify-center focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                 <svg class="w-5 h-5 text-blue-100 group-hover:text-white transition-colors" fill="none"
                     stroke="currentColor" viewBox="0 0 24 24">
@@ -56,7 +56,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                 </svg>
                 Buat Laporan Baru
-            </button>
+            </button> --}}
         </div>
 
         {{-- ============================== --}}
@@ -129,20 +129,15 @@
                                     :checked="pageIds.length > 0 && pageIds.every(id => selectedTickets.includes(id))"
                                     class="w-4 h-4 text-indigo-600 bg-slate-100 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer">
                             </th>
-                            <th
-                                class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                 Tiket / Tanggal</th>
-                            <th
-                                class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                 Mesin & Plant</th>
-                            <th
-                                class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                 Judul dan Uraian</th>
-                            <th
-                                class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                 Status</th>
-                            <th
-                                class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                 Aksi</th>
                         </tr>
                     </thead>
