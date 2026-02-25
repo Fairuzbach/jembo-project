@@ -368,10 +368,7 @@
                                 @endforeach
                             </div>
                         </div>
-
-                        {{-- ========================================================== --}}
                         {{-- UI MOBILE-FRIENDLY: AUTOWIRE (TABS PER TANGGAL CEK)        --}}
-                        {{-- ========================================================== --}}
                         <div x-show="compoundForm.plant === 'Autowire'" style="display: none;"
                             class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-4">
 
