@@ -162,188 +162,200 @@
                                                             <th
                                                                 class="p-3 text-[10px] font-extrabold text-blue-600 uppercase border-b text-center min-w-[140px]">
                                                                 Drawing</th>
-                                                            <th
-                                                                class="p-3 text-[10px] font-extrabold text-emerald-600 uppercase border-b text-center min-w-[140px]">
-                                                                Annealing</th>
+                                                            {{-- HEADER ANNEALING DINAMIS --}}
+                                                            <th class="p-3 text-[10px] font-extrabold text-emerald-600 uppercase border-b text-center {{ $key == 6 ? 'min-w-[280px]' : 'min-w-[140px]' }}"
+                                                                colspan="{{ $key == 6 ? 2 : 1 }}">
+                                                                Annealing {{ $key == 6 ? '(Twin RBD CU)' : '' }}
+                                                            </th>
                                                         </tr>
+                                                        {{-- SUB-HEADER KHUSUS BAK 6 --}}
+                                                        @if ($key == 6)
+                                                            <tr
+                                                                class="bg-slate-100/50 text-[9px] uppercase font-bold text-slate-500">
+                                                                <th class="border-b"></th>
+                                                                <th class="border-b"></th>
+                                                                <th
+                                                                    class="p-1 border-b text-center border-r border-slate-200 bg-emerald-50/50">
+                                                                    Bak A</th>
+                                                                <th class="p-1 border-b text-center bg-indigo-50/50">Bak
+                                                                    B</th>
+                                                            </tr>
+                                                        @endif
                                                     </thead>
-                                                    <tbody class="divide-y divide-slate-100">
-                                                        {{-- Baris Type --}}
+                                                    <tbody class="divide-y divide-slate-200"> {{-- Dipertegas garis pemisahnya --}}
+                                                        {{-- BARIS TYPE ITEM --}}
                                                         <tr>
                                                             <td
-                                                                class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-4">
+                                                                class="p-4 text-sm font-extrabold text-slate-800 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-5">
                                                                 Type Item</td>
-                                                            <td class="p-2 align-top">
+                                                            <td class="p-3 align-top">
                                                                 <input type="text"
                                                                     name="plant_a[bak_{{ $key }}][draw_type]"
-                                                                    class="w-full border-slate-200 rounded text-xs p-1.5 focus:ring-blue-500 text-center bg-slate-50/50"
+                                                                    class="w-full border-slate-300 rounded text-sm p-2 text-center bg-slate-50 font-medium focus:ring-2 focus:ring-blue-500"
                                                                     placeholder="...">
                                                                 <span
-                                                                    class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
+                                                                    class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
                                                                     <span
-                                                                        class="font-bold text-slate-600">{{ $stdDraw->std_tipe ?? '-' }}</span></span>
+                                                                        class="font-bold text-slate-700">{{ $stdDraw->std_tipe ?? '-' }}</span></span>
                                                             </td>
-                                                            <td class="p-2 align-top">
+                                                            <td
+                                                                class="p-3 align-top {{ $key == 6 ? 'border-r border-slate-300' : '' }}">
                                                                 <input type="text"
                                                                     name="plant_a[bak_{{ $key }}][ann_type]"
-                                                                    class="w-full border-slate-200 rounded text-xs p-1.5 focus:ring-emerald-500 text-center bg-slate-50/50"
+                                                                    class="w-full border-slate-300 rounded text-sm p-2 text-center bg-slate-50 font-medium focus:ring-2 focus:ring-emerald-500"
                                                                     placeholder="...">
                                                                 <span
-                                                                    class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
+                                                                    class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
                                                                     <span
-                                                                        class="font-bold text-slate-600">{{ $stdAnn->std_tipe ?? '-' }}</span></span>
+                                                                        class="font-bold text-slate-700">{{ $stdAnn->std_tipe ?? '-' }}</span></span>
                                                             </td>
+                                                            @if ($key == 6)
+                                                                <td class="p-3 align-top bg-indigo-50/40">
+                                                                    <input type="text"
+                                                                        name="plant_a[bak_{{ $key }}][ann_type_2]"
+                                                                        class="w-full border-indigo-300 rounded text-sm p-2 text-center bg-white shadow-sm font-medium focus:ring-2 focus:ring-indigo-500"
+                                                                        placeholder="...">
+                                                                    <span
+                                                                        class="block text-[11px] text-indigo-500 text-center mt-1.5 leading-none">Std:
+                                                                        <span
+                                                                            class="font-bold text-indigo-700">{{ $stdAnn->std_tipe ?? '-' }}</span></span>
+                                                                </td>
+                                                            @endif
                                                         </tr>
 
-                                                        {{-- Baris Supplier --}}
+                                                        {{-- BARIS KONSENTRASI --}}
                                                         <tr>
                                                             <td
-                                                                class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-4">
-                                                                Supplier</td>
-                                                            <td class="p-2 align-top">
-                                                                <input type="text"
-                                                                    name="plant_a[bak_{{ $key }}][draw_supplier]"
-                                                                    class="w-full border-slate-200 rounded text-xs p-1.5 focus:ring-blue-500 text-center"
-                                                                    placeholder="...">
-                                                                <span
-                                                                    class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
-                                                                    <span
-                                                                        class="font-bold text-slate-600">{{ $stdDraw->std_supplier ?? '-' }}</span></span>
-                                                            </td>
-                                                            <td class="p-2 align-top">
-                                                                <input type="text"
-                                                                    name="plant_a[bak_{{ $key }}][ann_supplier]"
-                                                                    class="w-full border-slate-200 rounded text-xs p-1.5 focus:ring-emerald-500 text-center"
-                                                                    placeholder="...">
-                                                                <span
-                                                                    class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
-                                                                    <span
-                                                                        class="font-bold text-slate-600">{{ $stdAnn->std_supplier ?? '-' }}</span></span>
-                                                            </td>
-                                                        </tr>
-
-                                                        {{-- Baris Warna --}}
-                                                        <tr>
-                                                            <td
-                                                                class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-4">
-                                                                Warna</td>
-                                                            <td class="p-2 align-top">
-                                                                <input type="text"
-                                                                    name="plant_a[bak_{{ $key }}][draw_warna]"
-                                                                    class="w-full border-slate-200 rounded text-xs p-1.5 focus:ring-blue-500 text-center"
-                                                                    placeholder="...">
-                                                                <span
-                                                                    class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
-                                                                    <span
-                                                                        class="font-bold text-slate-600">{{ $stdDraw->std_warna ?? '-' }}</span></span>
-                                                            </td>
-                                                            <td class="p-2 align-top">
-                                                                <input type="text"
-                                                                    name="plant_a[bak_{{ $key }}][ann_warna]"
-                                                                    class="w-full border-slate-200 rounded text-xs p-1.5 focus:ring-emerald-500 text-center"
-                                                                    placeholder="...">
-                                                                <span
-                                                                    class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
-                                                                    <span
-                                                                        class="font-bold text-slate-600">{{ $stdAnn->std_warna ?? '-' }}</span></span>
-                                                            </td>
-                                                        </tr>
-
-                                                        {{-- Baris Konsentrasi --}}
-                                                        <tr>
-                                                            <td
-                                                                class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-4">
+                                                                class="p-4 text-sm font-extrabold text-slate-800 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-5">
                                                                 Konsentrasi</td>
-                                                            <td class="p-2 align-top">
+                                                            <td class="p-3 align-top">
                                                                 <div class="flex items-center">
                                                                     <input type="number" step="0.1"
                                                                         name="plant_a[bak_{{ $key }}][draw_konsentrasi]"
-                                                                        class="w-full border-slate-200 rounded-l text-xs p-1.5 text-center font-bold text-blue-600"
-                                                                        placeholder="0.0">
+                                                                        class="w-full border-slate-300 rounded-l text-sm p-2 text-center font-bold text-blue-700 focus:ring-2 focus:ring-blue-500">
                                                                     <span
-                                                                        class="bg-slate-100 border border-l-0 border-slate-200 px-2 py-1.5 text-[10px] font-bold text-slate-500 rounded-r">%</span>
+                                                                        class="bg-slate-200 border border-l-0 border-slate-300 px-3 py-2 text-xs font-bold text-slate-600 rounded-r">%</span>
                                                                 </div>
                                                                 <span
-                                                                    class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
+                                                                    class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
                                                                     <span
-                                                                        class="font-bold text-slate-600">{{ $stdDraw->std_konsentrasi ?? '-' }}</span></span>
+                                                                        class="font-bold text-slate-700">{{ $stdDraw->std_konsentrasi ?? '-' }}</span></span>
                                                             </td>
-                                                            <td class="p-2 align-top">
+                                                            <td
+                                                                class="p-3 align-top {{ $key == 6 ? 'border-r border-slate-300' : '' }}">
                                                                 <div class="flex items-center">
                                                                     <input type="number" step="0.01"
                                                                         name="plant_a[bak_{{ $key }}][ann_konsentrasi]"
-                                                                        class="w-full border-slate-200 rounded-l text-xs p-1.5 text-center font-bold text-blue-600"
-                                                                        placeholder="0.0">
+                                                                        class="w-full border-slate-300 rounded-l text-sm p-2 text-center font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500">
                                                                     <span
-                                                                        class="bg-slate-100 border border-l-0 border-slate-200 px-2 py-1.5 text-[10px] font-bold text-slate-500 rounded-r">%</span>
+                                                                        class="bg-slate-200 border border-l-0 border-slate-300 px-3 py-2 text-xs font-bold text-slate-600 rounded-r">%</span>
                                                                 </div>
                                                                 <span
-                                                                    class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
+                                                                    class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
                                                                     <span
-                                                                        class="font-bold text-slate-600">{{ $stdAnn->std_konsentrasi ?? '-' }}</span></span>
+                                                                        class="font-bold text-slate-700">{{ $stdAnn->std_konsentrasi ?? '-' }}</span></span>
                                                             </td>
+                                                            @if ($key == 6)
+                                                                <td class="p-3 align-top bg-indigo-50/40">
+                                                                    <div class="flex items-center">
+                                                                        <input type="number" step="0.01"
+                                                                            name="plant_a[bak_{{ $key }}][ann_konsentrasi_2]"
+                                                                            class="w-full border-indigo-300 rounded-l text-sm p-2 text-center font-bold text-indigo-700 focus:ring-2 focus:ring-indigo-500">
+                                                                        <span
+                                                                            class="bg-indigo-100 border border-l-0 border-indigo-300 px-3 py-2 text-xs font-bold text-indigo-600 rounded-r">%</span>
+                                                                    </div>
+                                                                    <span
+                                                                        class="block text-[11px] text-indigo-500 text-center mt-1.5 leading-none">Std:
+                                                                        <span
+                                                                            class="font-bold text-indigo-700">{{ $stdAnn->std_konsentrasi ?? '-' }}</span></span>
+                                                                </td>
+                                                            @endif
                                                         </tr>
 
-                                                        {{-- Baris pH --}}
+                                                        {{-- BARIS PH LEVEL --}}
                                                         <tr>
                                                             <td
-                                                                class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-4">
+                                                                class="p-4 text-sm font-extrabold text-slate-800 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-5">
                                                                 pH Level</td>
-                                                            <td class="p-2 align-top">
+                                                            <td class="p-3 align-top">
                                                                 <input type="number" step="0.1"
                                                                     name="plant_a[bak_{{ $key }}][draw_ph]"
-                                                                    class="w-full border-slate-200 rounded text-xs p-1.5 text-center font-bold text-emerald-700"
-                                                                    placeholder="0.0">
+                                                                    class="w-full border-slate-300 rounded text-sm p-2 text-center font-bold text-emerald-800 focus:ring-2 focus:ring-emerald-500">
                                                                 <span
-                                                                    class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
+                                                                    class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
                                                                     <span
-                                                                        class="font-bold text-slate-600">{{ $stdDraw->std_ph ?? '-' }}</span></span>
+                                                                        class="font-bold text-slate-700">{{ $stdDraw->std_ph ?? '-' }}</span></span>
                                                             </td>
-                                                            <td class="p-2 align-top">
+                                                            <td
+                                                                class="p-3 align-top {{ $key == 6 ? 'border-r border-slate-300' : '' }}">
                                                                 <input type="number" step="0.1"
                                                                     name="plant_a[bak_{{ $key }}][ann_ph]"
-                                                                    class="w-full border-slate-200 rounded text-xs p-1.5 text-center font-bold text-emerald-700"
-                                                                    placeholder="0.0">
+                                                                    class="w-full border-slate-200 rounded text-sm p-2 text-center font-bold text-emerald-800 focus:ring-2 focus:ring-emerald-500">
                                                                 <span
-                                                                    class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
+                                                                    class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
                                                                     <span
-                                                                        class="font-bold text-slate-600">{{ $stdAnn->std_ph ?? '-' }}</span></span>
+                                                                        class="font-bold text-slate-700">{{ $stdAnn->std_ph ?? '-' }}</span></span>
                                                             </td>
+                                                            @if ($key == 6)
+                                                                <td class="p-3 align-top bg-indigo-50/40">
+                                                                    <input type="number" step="0.1"
+                                                                        name="plant_a[bak_{{ $key }}][ann_ph_2]"
+                                                                        class="w-full border-indigo-300 rounded text-sm p-2 text-center font-bold text-indigo-800 focus:ring-2 focus:ring-indigo-500">
+                                                                    <span
+                                                                        class="block text-[11px] text-indigo-500 text-center mt-1.5 leading-none">Std:
+                                                                        <span
+                                                                            class="font-bold text-indigo-700">{{ $stdAnn->std_ph ?? '-' }}</span></span>
+                                                                </td>
+                                                            @endif
                                                         </tr>
 
-                                                        {{-- Baris Temperatur --}}
+                                                        {{-- BARIS TEMPERATUR --}}
                                                         <tr>
                                                             <td
-                                                                class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-4">
+                                                                class="p-4 text-sm font-extrabold text-slate-800 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-5">
                                                                 Temperatur</td>
-                                                            <td class="p-2 align-top">
+                                                            <td class="p-3 align-top">
                                                                 <div class="flex items-center">
-                                                                    <input type="number" step="1"
+                                                                    <input type="number"
                                                                         name="plant_a[bak_{{ $key }}][draw_temp]"
-                                                                        class="w-full border-slate-200 rounded-l text-xs p-1.5 text-center"
-                                                                        placeholder="0">
+                                                                        class="w-full border-slate-300 rounded-l text-sm p-2 text-center font-bold focus:ring-2 focus:ring-blue-500">
                                                                     <span
-                                                                        class="bg-slate-100 border border-l-0 border-slate-200 px-1 py-1.5 text-[10px] font-bold text-slate-500 rounded-r">°C</span>
+                                                                        class="bg-slate-200 border border-l-0 border-slate-300 px-2 py-2 text-xs font-bold text-slate-600 rounded-r">°C</span>
                                                                 </div>
                                                                 <span
-                                                                    class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
+                                                                    class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
                                                                     <span
-                                                                        class="font-bold text-slate-600">{{ $stdDraw->std_temp ?? '-' }}</span></span>
+                                                                        class="font-bold text-slate-700">{{ $stdDraw->std_temp ?? '-' }}</span></span>
                                                             </td>
-                                                            <td class="p-2 align-top">
+                                                            <td
+                                                                class="p-3 align-top {{ $key == 6 ? 'border-r border-slate-300' : '' }}">
                                                                 <div class="flex items-center">
-                                                                    <input type="number" step="1"
+                                                                    <input type="number"
                                                                         name="plant_a[bak_{{ $key }}][ann_temp]"
-                                                                        class="w-full border-slate-200 rounded-l text-xs p-1.5 text-center"
-                                                                        placeholder="0">
+                                                                        class="w-full border-slate-300 rounded-l text-sm p-2 text-center font-bold focus:ring-2 focus:ring-emerald-500">
                                                                     <span
-                                                                        class="bg-slate-100 border border-l-0 border-slate-200 px-1 py-1.5 text-[10px] font-bold text-slate-500 rounded-r">°C</span>
+                                                                        class="bg-slate-200 border border-l-0 border-slate-300 px-2 py-2 text-xs font-bold text-slate-600 rounded-r">°C</span>
                                                                 </div>
                                                                 <span
-                                                                    class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
+                                                                    class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
                                                                     <span
-                                                                        class="font-bold text-slate-600">{{ $stdAnn->std_temp ?? '-' }}</span></span>
+                                                                        class="font-bold text-slate-700">{{ $stdAnn->std_temp ?? '-' }}</span></span>
                                                             </td>
+                                                            @if ($key == 6)
+                                                                <td class="p-3 align-top bg-indigo-50/40">
+                                                                    <div class="flex items-center">
+                                                                        <input type="number"
+                                                                            name="plant_a[bak_{{ $key }}][ann_temp_2]"
+                                                                            class="w-full border-indigo-300 rounded-l text-sm p-2 text-center font-bold focus:ring-2 focus:ring-indigo-500">
+                                                                        <span
+                                                                            class="bg-indigo-100 border border-l-0 border-indigo-300 px-2 py-2 text-xs font-bold text-indigo-600 rounded-r">°C</span>
+                                                                    </div>
+                                                                    <span
+                                                                        class="block text-[11px] text-indigo-500 text-center mt-1.5 leading-none">Std:
+                                                                        <span
+                                                                            class="font-bold text-indigo-700">{{ $stdAnn->std_temp ?? '-' }}</span></span>
+                                                                </td>
+                                                            @endif
                                                         </tr>
                                                     </tbody>
                                                 </table>
