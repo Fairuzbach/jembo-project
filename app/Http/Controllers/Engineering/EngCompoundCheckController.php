@@ -405,7 +405,10 @@ class EngCompoundCheckController extends Controller
 
         $query = \App\Models\Engineering\EngCompoundCheck::where('plant_id', $plantId)
             ->where(function ($q) {
-                $q->whereNotNull('draw_ph')->orWhereNotNull('ann_ph');
+                // Tambahkan pengecekan ann_ph_2 agar query tetap aman
+                $q->whereNotNull('draw_ph')
+                    ->orWhereNotNull('ann_ph')
+                    ->orWhereNotNull('ann_ph_2');
             });
 
         if ($plant === 'Plant A' && $machineId !== 'all') {
@@ -440,26 +443,36 @@ class EngCompoundCheckController extends Controller
                     break;
             }
         }
+
         $stats = $query->selectRaw("
                 $selectLabel,
                 AVG(draw_ph) as avg_draw_ph,
                 AVG(ann_ph) as avg_ann_ph,
+                AVG(ann_ph_2) as avg_ann_ph_2,
                 AVG(CAST(REPLACE(draw_konsentrasi, '%', '') AS DECIMAL(10,2))) as avg_draw_kons,
                 AVG(CAST(REPLACE(ann_konsentrasi, '%', '') AS DECIMAL(10,2))) as avg_ann_kons,
+                AVG(CAST(REPLACE(ann_konsentrasi_2, '%', '') AS DECIMAL(10,2))) as avg_ann_kons_2,
                 AVG(CAST(REPLACE(draw_temp, '°C', '') AS DECIMAL(10,2))) as avg_draw_temp,
-                AVG(CAST(REPLACE(ann_temp, '°C', '') AS DECIMAL(10,2))) as avg_ann_temp
+                AVG(CAST(REPLACE(ann_temp, '°C', '') AS DECIMAL(10,2))) as avg_ann_temp,
+                AVG(CAST(REPLACE(ann_temp_2, '°C', '') AS DECIMAL(10,2))) as avg_ann_temp_2
             ")
             ->groupByRaw($groupBy)
             ->orderByRaw('MIN(tanggal_cek) ASC')
             ->get();
 
         $labels = $stats->pluck('label');
+
         $drawPhData = $stats->pluck('avg_draw_ph')->map(fn($val) => round($val, 2));
         $annPhData  = $stats->pluck('avg_ann_ph')->map(fn($val) => round($val, 2));
+        $annPhData2 = $stats->pluck('avg_ann_ph_2')->map(fn($val) => round($val, 2)); // DATA BARU
+
         $drawKonsData = $stats->pluck('avg_draw_kons')->map(fn($val) => round($val, 2));
         $annKonsData  = $stats->pluck('avg_ann_kons')->map(fn($val) => round($val, 2));
+        $annKonsData2 = $stats->pluck('avg_ann_kons_2')->map(fn($val) => round($val, 2)); // DATA BARU
+
         $drawTempData = $stats->pluck('avg_draw_temp')->map(fn($val) => round($val, 2));
         $annTempData  = $stats->pluck('avg_ann_temp')->map(fn($val) => round($val, 2));
+        $annTempData2 = $stats->pluck('avg_ann_temp_2')->map(fn($val) => round($val, 2)); // DATA BARU
 
         $stdDraw = null;
         $stdAnn = null;
@@ -508,10 +521,13 @@ class EngCompoundCheckController extends Controller
             'filter',
             'drawPhData',
             'annPhData',
+            'annPhData2',     // DATA BARU
             'drawKonsData',
             'annKonsData',
+            'annKonsData2',   // DATA BARU
             'drawTempData',
             'annTempData',
+            'annTempData2',   // DATA BARU
             'mode',
             'plant',
             'machineId',

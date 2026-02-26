@@ -161,13 +161,28 @@
         document.addEventListener('DOMContentLoaded', function() {
             const labels = @json($labels);
             const stdValues = @json($stdValues);
+            const machineId = @json($machineId); // Ambil ID mesin yang sedang dipilih
 
-            const lineConfig = (labelName, dataArray, borderColor, bgColor) => ({
+            // Data Aktual
+            const drawPhData = @json($drawPhData);
+            const annPhData = @json($annPhData);
+            const annPhData2 = @json($annPhData2); // Data Bak B
+
+            const drawKonsData = @json($drawKonsData);
+            const annKonsData = @json($annKonsData);
+            const annKonsData2 = @json($annKonsData2); // Data Bak B
+
+            const drawTempData = @json($drawTempData);
+            const annTempData = @json($annTempData);
+            const annTempData2 = @json($annTempData2); // Data Bak B
+
+            const lineConfig = (labelName, dataArray, borderColor, bgColor, borderDash = []) => ({
                 label: labelName,
                 data: dataArray,
                 borderColor: borderColor,
                 backgroundColor: bgColor,
                 borderWidth: 2,
+                borderDash: borderDash, // Tambahan untuk membedakan gaya garis (opsional)
                 tension: 0.3,
                 fill: false,
                 pointBackgroundColor: '#ffffff',
@@ -175,9 +190,9 @@
                 pointRadius: 4,
                 pointHoverRadius: 6
             });
+
             const stdLineConfigs = (labelName, stdObj, color) => {
                 if (!stdObj || stdObj.min === null) return []; // Kosongkan jika tidak ada standar
-
                 let configs = [];
 
                 // 1. Buat Garis Standar Bawah (Min)
@@ -207,9 +222,9 @@
                         tension: 0
                     });
                 }
-
                 return configs;
             };
+
             const commonOptions = (yAxisLabel, suggestMin, suggestMax) => ({
                 responsive: true,
                 maintainAspectRatio: false,
@@ -276,50 +291,68 @@
                 }
             });
 
+            // 1. GRAFIK pH
+            let phDatasets = [
+                lineConfig('Actual Draw', drawPhData, '#2563eb', 'transparent'),
+                lineConfig('Actual Ann (Bak A)', annPhData, '#059669', 'transparent'),
+                ...stdLineConfigs('Draw', stdValues.draw_ph, '#93c5fd'),
+                ...stdLineConfigs('Ann', stdValues.ann_ph, '#6ee7b7')
+            ];
+            // Tambahkan Garis Bak B hanya jika mesin = all atau mesin = 2 (Twin RBD)
+            if (machineId === 'all' || machineId == 2) {
+                phDatasets.splice(2, 0, lineConfig('Actual Ann (Bak B)', annPhData2, '#4f46e5', 'transparent', [3,
+                    3]));
+                // Warnanya indigo dan garisnya sedikit putus-putus [3,3] agar mudah dibedakan dengan Bak A
+            }
             new Chart(document.getElementById('phChart').getContext('2d'), {
                 type: 'line',
                 data: {
                     labels: labels,
-                    datasets: [
-                        lineConfig('Actual Draw', @json($drawPhData), '#2563eb',
-                            'transparent'),
-                        lineConfig('Actual Ann', @json($annPhData), '#059669',
-                        'transparent'),
-                        ...stdLineConfigs('Draw', stdValues.draw_ph, '#93c5fd'),
-                        ...stdLineConfigs('Ann', stdValues.ann_ph, '#6ee7b7')
-                    ]
+                    datasets: phDatasets
                 },
                 options: commonOptions('Nilai pH', 6, 10)
             });
 
+            // 2. GRAFIK KONSENTRASI
+            let konsDatasets = [
+                lineConfig('Actual Draw', drawKonsData, '#8b5cf6', 'transparent'),
+                lineConfig('Actual Ann (Bak A)', annKonsData, '#d97706', 'transparent'),
+                ...stdLineConfigs('Draw', stdValues.draw_kons, '#c4b5fd'),
+                ...stdLineConfigs('Ann', stdValues.ann_kons, '#fcd34d')
+            ];
+            if (machineId === 'all' || machineId == 2) {
+                konsDatasets.splice(2, 0, lineConfig('Actual Ann (Bak B)', annKonsData2, '#be185d', 'transparent', [
+                    3, 3
+                ]));
+                // Warna pink gelap
+            }
             new Chart(document.getElementById('konsChart').getContext('2d'), {
                 type: 'line',
                 data: {
                     labels: labels,
-                    datasets: [
-                        lineConfig('Actual Draw', @json($drawKonsData), '#8b5cf6',
-                            'transparent'),
-                        lineConfig('Actual Ann', @json($annKonsData), '#d97706',
-                        'transparent'),
-                        ...stdLineConfigs('Draw', stdValues.draw_kons, '#c4b5fd'),
-                        ...stdLineConfigs('Ann', stdValues.ann_kons, '#fcd34d')
-                    ]
+                    datasets: konsDatasets
                 },
                 options: commonOptions('Konsentrasi (%)', 0, 15)
             });
 
+            // 3. GRAFIK TEMPERATUR
+            let tempDatasets = [
+                lineConfig('Actual Draw', drawTempData, '#dc2626', 'transparent'),
+                lineConfig('Actual Ann (Bak A)', annTempData, '#ea580c', 'transparent'),
+                ...stdLineConfigs('Draw', stdValues.draw_temp, '#fca5a5'),
+                ...stdLineConfigs('Ann', stdValues.ann_temp, '#fdba74')
+            ];
+            if (machineId === 'all' || machineId == 2) {
+                tempDatasets.splice(2, 0, lineConfig('Actual Ann (Bak B)', annTempData2, '#0369a1', 'transparent', [
+                    3, 3
+                ]));
+                // Warna biru gelap
+            }
             new Chart(document.getElementById('tempChart').getContext('2d'), {
                 type: 'line',
                 data: {
                     labels: labels,
-                    datasets: [
-                        lineConfig('Actual Draw', @json($drawTempData), '#dc2626',
-                            'transparent'),
-                        lineConfig('Actual Ann', @json($annTempData), '#ea580c',
-                        'transparent'),
-                        ...stdLineConfigs('Draw', stdValues.draw_temp, '#fca5a5'),
-                        ...stdLineConfigs('Ann', stdValues.ann_temp, '#fdba74')
-                    ]
+                    datasets: tempDatasets
                 },
                 options: commonOptions('Temperatur (°C)', 30, 60)
             });
