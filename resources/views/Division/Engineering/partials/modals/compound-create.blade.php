@@ -741,7 +741,8 @@
                                 class="w-full md:w-1/3 text-[11px] text-slate-600 bg-slate-100 p-3 rounded border border-slate-200 h-full">
                                 <span class="font-bold text-slate-800">Catatan Standar:</span>
                                 <ul class="list-disc pl-4 mt-1 space-y-1">
-                                    <li>Pengukuran dilakukan setiap minggu pada Shift 1.</li>
+                                    <li>Pengukuran dilakukan setiap <strong>1 Minggu 2 Kali (Senin & Rabu)</strong>.
+                                    </li>
                                     <li>Bila terjadi hal meragukan (compound berbau, warna berubah), segera info ke
                                         Engineering.</li>
                                     <li>Bila konsentrasi berkurang tambah compound, bila tinggi tambah air.</li>
