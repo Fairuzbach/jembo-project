@@ -22,8 +22,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         //
-        Mail::extend('microsoft', function (array $config = []) {
-            return new MicrosoftGraphTransport();
-        });
+        // Mail::extend('microsoft', function (array $config = []) {
+        //     return new MicrosoftGraphTransport();
+        // });
     }
 }
