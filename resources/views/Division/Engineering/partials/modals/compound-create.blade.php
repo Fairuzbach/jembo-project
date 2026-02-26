@@ -182,7 +182,7 @@
                                                             </tr>
                                                         @endif
                                                     </thead>
-                                                    <tbody class="divide-y divide-slate-200"> {{-- Dipertegas garis pemisahnya --}}
+                                                    <tbody class="divide-y divide-slate-200">
                                                         {{-- BARIS TYPE ITEM --}}
                                                         <tr>
                                                             <td
@@ -219,6 +219,86 @@
                                                                         class="block text-[11px] text-indigo-500 text-center mt-1.5 leading-none">Std:
                                                                         <span
                                                                             class="font-bold text-indigo-700">{{ $stdAnn->std_tipe ?? '-' }}</span></span>
+                                                                </td>
+                                                            @endif
+                                                        </tr>
+
+                                                        {{-- BARIS SUPPLIER --}}
+                                                        <tr>
+                                                            <td
+                                                                class="p-4 text-sm font-extrabold text-slate-800 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-5">
+                                                                Supplier</td>
+                                                            <td class="p-3 align-top">
+                                                                <input type="text"
+                                                                    name="plant_a[bak_{{ $key }}][draw_supplier]"
+                                                                    class="w-full border-slate-300 rounded text-sm p-2 text-center focus:ring-2 focus:ring-blue-500"
+                                                                    placeholder="...">
+                                                                <span
+                                                                    class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
+                                                                    <span
+                                                                        class="font-bold text-slate-700">{{ $stdDraw->std_supplier ?? '-' }}</span></span>
+                                                            </td>
+                                                            <td
+                                                                class="p-3 align-top {{ $key == 6 ? 'border-r border-slate-300' : '' }}">
+                                                                <input type="text"
+                                                                    name="plant_a[bak_{{ $key }}][ann_supplier]"
+                                                                    class="w-full border-slate-300 rounded text-sm p-2 text-center focus:ring-2 focus:ring-emerald-500"
+                                                                    placeholder="...">
+                                                                <span
+                                                                    class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
+                                                                    <span
+                                                                        class="font-bold text-slate-700">{{ $stdAnn->std_supplier ?? '-' }}</span></span>
+                                                            </td>
+                                                            @if ($key == 6)
+                                                                <td class="p-3 align-top bg-indigo-50/40">
+                                                                    <input type="text"
+                                                                        name="plant_a[bak_{{ $key }}][ann_supplier_2]"
+                                                                        class="w-full border-indigo-300 rounded text-sm p-2 text-center bg-white shadow-sm focus:ring-2 focus:ring-indigo-500"
+                                                                        placeholder="...">
+                                                                    <span
+                                                                        class="block text-[11px] text-indigo-500 text-center mt-1.5 leading-none">Std:
+                                                                        <span
+                                                                            class="font-bold text-indigo-700">{{ $stdAnn->std_supplier ?? '-' }}</span></span>
+                                                                </td>
+                                                            @endif
+                                                        </tr>
+
+                                                        {{-- BARIS WARNA --}}
+                                                        <tr>
+                                                            <td
+                                                                class="p-4 text-sm font-extrabold text-slate-800 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-5">
+                                                                Warna</td>
+                                                            <td class="p-3 align-top">
+                                                                <input type="text"
+                                                                    name="plant_a[bak_{{ $key }}][draw_warna]"
+                                                                    class="w-full border-slate-300 rounded text-sm p-2 text-center focus:ring-2 focus:ring-blue-500"
+                                                                    placeholder="...">
+                                                                <span
+                                                                    class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
+                                                                    <span
+                                                                        class="font-bold text-slate-700">{{ $stdDraw->std_warna ?? '-' }}</span></span>
+                                                            </td>
+                                                            <td
+                                                                class="p-3 align-top {{ $key == 6 ? 'border-r border-slate-300' : '' }}">
+                                                                <input type="text"
+                                                                    name="plant_a[bak_{{ $key }}][ann_warna]"
+                                                                    class="w-full border-slate-300 rounded text-sm p-2 text-center focus:ring-2 focus:ring-emerald-500"
+                                                                    placeholder="...">
+                                                                <span
+                                                                    class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
+                                                                    <span
+                                                                        class="font-bold text-slate-700">{{ $stdAnn->std_warna ?? '-' }}</span></span>
+                                                            </td>
+                                                            @if ($key == 6)
+                                                                <td class="p-3 align-top bg-indigo-50/40">
+                                                                    <input type="text"
+                                                                        name="plant_a[bak_{{ $key }}][ann_warna_2]"
+                                                                        class="w-full border-indigo-300 rounded text-sm p-2 text-center bg-white shadow-sm focus:ring-2 focus:ring-indigo-500"
+                                                                        placeholder="...">
+                                                                    <span
+                                                                        class="block text-[11px] text-indigo-500 text-center mt-1.5 leading-none">Std:
+                                                                        <span
+                                                                            class="font-bold text-indigo-700">{{ $stdAnn->std_warna ?? '-' }}</span></span>
                                                                 </td>
                                                             @endif
                                                         </tr>
@@ -260,7 +340,7 @@
                                                                     <div class="flex items-center">
                                                                         <input type="number" step="0.01"
                                                                             name="plant_a[bak_{{ $key }}][ann_konsentrasi_2]"
-                                                                            class="w-full border-indigo-300 rounded-l text-sm p-2 text-center font-bold text-indigo-700 focus:ring-2 focus:ring-indigo-500">
+                                                                            class="w-full border-indigo-300 rounded-l text-sm p-2 text-center font-bold text-indigo-700 focus:ring-2 focus:ring-indigo-500 bg-white">
                                                                         <span
                                                                             class="bg-indigo-100 border border-l-0 border-indigo-300 px-3 py-2 text-xs font-bold text-indigo-600 rounded-r">%</span>
                                                                     </div>
@@ -290,7 +370,7 @@
                                                                 class="p-3 align-top {{ $key == 6 ? 'border-r border-slate-300' : '' }}">
                                                                 <input type="number" step="0.1"
                                                                     name="plant_a[bak_{{ $key }}][ann_ph]"
-                                                                    class="w-full border-slate-200 rounded text-sm p-2 text-center font-bold text-emerald-800 focus:ring-2 focus:ring-emerald-500">
+                                                                    class="w-full border-slate-300 rounded text-sm p-2 text-center font-bold text-emerald-800 focus:ring-2 focus:ring-emerald-500">
                                                                 <span
                                                                     class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
                                                                     <span
@@ -300,7 +380,7 @@
                                                                 <td class="p-3 align-top bg-indigo-50/40">
                                                                     <input type="number" step="0.1"
                                                                         name="plant_a[bak_{{ $key }}][ann_ph_2]"
-                                                                        class="w-full border-indigo-300 rounded text-sm p-2 text-center font-bold text-indigo-800 focus:ring-2 focus:ring-indigo-500">
+                                                                        class="w-full border-indigo-300 rounded text-sm p-2 text-center font-bold text-indigo-800 bg-white shadow-sm focus:ring-2 focus:ring-indigo-500">
                                                                     <span
                                                                         class="block text-[11px] text-indigo-500 text-center mt-1.5 leading-none">Std:
                                                                         <span
@@ -320,7 +400,7 @@
                                                                         name="plant_a[bak_{{ $key }}][draw_temp]"
                                                                         class="w-full border-slate-300 rounded-l text-sm p-2 text-center font-bold focus:ring-2 focus:ring-blue-500">
                                                                     <span
-                                                                        class="bg-slate-200 border border-l-0 border-slate-300 px-2 py-2 text-xs font-bold text-slate-600 rounded-r">°C</span>
+                                                                        class="bg-slate-200 border border-l-0 border-slate-300 px-3 py-2 text-xs font-bold text-slate-600 rounded-r">°C</span>
                                                                 </div>
                                                                 <span
                                                                     class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
@@ -334,7 +414,7 @@
                                                                         name="plant_a[bak_{{ $key }}][ann_temp]"
                                                                         class="w-full border-slate-300 rounded-l text-sm p-2 text-center font-bold focus:ring-2 focus:ring-emerald-500">
                                                                     <span
-                                                                        class="bg-slate-200 border border-l-0 border-slate-300 px-2 py-2 text-xs font-bold text-slate-600 rounded-r">°C</span>
+                                                                        class="bg-slate-200 border border-l-0 border-slate-300 px-3 py-2 text-xs font-bold text-slate-600 rounded-r">°C</span>
                                                                 </div>
                                                                 <span
                                                                     class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
@@ -346,9 +426,9 @@
                                                                     <div class="flex items-center">
                                                                         <input type="number"
                                                                             name="plant_a[bak_{{ $key }}][ann_temp_2]"
-                                                                            class="w-full border-indigo-300 rounded-l text-sm p-2 text-center font-bold focus:ring-2 focus:ring-indigo-500">
+                                                                            class="w-full border-indigo-300 rounded-l text-sm p-2 text-center font-bold bg-white focus:ring-2 focus:ring-indigo-500">
                                                                         <span
-                                                                            class="bg-indigo-100 border border-l-0 border-indigo-300 px-2 py-2 text-xs font-bold text-indigo-600 rounded-r">°C</span>
+                                                                            class="bg-indigo-100 border border-l-0 border-indigo-300 px-3 py-2 text-xs font-bold text-indigo-600 rounded-r">°C</span>
                                                                     </div>
                                                                     <span
                                                                         class="block text-[11px] text-indigo-500 text-center mt-1.5 leading-none">Std:

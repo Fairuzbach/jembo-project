@@ -51,70 +51,102 @@ class EngCompoundCheckController extends Controller
 
                 foreach ($dataBak as $bakKey => $data) {
                     $hasDrawing = collect($data)->only(['draw_type', 'draw_supplier', 'draw_warna', 'draw_konsentrasi', 'draw_ph', 'draw_temp'])->filter(fn($val) => $val !== null && $val !== '')->isNotEmpty();
-                    $hasAnnealing = collect($data)->only(['ann_type', 'ann_supplier', 'ann_warna', 'ann_konsentrasi', 'ann_ph', 'ann_temp'])->filter(fn($val) => $val !== null && $val !== '')->isNotEmpty();
+                    // UPDATE: Menambahkan pengecekan untuk kolom _2 (Bak B Twin RBD)
+                    $hasAnnealing = collect($data)->only([
+                        'ann_type',
+                        'ann_supplier',
+                        'ann_warna',
+                        'ann_konsentrasi',
+                        'ann_ph',
+                        'ann_temp',
+                        'ann_type_2',
+                        'ann_supplier_2',
+                        'ann_warna_2',
+                        'ann_konsentrasi_2',
+                        'ann_ph_2',
+                        'ann_temp_2'
+                    ])->filter(fn($val) => $val !== null && $val !== '')->isNotEmpty();
+
                     if (!$hasDrawing && !$hasAnnealing) continue;
 
-                    // $dataYangAkanDisimpan = [
-                    //     'plant_id'       => $plantId,
-                    //     'machine_id'     => $machineMap[$bakKey] ?? 'NULL KARENA TIDAK COCOK',
-                    //     'key_dari_html'  => $bakKey,
-                    //     'tanggal_cek'    => $tanggal,
-                    //     'diperiksa_oleh' => $diperiksaOleh,
-                    //     'diketahui_oleh' => $namaForeman,
-                    // ];
+                    // PERBAIKAN: Format string aman yang tidak menghilangkan angka 0
+                    $draw_kons  = (isset($data['draw_konsentrasi']) && $data['draw_konsentrasi'] !== '') ? (str_contains($data['draw_konsentrasi'], '%') ? $data['draw_konsentrasi'] : $data['draw_konsentrasi'] . '%') : null;
+                    $draw_temp  = (isset($data['draw_temp']) && $data['draw_temp'] !== '') ? (str_contains($data['draw_temp'], 'C') ? $data['draw_temp'] : $data['draw_temp'] . '°C') : null;
 
-                    // // dd() akan menghentikan sistem dan menampilkan array di atas ke layar Anda
-                    // dd("HASIL DEBUGGING SEBELUM SIMPAN:", $dataYangAkanDisimpan);
+                    $ann_kons   = (isset($data['ann_konsentrasi']) && $data['ann_konsentrasi'] !== '') ? (str_contains($data['ann_konsentrasi'], '%') ? $data['ann_konsentrasi'] : $data['ann_konsentrasi'] . '%') : null;
+                    $ann_temp   = (isset($data['ann_temp']) && $data['ann_temp'] !== '') ? (str_contains($data['ann_temp'], 'C') ? $data['ann_temp'] : $data['ann_temp'] . '°C') : null;
+
+                    $ann_kons_2 = (isset($data['ann_konsentrasi_2']) && $data['ann_konsentrasi_2'] !== '') ? (str_contains($data['ann_konsentrasi_2'], '%') ? $data['ann_konsentrasi_2'] : $data['ann_konsentrasi_2'] . '%') : null;
+                    $ann_temp_2 = (isset($data['ann_temp_2']) && $data['ann_temp_2'] !== '') ? (str_contains($data['ann_temp_2'], 'C') ? $data['ann_temp_2'] : $data['ann_temp_2'] . '°C') : null;
 
                     EngCompoundCheck::create([
-                        'plant_id'       => $plantId,
-                        'machine_id'     => $machineMap[$bakKey] ?? null,
-                        'tanggal_cek'    => $tanggal,
-                        'keterangan'     => $keterangan,
-                        'diperiksa_oleh' => $diperiksaOleh,
-                        'diketahui_oleh' => $namaForeman,
-                        'status'         => 'waiting_approval',
-                        'draw_type'      => $data['draw_type'] ?? null,
-                        'draw_supplier'  => $data['draw_supplier'] ?? null,
-                        'draw_warna'     => $data['draw_warna'] ?? null,
-                        'draw_konsentrasi' => $data['draw_konsentrasi'] ? $data['draw_konsentrasi'] . '%' : null,
-                        'draw_ph'        => $data['draw_ph'] ?? null,
-                        'draw_temp'      => $data['draw_temp'] ? $data['draw_temp'] . '°C' : null,
-                        'ann_type'       => $data['ann_type'] ?? null,
-                        'ann_supplier'   => $data['ann_supplier'] ?? null,
-                        'ann_warna'      => $data['ann_warna'] ?? null,
-                        'ann_konsentrasi' => $data['ann_konsentrasi'] ? $data['ann_konsentrasi'] . '%' : null,
-                        'ann_ph'         => $data['ann_ph'] ?? null,
-                        'ann_temp'       => $data['ann_temp'] ? $data['ann_temp'] . '°C' : null,
+                        'plant_id'         => $plantId,
+                        'machine_id'       => $machineMap[$bakKey] ?? null,
+                        'tanggal_cek'      => $tanggal,
+                        'keterangan'       => $keterangan,
+                        'diperiksa_oleh'   => $diperiksaOleh,
+                        'diketahui_oleh'   => $namaForeman,
+                        'status'           => 'waiting_approval',
+
+                        'draw_type'        => $data['draw_type'] ?? null,
+                        'draw_supplier'    => $data['draw_supplier'] ?? null,
+                        'draw_warna'       => $data['draw_warna'] ?? null,
+                        'draw_konsentrasi' => $draw_kons,
+                        'draw_ph'          => $data['draw_ph'] ?? null,
+                        'draw_temp'        => $draw_temp,
+
+                        'ann_type'         => $data['ann_type'] ?? null,
+                        'ann_supplier'     => $data['ann_supplier'] ?? null,
+                        'ann_warna'        => $data['ann_warna'] ?? null,
+                        'ann_konsentrasi'  => $ann_kons,
+                        'ann_ph'           => $data['ann_ph'] ?? null,
+                        'ann_temp'         => $ann_temp,
+
+                        // TAMBAHAN: Data Bak B untuk Mesin Twin RBD
+                        'ann_type_2'        => $data['ann_type_2'] ?? null,
+                        'ann_supplier_2'    => $data['ann_supplier_2'] ?? null,
+                        'ann_warna_2'       => $data['ann_warna_2'] ?? null,
+                        'ann_konsentrasi_2' => $ann_kons_2,
+                        'ann_ph_2'          => $data['ann_ph_2'] ?? null,
+                        'ann_temp_2'        => $ann_temp_2,
                     ]);
                 }
             } elseif ($plantName === 'Autowire') {
                 $autowireMachineId = 55;
                 $dataCek = $request->autowire;
-                foreach ($dataCek as $cekKey => $data) {
-                    if (empty($data['tanggal'])) continue;
+                if ($dataCek) {
+                    foreach ($dataCek as $cekKey => $data) {
+                        if (empty($data['tanggal'])) continue;
 
-                    EngCompoundCheck::create([
-                        'plant_id'       => $plantId,
-                        'machine_id'     => $autowireMachineId,
-                        'tanggal_cek'    => $data['tanggal'],
-                        'keterangan'     => $keterangan,
-                        'diperiksa_oleh' => $diperiksaOleh,
-                        'diketahui_oleh' => $namaForeman,
-                        'status'         => 'waiting_approval',
-                        'draw_type'      => $data['draw_type'] ?? null,
-                        'draw_supplier'  => $data['draw_supplier'] ?? null,
-                        'draw_warna'     => $data['draw_warna'] ?? null,
-                        'draw_konsentrasi' => isset($data['draw_konsentrasi']) ? $data['draw_konsentrasi'] . '%' : null,
-                        'draw_ph'        => $data['draw_ph'] ?? null,
-                        'draw_temp'      => isset($data['draw_temp']) ? $data['draw_temp'] . '°C' : null,
-                        'ann_type'       => $data['ann_type'] ?? null,
-                        'ann_supplier'   => $data['ann_supplier'] ?? null,
-                        'ann_warna'      => $data['ann_warna'] ?? null,
-                        'ann_konsentrasi' => isset($data['ann_konsentrasi']) ? $data['ann_konsentrasi'] . '%' : null,
-                        'ann_ph'         => $data['ann_ph'] ?? null,
-                        'ann_temp'       => isset($data['ann_temp']) ? $data['ann_temp'] . '°C' : null,
-                    ]);
+                        $draw_kons = (isset($data['draw_konsentrasi']) && $data['draw_konsentrasi'] !== '') ? (str_contains($data['draw_konsentrasi'], '%') ? $data['draw_konsentrasi'] : $data['draw_konsentrasi'] . '%') : null;
+                        $draw_temp = (isset($data['draw_temp']) && $data['draw_temp'] !== '') ? (str_contains($data['draw_temp'], 'C') ? $data['draw_temp'] : $data['draw_temp'] . '°C') : null;
+                        $ann_kons  = (isset($data['ann_konsentrasi']) && $data['ann_konsentrasi'] !== '') ? (str_contains($data['ann_konsentrasi'], '%') ? $data['ann_konsentrasi'] : $data['ann_konsentrasi'] . '%') : null;
+                        $ann_temp  = (isset($data['ann_temp']) && $data['ann_temp'] !== '') ? (str_contains($data['ann_temp'], 'C') ? $data['ann_temp'] : $data['ann_temp'] . '°C') : null;
+
+                        EngCompoundCheck::create([
+                            'plant_id'         => $plantId,
+                            'machine_id'       => $autowireMachineId,
+                            'tanggal_cek'      => $data['tanggal'],
+                            'keterangan'       => $keterangan,
+                            'diperiksa_oleh'   => $diperiksaOleh,
+                            'diketahui_oleh'   => $namaForeman,
+                            'status'           => 'waiting_approval',
+
+                            'draw_type'        => $data['draw_type'] ?? null,
+                            'draw_supplier'    => $data['draw_supplier'] ?? null,
+                            'draw_warna'       => $data['draw_warna'] ?? null,
+                            'draw_konsentrasi' => $draw_kons,
+                            'draw_ph'          => $data['draw_ph'] ?? null,
+                            'draw_temp'        => $draw_temp,
+
+                            'ann_type'         => $data['ann_type'] ?? null,
+                            'ann_supplier'     => $data['ann_supplier'] ?? null,
+                            'ann_warna'        => $data['ann_warna'] ?? null,
+                            'ann_konsentrasi'  => $ann_kons,
+                            'ann_ph'           => $data['ann_ph'] ?? null,
+                            'ann_temp'         => $ann_temp,
+                        ]);
+                    }
                 }
             }
 
@@ -130,19 +162,32 @@ class EngCompoundCheckController extends Controller
     public function editCompound($plant_id, $tanggal)
     {
         $plant = Plant::findOrFail($plant_id);
+
         // Ambil semua data pengecekan pada tanggal dan plant tersebut
         $checksData = EngCompoundCheck::where('plant_id', $plant_id)
             ->whereDate('tanggal_cek', $tanggal)
             ->get();
 
-        // 1. Ambil Nama Operator, Foreman, dan Status dari salah satu baris data (karena dalam 1 submit namanya pasti sama)
+        // 1. Ambil Nama Operator, Foreman, Keterangan dan Status dari salah satu baris data 
+        // (karena dalam 1 submit datanya pasti sama)
         $firstCheck   = $checksData->first();
         $operatorName = $firstCheck ? $firstCheck->diperiksa_oleh : '';
         $foremanName  = $firstCheck ? $firstCheck->diketahui_oleh : '';
+        $keterangan   = $firstCheck ? $firstCheck->keterangan : ''; // Tambahan: Ambil keterangan existing
         $status       = $firstCheck ? $firstCheck->status : 'waiting_approval';
 
         // 2. Jadikan ID Mesin sebagai key array agar mudah dipanggil di Blade
         $checks = $checksData->keyBy('machine_id');
+
+        // 3. Mapping ID Mesin untuk Plant A (Sangat penting agar Blade tahu ID masing-masing Bak)
+        $machineMap = [
+            'bak_1' => 1,
+            'bak_2' => 3,
+            'bak_3' => 52,
+            'bak_4' => 53,
+            'bak_5' => 54,
+            'bak_6' => 2, // Bak 6 / Twin RBD
+        ];
 
         // Tentukan nama Plant (untuk logika di Blade)
         $plantName = ($plant->name === 'Plant A - Autowire' || str_contains(strtolower($plant->name), 'autowire')) ? 'Autowire' : 'Plant A';
@@ -157,17 +202,18 @@ class EngCompoundCheckController extends Controller
             'plantName',
             'tanggal',
             'checks',
+            'machineMap',   // <--- Variabel baru untuk memetakan ID mesin ke Bak
             'stdPlantA',
             'stdAutowire',
-            'operatorName', // Kirim ke Blade
-            'foremanName',  // Kirim ke Blade
-            'status'        // Kirim ke Blade (berguna jika mau buat tombol Approve)
+            'operatorName',
+            'foremanName',
+            'keterangan',   // <--- Kirim ke Blade agar textarea keterangan terisi
+            'status'
         ));
     }
 
     public function updateCompound(Request $request, $plant_id, $tanggal)
     {
-        // Validasi dasar
         $request->validate([
             'plant' => 'required|in:Plant A,Autowire',
         ]);
@@ -184,10 +230,7 @@ class EngCompoundCheckController extends Controller
         DB::beginTransaction();
 
         try {
-            // LOGIKA UPDATE: PLANT A
             if ($plantName === 'Plant A') {
-
-                // 1. PASTIKAN ID MESIN SAMA PERSIS DENGAN FUNGSI STORE
                 $machineMap = [
                     'bak_1' => 1,
                     'bak_2' => 3,
@@ -201,7 +244,7 @@ class EngCompoundCheckController extends Controller
 
                 if ($plantA_data) {
                     foreach ($plantA_data as $bakKey => $data) {
-                        // Cek apakah ada data teknis yang diisi di Bak ini (selain null/string kosong)
+                        // UPDATE: Tangkap juga inputan _2 saat Edit
                         $hasInput = collect($data)->only([
                             'draw_type',
                             'draw_supplier',
@@ -214,20 +257,26 @@ class EngCompoundCheckController extends Controller
                             'ann_warna',
                             'ann_konsentrasi',
                             'ann_ph',
-                            'ann_temp'
+                            'ann_temp',
+                            'ann_type_2',
+                            'ann_supplier_2',
+                            'ann_warna_2',
+                            'ann_konsentrasi_2',
+                            'ann_ph_2',
+                            'ann_temp_2'
                         ])->filter(fn($val) => $val !== null && $val !== '')->isNotEmpty();
 
-                        // Ambil tanggal dari input tanggal plant A (fallback ke parameter route $tanggal)
                         $tglCek = $request->plant_a_tanggal ?? $tanggal;
 
                         if ($hasInput) {
-                            // 2. PENAMBAHAN SATUAN AMAN (Cek dulu apakah sudah ada % atau °C biar tidak dobel)
-                            $draw_kons = !empty($data['draw_konsentrasi']) ? (str_contains($data['draw_konsentrasi'], '%') ? $data['draw_konsentrasi'] : $data['draw_konsentrasi'] . '%') : null;
-                            $draw_temp = !empty($data['draw_temp'])        ? (str_contains($data['draw_temp'], 'C')        ? $data['draw_temp']        : $data['draw_temp'] . '°C') : null;
-                            $ann_kons  = !empty($data['ann_konsentrasi'])  ? (str_contains($data['ann_konsentrasi'], '%')  ? $data['ann_konsentrasi']  : $data['ann_konsentrasi'] . '%') : null;
-                            $ann_temp  = !empty($data['ann_temp'])         ? (str_contains($data['ann_temp'], 'C')         ? $data['ann_temp']         : $data['ann_temp'] . '°C') : null;
+                            $draw_kons  = (isset($data['draw_konsentrasi']) && $data['draw_konsentrasi'] !== '') ? (str_contains($data['draw_konsentrasi'], '%') ? $data['draw_konsentrasi'] : $data['draw_konsentrasi'] . '%') : null;
+                            $draw_temp  = (isset($data['draw_temp']) && $data['draw_temp'] !== '') ? (str_contains($data['draw_temp'], 'C') ? $data['draw_temp'] : $data['draw_temp'] . '°C') : null;
+                            $ann_kons   = (isset($data['ann_konsentrasi']) && $data['ann_konsentrasi'] !== '') ? (str_contains($data['ann_konsentrasi'], '%') ? $data['ann_konsentrasi'] : $data['ann_konsentrasi'] . '%') : null;
+                            $ann_temp   = (isset($data['ann_temp']) && $data['ann_temp'] !== '') ? (str_contains($data['ann_temp'], 'C') ? $data['ann_temp'] : $data['ann_temp'] . '°C') : null;
 
-                            // Update atau Create Data
+                            $ann_kons_2 = (isset($data['ann_konsentrasi_2']) && $data['ann_konsentrasi_2'] !== '') ? (str_contains($data['ann_konsentrasi_2'], '%') ? $data['ann_konsentrasi_2'] : $data['ann_konsentrasi_2'] . '%') : null;
+                            $ann_temp_2 = (isset($data['ann_temp_2']) && $data['ann_temp_2'] !== '') ? (str_contains($data['ann_temp_2'], 'C') ? $data['ann_temp_2'] : $data['ann_temp_2'] . '°C') : null;
+
                             EngCompoundCheck::updateOrCreate(
                                 [
                                     'plant_id'    => $plant_id,
@@ -252,6 +301,13 @@ class EngCompoundCheckController extends Controller
                                     'ann_konsentrasi'  => $ann_kons,
                                     'ann_ph'           => $data['ann_ph'] ?? null,
                                     'ann_temp'         => $ann_temp,
+
+                                    'ann_type_2'        => $data['ann_type_2'] ?? null,
+                                    'ann_supplier_2'    => $data['ann_supplier_2'] ?? null,
+                                    'ann_warna_2'       => $data['ann_warna_2'] ?? null,
+                                    'ann_konsentrasi_2' => $ann_kons_2,
+                                    'ann_ph_2'          => $data['ann_ph_2'] ?? null,
+                                    'ann_temp_2'        => $ann_temp_2,
                                 ]
                             );
                         } else {
@@ -262,15 +318,14 @@ class EngCompoundCheckController extends Controller
                         }
                     }
                 }
-            }
-            // LOGIKA UPDATE: AUTOWIRE
-            elseif ($plantName === 'Autowire') {
+            } elseif ($plantName === 'Autowire') {
                 $autowireMachineId = 55;
                 $dataCek = $request->autowire;
                 if ($dataCek) {
                     foreach ($dataCek as $cekKey => $data) {
                         $tglCekAuto = $data['tanggal'] ?? null;
                         if (empty($tglCekAuto)) continue;
+
                         $hasInput = collect($data)->only([
                             'draw_type',
                             'draw_supplier',
@@ -285,18 +340,18 @@ class EngCompoundCheckController extends Controller
                             'ann_ph',
                             'ann_temp'
                         ])->filter(fn($val) => $val !== null && $val !== '')->isNotEmpty();
+
                         if ($hasInput) {
-                            // Format satuan khusus Autowire
-                            $draw_kons = !empty($data['draw_konsentrasi']) ? (str_contains($data['draw_konsentrasi'], '%') ? $data['draw_konsentrasi'] : $data['draw_konsentrasi'] . '%') : null;
-                            $draw_temp = !empty($data['draw_temp'])        ? (str_contains($data['draw_temp'], 'C')        ? $data['draw_temp']        : $data['draw_temp'] . '°C') : null;
-                            $ann_kons  = !empty($data['ann_konsentrasi'])  ? (str_contains($data['ann_konsentrasi'], '%')  ? $data['ann_konsentrasi']  : $data['ann_konsentrasi'] . '%') : null;
-                            $ann_temp  = !empty($data['ann_temp'])         ? (str_contains($data['ann_temp'], 'C')         ? $data['ann_temp']         : $data['ann_temp'] . '°C') : null;
+                            $draw_kons = (isset($data['draw_konsentrasi']) && $data['draw_konsentrasi'] !== '') ? (str_contains($data['draw_konsentrasi'], '%') ? $data['draw_konsentrasi'] : $data['draw_konsentrasi'] . '%') : null;
+                            $draw_temp = (isset($data['draw_temp']) && $data['draw_temp'] !== '') ? (str_contains($data['draw_temp'], 'C') ? $data['draw_temp'] : $data['draw_temp'] . '°C') : null;
+                            $ann_kons  = (isset($data['ann_konsentrasi']) && $data['ann_konsentrasi'] !== '') ? (str_contains($data['ann_konsentrasi'], '%') ? $data['ann_konsentrasi'] : $data['ann_konsentrasi'] . '%') : null;
+                            $ann_temp  = (isset($data['ann_temp']) && $data['ann_temp'] !== '') ? (str_contains($data['ann_temp'], 'C') ? $data['ann_temp'] : $data['ann_temp'] . '°C') : null;
 
                             EngCompoundCheck::updateOrCreate(
                                 [
                                     'plant_id'    => $plant_id,
                                     'machine_id'  => $autowireMachineId,
-                                    'tanggal_cek' => $tglCekAuto, // Pencarian spesifik ke tanggal di tab Autowire tersebut
+                                    'tanggal_cek' => $tglCekAuto,
                                 ],
                                 [
                                     'diperiksa_oleh' => $diperiksaOleh,
@@ -319,7 +374,6 @@ class EngCompoundCheckController extends Controller
                                 ]
                             );
                         } else {
-                            // Hapus jika tab Autowire ini dikosongkan saat proses edit
                             EngCompoundCheck::where('plant_id', $plant_id)
                                 ->where('machine_id', $autowireMachineId)
                                 ->whereDate('tanggal_cek', $tglCekAuto)
@@ -333,7 +387,7 @@ class EngCompoundCheckController extends Controller
             return redirect()->route('eng.index')->with('success', 'Data Compound berhasil diperbarui!');
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Error Update Compound: " . $e->getMessage());
+            \Log::error("Error Update Compound: " . $e->getMessage());
             return redirect()->back()->with('error', 'Terjadi kesalahan sistem saat mengupdate data.');
         }
     }
