@@ -176,9 +176,9 @@
                                                                 <th class="border-b"></th>
                                                                 <th
                                                                     class="p-1 border-b text-center border-r border-slate-200 bg-emerald-50/50">
-                                                                    Bak A</th>
+                                                                    Bak Annealing 1</th>
                                                                 <th class="p-1 border-b text-center bg-indigo-50/50">Bak
-                                                                    B</th>
+                                                                    Annealing 2</th>
                                                             </tr>
                                                         @endif
                                                     </thead>
