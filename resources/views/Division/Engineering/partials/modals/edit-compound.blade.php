@@ -450,278 +450,189 @@
                                                     Annealing</th>
                                             </tr>
                                         </thead>
-                                        <tbody class="divide-y divide-slate-200">
-                                            {{-- BARIS TYPE ITEM --}}
+                                        <tbody class="divide-y divide-slate-100">
+                                            {{-- Type Item --}}
                                             <tr>
                                                 <td
-                                                    class="p-4 text-sm font-extrabold text-slate-800 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-5">
+                                                    class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-4">
                                                     Type Item</td>
-                                                <td class="p-3 align-top">
-                                                    <input type="text"
-                                                        name="plant_a[bak_{{ $key }}][draw_type]"
-                                                        value="{{ $checks[$machineMap['bak_' . $key] ?? 0]->draw_type ?? '' }}"
-                                                        class="w-full border-slate-300 rounded text-sm p-2 text-center bg-slate-50 font-medium focus:ring-2 focus:ring-blue-500"
+                                                <td class="p-2 align-top">
+                                                    <input type="text" name="autowire[cek_1][draw_type]"
+                                                        value="{{ $dataAuto->draw_type ?? '' }}"
+                                                        class="w-full border-slate-200 rounded text-xs p-1.5 focus:ring-blue-500 text-center bg-slate-50/50"
                                                         placeholder="...">
                                                     <span
-                                                        class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
+                                                        class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
                                                         <span
-                                                            class="font-bold text-slate-700">{{ $stdDraw->std_tipe ?? '-' }}</span></span>
+                                                            class="font-bold text-slate-600">{{ $stdDrawAuto->std_tipe ?? '-' }}</span></span>
                                                 </td>
-                                                <td
-                                                    class="p-3 align-top {{ $key == 6 ? 'border-r border-slate-300' : '' }}">
-                                                    <input type="text"
-                                                        name="plant_a[bak_{{ $key }}][ann_type]"
-                                                        value="{{ $checks[$machineMap['bak_' . $key] ?? 0]->ann_type ?? '' }}"
-                                                        class="w-full border-slate-300 rounded text-sm p-2 text-center bg-slate-50 font-medium focus:ring-2 focus:ring-emerald-500"
+                                                <td class="p-2 align-top">
+                                                    <input type="text" name="autowire[cek_1][ann_type]"
+                                                        value="{{ $dataAuto->ann_type ?? '' }}"
+                                                        class="w-full border-slate-200 rounded text-xs p-1.5 focus:ring-emerald-500 text-center bg-slate-50/50"
                                                         placeholder="...">
                                                     <span
-                                                        class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
+                                                        class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
                                                         <span
-                                                            class="font-bold text-slate-700">{{ $stdAnn->std_tipe ?? '-' }}</span></span>
+                                                            class="font-bold text-slate-600">{{ $stdAnnAuto->std_tipe ?? '-' }}</span></span>
                                                 </td>
-                                                @if ($key == 6)
-                                                    <td class="p-3 align-top bg-indigo-50/40">
-                                                        <input type="text"
-                                                            name="plant_a[bak_{{ $key }}][ann_type_2]"
-                                                            value="{{ $checks[$machineMap['bak_' . $key] ?? 0]->ann_type_2 ?? '' }}"
-                                                            class="w-full border-indigo-300 rounded text-sm p-2 text-center bg-white shadow-sm font-medium focus:ring-2 focus:ring-indigo-500"
-                                                            placeholder="Bak B...">
-                                                        <span
-                                                            class="block text-[11px] text-indigo-500 text-center mt-1.5 leading-none">Std:
-                                                            <span
-                                                                class="font-bold text-indigo-700">{{ $stdAnn->std_tipe ?? '-' }}</span></span>
-                                                    </td>
-                                                @endif
                                             </tr>
 
-                                            {{-- BARIS SUPPLIER --}}
+                                            {{-- Supplier --}}
                                             <tr>
                                                 <td
-                                                    class="p-4 text-sm font-extrabold text-slate-800 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-5">
+                                                    class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-4">
                                                     Supplier</td>
-                                                <td class="p-3 align-top">
-                                                    <input type="text"
-                                                        name="plant_a[bak_{{ $key }}][draw_supplier]"
-                                                        value="{{ $checks[$machineMap['bak_' . $key] ?? 0]->draw_supplier ?? '' }}"
-                                                        class="w-full border-slate-300 rounded text-sm p-2 text-center focus:ring-2 focus:ring-blue-500"
+                                                <td class="p-2 align-top">
+                                                    <input type="text" name="autowire[cek_1][draw_supplier]"
+                                                        value="{{ $dataAuto->draw_supplier ?? '' }}"
+                                                        class="w-full border-slate-200 rounded text-xs p-1.5 focus:ring-blue-500 text-center"
                                                         placeholder="...">
                                                     <span
-                                                        class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
+                                                        class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
                                                         <span
-                                                            class="font-bold text-slate-700">{{ $stdDraw->std_supplier ?? '-' }}</span></span>
+                                                            class="font-bold text-slate-600">{{ $stdDrawAuto->std_supplier ?? '-' }}</span></span>
                                                 </td>
-                                                <td
-                                                    class="p-3 align-top {{ $key == 6 ? 'border-r border-slate-300' : '' }}">
-                                                    <input type="text"
-                                                        name="plant_a[bak_{{ $key }}][ann_supplier]"
-                                                        value="{{ $checks[$machineMap['bak_' . $key] ?? 0]->ann_supplier ?? '' }}"
-                                                        class="w-full border-slate-300 rounded text-sm p-2 text-center focus:ring-2 focus:ring-emerald-500"
+                                                <td class="p-2 align-top">
+                                                    <input type="text" name="autowire[cek_1][ann_supplier]"
+                                                        value="{{ $dataAuto->ann_supplier ?? '' }}"
+                                                        class="w-full border-slate-200 rounded text-xs p-1.5 focus:ring-emerald-500 text-center"
                                                         placeholder="...">
                                                     <span
-                                                        class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
+                                                        class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
                                                         <span
-                                                            class="font-bold text-slate-700">{{ $stdAnn->std_supplier ?? '-' }}</span></span>
+                                                            class="font-bold text-slate-600">{{ $stdAnnAuto->std_supplier ?? '-' }}</span></span>
                                                 </td>
-                                                @if ($key == 6)
-                                                    <td class="p-3 align-top bg-indigo-50/40">
-                                                        <input type="text"
-                                                            name="plant_a[bak_{{ $key }}][ann_supplier_2]"
-                                                            value="{{ $checks[$machineMap['bak_' . $key] ?? 0]->ann_supplier_2 ?? '' }}"
-                                                            class="w-full border-indigo-300 rounded text-sm p-2 text-center bg-white shadow-sm focus:ring-2 focus:ring-indigo-500"
-                                                            placeholder="Bak B...">
-                                                        <span
-                                                            class="block text-[11px] text-indigo-500 text-center mt-1.5 leading-none">Std:
-                                                            <span
-                                                                class="font-bold text-indigo-700">{{ $stdAnn->std_supplier ?? '-' }}</span></span>
-                                                    </td>
-                                                @endif
                                             </tr>
 
-                                            {{-- BARIS WARNA --}}
+                                            {{-- Warna --}}
                                             <tr>
                                                 <td
-                                                    class="p-4 text-sm font-extrabold text-slate-800 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-5">
+                                                    class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-4">
                                                     Warna</td>
-                                                <td class="p-3 align-top">
-                                                    <input type="text"
-                                                        name="plant_a[bak_{{ $key }}][draw_warna]"
-                                                        value="{{ $checks[$machineMap['bak_' . $key] ?? 0]->draw_warna ?? '' }}"
-                                                        class="w-full border-slate-300 rounded text-sm p-2 text-center focus:ring-2 focus:ring-blue-500"
+                                                <td class="p-2 align-top">
+                                                    <input type="text" name="autowire[cek_1][draw_warna]"
+                                                        value="{{ $dataAuto->draw_warna ?? '' }}"
+                                                        class="w-full border-slate-200 rounded text-xs p-1.5 focus:ring-blue-500 text-center"
                                                         placeholder="...">
                                                     <span
-                                                        class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
+                                                        class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
                                                         <span
-                                                            class="font-bold text-slate-700">{{ $stdDraw->std_warna ?? '-' }}</span></span>
+                                                            class="font-bold text-slate-600">{{ $stdDrawAuto->std_warna ?? '-' }}</span></span>
                                                 </td>
-                                                <td
-                                                    class="p-3 align-top {{ $key == 6 ? 'border-r border-slate-300' : '' }}">
-                                                    <input type="text"
-                                                        name="plant_a[bak_{{ $key }}][ann_warna]"
-                                                        value="{{ $checks[$machineMap['bak_' . $key] ?? 0]->ann_warna ?? '' }}"
-                                                        class="w-full border-slate-300 rounded text-sm p-2 text-center focus:ring-2 focus:ring-emerald-500"
+                                                <td class="p-2 align-top">
+                                                    <input type="text" name="autowire[cek_1][ann_warna]"
+                                                        value="{{ $dataAuto->ann_warna ?? '' }}"
+                                                        class="w-full border-slate-200 rounded text-xs p-1.5 focus:ring-emerald-500 text-center"
                                                         placeholder="...">
                                                     <span
-                                                        class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
+                                                        class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
                                                         <span
-                                                            class="font-bold text-slate-700">{{ $stdAnn->std_warna ?? '-' }}</span></span>
+                                                            class="font-bold text-slate-600">{{ $stdAnnAuto->std_warna ?? '-' }}</span></span>
                                                 </td>
-                                                @if ($key == 6)
-                                                    <td class="p-3 align-top bg-indigo-50/40">
-                                                        <input type="text"
-                                                            name="plant_a[bak_{{ $key }}][ann_warna_2]"
-                                                            value="{{ $checks[$machineMap['bak_' . $key] ?? 0]->ann_warna_2 ?? '' }}"
-                                                            class="w-full border-indigo-300 rounded text-sm p-2 text-center bg-white shadow-sm focus:ring-2 focus:ring-indigo-500"
-                                                            placeholder="Bak B...">
-                                                        <span
-                                                            class="block text-[11px] text-indigo-500 text-center mt-1.5 leading-none">Std:
-                                                            <span
-                                                                class="font-bold text-indigo-700">{{ $stdAnn->std_warna ?? '-' }}</span></span>
-                                                    </td>
-                                                @endif
                                             </tr>
 
-                                            {{-- BARIS KONSENTRASI --}}
+                                            {{-- Konsentrasi --}}
                                             <tr>
                                                 <td
-                                                    class="p-4 text-sm font-extrabold text-slate-800 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-5">
+                                                    class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-4">
                                                     Konsentrasi</td>
-                                                <td class="p-3 align-top">
+                                                <td class="p-2 align-top">
                                                     <div class="flex items-center">
                                                         <input type="number" step="0.1"
-                                                            name="plant_a[bak_{{ $key }}][draw_konsentrasi]"
-                                                            value="{{ isset($checks[$machineMap['bak_' . $key] ?? 0]->draw_konsentrasi) ? str_replace('%', '', $checks[$machineMap['bak_' . $key] ?? 0]->draw_konsentrasi) : '' }}"
-                                                            class="w-full border-slate-300 rounded-l text-sm p-2 text-center font-bold text-blue-700 focus:ring-2 focus:ring-blue-500">
+                                                            name="autowire[cek_1][draw_konsentrasi]"
+                                                            value="{{ isset($dataAuto->draw_konsentrasi) ? str_replace('%', '', $dataAuto->draw_konsentrasi) : '' }}"
+                                                            class="w-full border-slate-200 rounded-l text-xs p-1.5 text-center font-bold text-blue-600 focus:ring-blue-500"
+                                                            placeholder="0.0">
                                                         <span
-                                                            class="bg-slate-200 border border-l-0 border-slate-300 px-3 py-2 text-xs font-bold text-slate-600 rounded-r">%</span>
+                                                            class="bg-slate-100 border border-l-0 border-slate-200 px-2 py-1.5 text-[10px] font-bold text-slate-500 rounded-r">%</span>
                                                     </div>
                                                     <span
-                                                        class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
+                                                        class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
                                                         <span
-                                                            class="font-bold text-slate-700">{{ $stdDraw->std_konsentrasi ?? '-' }}</span></span>
+                                                            class="font-bold text-slate-600">{{ $stdDrawAuto->std_konsentrasi ?? '-' }}</span></span>
                                                 </td>
-                                                <td
-                                                    class="p-3 align-top {{ $key == 6 ? 'border-r border-slate-300' : '' }}">
+                                                <td class="p-2 align-top">
                                                     <div class="flex items-center">
                                                         <input type="number" step="0.01"
-                                                            name="plant_a[bak_{{ $key }}][ann_konsentrasi]"
-                                                            value="{{ isset($checks[$machineMap['bak_' . $key] ?? 0]->ann_konsentrasi) ? str_replace('%', '', $checks[$machineMap['bak_' . $key] ?? 0]->ann_konsentrasi) : '' }}"
-                                                            class="w-full border-slate-300 rounded-l text-sm p-2 text-center font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500">
+                                                            name="autowire[cek_1][ann_konsentrasi]"
+                                                            value="{{ isset($dataAuto->ann_konsentrasi) ? str_replace('%', '', $dataAuto->ann_konsentrasi) : '' }}"
+                                                            class="w-full border-slate-200 rounded-l text-xs p-1.5 text-center font-bold text-emerald-600 focus:ring-emerald-500"
+                                                            placeholder="0.0">
                                                         <span
-                                                            class="bg-slate-200 border border-l-0 border-slate-300 px-3 py-2 text-xs font-bold text-slate-600 rounded-r">%</span>
+                                                            class="bg-slate-100 border border-l-0 border-slate-200 px-2 py-1.5 text-[10px] font-bold text-slate-500 rounded-r">%</span>
                                                     </div>
                                                     <span
-                                                        class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
+                                                        class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
                                                         <span
-                                                            class="font-bold text-slate-700">{{ $stdAnn->std_konsentrasi ?? '-' }}</span></span>
+                                                            class="font-bold text-slate-600">{{ $stdAnnAuto->std_konsentrasi ?? '-' }}</span></span>
                                                 </td>
-                                                @if ($key == 6)
-                                                    <td class="p-3 align-top bg-indigo-50/40">
-                                                        <div class="flex items-center">
-                                                            <input type="number" step="0.01"
-                                                                name="plant_a[bak_{{ $key }}][ann_konsentrasi_2]"
-                                                                value="{{ isset($checks[$machineMap['bak_' . $key] ?? 0]->ann_konsentrasi_2) ? str_replace('%', '', $checks[$machineMap['bak_' . $key] ?? 0]->ann_konsentrasi_2) : '' }}"
-                                                                class="w-full border-indigo-300 rounded-l text-sm p-2 text-center font-bold text-indigo-700 bg-white focus:ring-2 focus:ring-indigo-500">
-                                                            <span
-                                                                class="bg-indigo-100 border border-l-0 border-indigo-300 px-3 py-2 text-xs font-bold text-indigo-600 rounded-r">%</span>
-                                                        </div>
-                                                        <span
-                                                            class="block text-[11px] text-indigo-500 text-center mt-1.5 leading-none">Std:
-                                                            <span
-                                                                class="font-bold text-indigo-700">{{ $stdAnn->std_konsentrasi ?? '-' }}</span></span>
-                                                    </td>
-                                                @endif
                                             </tr>
 
-                                            {{-- BARIS PH LEVEL --}}
+                                            {{-- pH Level --}}
                                             <tr>
                                                 <td
-                                                    class="p-4 text-sm font-extrabold text-slate-800 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-5">
+                                                    class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-4">
                                                     pH Level</td>
-                                                <td class="p-3 align-top">
+                                                <td class="p-2 align-top">
                                                     <input type="number" step="0.1"
-                                                        name="plant_a[bak_{{ $key }}][draw_ph]"
-                                                        value="{{ $checks[$machineMap['bak_' . $key] ?? 0]->draw_ph ?? '' }}"
-                                                        class="w-full border-slate-300 rounded text-sm p-2 text-center font-bold text-emerald-800 focus:ring-2 focus:ring-emerald-500">
+                                                        name="autowire[cek_1][draw_ph]"
+                                                        value="{{ $dataAuto->draw_ph ?? '' }}"
+                                                        class="w-full border-slate-200 rounded text-xs p-1.5 text-center font-bold text-emerald-700 focus:ring-blue-500"
+                                                        placeholder="0.0">
                                                     <span
-                                                        class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
+                                                        class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
                                                         <span
-                                                            class="font-bold text-slate-700">{{ $stdDraw->std_ph ?? '-' }}</span></span>
+                                                            class="font-bold text-slate-600">{{ $stdDrawAuto->std_ph ?? '-' }}</span></span>
                                                 </td>
-                                                <td
-                                                    class="p-3 align-top {{ $key == 6 ? 'border-r border-slate-300' : '' }}">
+                                                <td class="p-2 align-top">
                                                     <input type="number" step="0.1"
-                                                        name="plant_a[bak_{{ $key }}][ann_ph]"
-                                                        value="{{ $checks[$machineMap['bak_' . $key] ?? 0]->ann_ph ?? '' }}"
-                                                        class="w-full border-slate-300 rounded text-sm p-2 text-center font-bold text-emerald-800 focus:ring-2 focus:ring-emerald-500">
+                                                        name="autowire[cek_1][ann_ph]"
+                                                        value="{{ $dataAuto->ann_ph ?? '' }}"
+                                                        class="w-full border-slate-200 rounded text-xs p-1.5 text-center font-bold text-emerald-700 focus:ring-emerald-500"
+                                                        placeholder="0.0">
                                                     <span
-                                                        class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
+                                                        class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
                                                         <span
-                                                            class="font-bold text-slate-700">{{ $stdAnn->std_ph ?? '-' }}</span></span>
+                                                            class="font-bold text-slate-600">{{ $stdAnnAuto->std_ph ?? '-' }}</span></span>
                                                 </td>
-                                                @if ($key == 6)
-                                                    <td class="p-3 align-top bg-indigo-50/40">
-                                                        <input type="number" step="0.1"
-                                                            name="plant_a[bak_{{ $key }}][ann_ph_2]"
-                                                            value="{{ $checks[$machineMap['bak_' . $key] ?? 0]->ann_ph_2 ?? '' }}"
-                                                            class="w-full border-indigo-300 rounded text-sm p-2 text-center font-bold text-indigo-800 bg-white shadow-sm focus:ring-2 focus:ring-indigo-500">
-                                                        <span
-                                                            class="block text-[11px] text-indigo-500 text-center mt-1.5 leading-none">Std:
-                                                            <span
-                                                                class="font-bold text-indigo-700">{{ $stdAnn->std_ph ?? '-' }}</span></span>
-                                                    </td>
-                                                @endif
                                             </tr>
 
-                                            {{-- BARIS TEMPERATUR --}}
+                                            {{-- Temperatur --}}
                                             <tr>
                                                 <td
-                                                    class="p-4 text-sm font-extrabold text-slate-800 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-5">
+                                                    class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-4">
                                                     Temperatur</td>
-                                                <td class="p-3 align-top">
+                                                <td class="p-2 align-top">
                                                     <div class="flex items-center">
-                                                        <input type="number"
-                                                            name="plant_a[bak_{{ $key }}][draw_temp]"
-                                                            value="{{ isset($checks[$machineMap['bak_' . $key] ?? 0]->draw_temp) ? str_replace(['°C', 'C'], '', $checks[$machineMap['bak_' . $key] ?? 0]->draw_temp) : '' }}"
-                                                            class="w-full border-slate-300 rounded-l text-sm p-2 text-center font-bold focus:ring-2 focus:ring-blue-500">
+                                                        <input type="number" step="1"
+                                                            name="autowire[cek_1][draw_temp]"
+                                                            value="{{ isset($dataAuto->draw_temp) ? str_replace(['°C', 'C'], '', $dataAuto->draw_temp) : '' }}"
+                                                            class="w-full border-slate-200 rounded-l text-xs p-1.5 text-center focus:ring-blue-500"
+                                                            placeholder="0">
                                                         <span
-                                                            class="bg-slate-200 border border-l-0 border-slate-300 px-2 py-2 text-xs font-bold text-slate-600 rounded-r">°C</span>
+                                                            class="bg-slate-100 border border-l-0 border-slate-200 px-1 py-1.5 text-[10px] font-bold text-slate-500 rounded-r">°C</span>
                                                     </div>
                                                     <span
-                                                        class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
+                                                        class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
                                                         <span
-                                                            class="font-bold text-slate-700">{{ $stdDraw->std_temp ?? '-' }}</span></span>
+                                                            class="font-bold text-slate-600">{{ $stdDrawAuto->std_temp ?? '-' }}</span></span>
                                                 </td>
-                                                <td
-                                                    class="p-3 align-top {{ $key == 6 ? 'border-r border-slate-300' : '' }}">
+                                                <td class="p-2 align-top">
                                                     <div class="flex items-center">
-                                                        <input type="number"
-                                                            name="plant_a[bak_{{ $key }}][ann_temp]"
-                                                            value="{{ isset($checks[$machineMap['bak_' . $key] ?? 0]->ann_temp) ? str_replace(['°C', 'C'], '', $checks[$machineMap['bak_' . $key] ?? 0]->ann_temp) : '' }}"
-                                                            class="w-full border-slate-300 rounded-l text-sm p-2 text-center font-bold focus:ring-2 focus:ring-emerald-500">
+                                                        <input type="number" step="1"
+                                                            name="autowire[cek_1][ann_temp]"
+                                                            value="{{ isset($dataAuto->ann_temp) ? str_replace(['°C', 'C'], '', $dataAuto->ann_temp) : '' }}"
+                                                            class="w-full border-slate-200 rounded-l text-xs p-1.5 text-center focus:ring-emerald-500"
+                                                            placeholder="0">
                                                         <span
-                                                            class="bg-slate-200 border border-l-0 border-slate-300 px-2 py-2 text-xs font-bold text-slate-600 rounded-r">°C</span>
+                                                            class="bg-slate-100 border border-l-0 border-slate-200 px-1 py-1.5 text-[10px] font-bold text-slate-500 rounded-r">°C</span>
                                                     </div>
                                                     <span
-                                                        class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
+                                                        class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
                                                         <span
-                                                            class="font-bold text-slate-700">{{ $stdAnn->std_temp ?? '-' }}</span></span>
+                                                            class="font-bold text-slate-600">{{ $stdAnnAuto->std_temp ?? '-' }}</span></span>
                                                 </td>
-                                                @if ($key == 6)
-                                                    <td class="p-3 align-top bg-indigo-50/40">
-                                                        <div class="flex items-center">
-                                                            <input type="number"
-                                                                name="plant_a[bak_{{ $key }}][ann_temp_2]"
-                                                                value="{{ isset($checks[$machineMap['bak_' . $key] ?? 0]->ann_temp_2) ? str_replace(['°C', 'C'], '', $checks[$machineMap['bak_' . $key] ?? 0]->ann_temp_2) : '' }}"
-                                                                class="w-full border-indigo-300 rounded-l text-sm p-2 text-center font-bold bg-white focus:ring-2 focus:ring-indigo-500">
-                                                            <span
-                                                                class="bg-indigo-100 border border-l-0 border-indigo-300 px-2 py-2 text-xs font-bold text-indigo-600 rounded-r">°C</span>
-                                                        </div>
-                                                        <span
-                                                            class="block text-[11px] text-indigo-500 text-center mt-1.5 leading-none">Std:
-                                                            <span
-                                                                class="font-bold text-indigo-700">{{ $stdAnn->std_temp ?? '-' }}</span></span>
-                                                    </td>
-                                                @endif
                                             </tr>
                                         </tbody>
                                     </table>
