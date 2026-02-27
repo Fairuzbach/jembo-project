@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // ============================================================
     // 4. CHART PARAMETER (Doughnut)
     // ============================================================
-    const paramId = 'paramChart';
+   const paramId = 'paramChart';
 if (document.getElementById(paramId) && config.param) {
     destroyChartIfExists(paramId);
     
@@ -164,41 +164,78 @@ if (document.getElementById(paramId) && config.param) {
         ];
         return colors.slice(0, count);
     };
+
+    // SOLUSI CHART KOSONG: Pastikan format data dibaca sebagai array dengan aman sebelum dimanipulasi
+    let rawLabels = Array.isArray(config.param.labels) ? config.param.labels : Object.values(config.param.labels || {});
+    let modifiedLabels = rawLabels.map(label => 
+        (!label || label === '-' || label.trim() === '') ? 'Belum Didefinisikan' : label
+    );
     
     new Chart(document.getElementById(paramId).getContext('2d'), {
-        type: 'doughnut',
+        type: 'bar',
         data: {
-            labels: config.param.labels,
+            labels: modifiedLabels, // Menggunakan label yang sudah diubah
             datasets: [{
+                label: 'Jumlah Permintaan',
                 data: config.param.values,
                 backgroundColor: generateColors(config.param.values.length),
                 borderWidth: 1,
-                borderColor: '#fff'
+                borderColor: 'transparent',
+                borderRadius: 4
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            layout: {
+                padding: {
+                    top: 25 // SOLUSI ANGKA TERPOTONG: Tambahan bantalan di bagian atas kanvas
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grace: '15%', // SOLUSI ANGKA TERPOTONG: Menambah ruang kosong ekstra 15% di atas batang paling tinggi
+                    grid: {
+                        borderDash: [4, 4],
+                        color: '#f1f5f9'
+                    },
+                    ticks: {
+                        stepSize: 1
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        maxRotation: 45,
+                        minRotation: 0,
+                        font: { size: 11 }
+                    }
+                }
+            },
             plugins: {
                 legend: {
-                    position: 'bottom',
-                    labels: {
-                        padding: 10,
-                        font: {
-                            size: 10
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return ' Total: ' + context.parsed.y + ' Permintaan';
                         }
                     }
                 },
                 datalabels: {
-                    color: '#fff',
+                    color: '#334155',
+                    anchor: 'end',
+                    align: 'top',
                     font: {
                         weight: 'bold',
                         size: 11
                     },
-                    formatter: (value, ctx) => {
-                        let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                        let percentage = (value * 100 / sum).toFixed(0) + "%";
-                        return value > 0 ? percentage : '';
+                    formatter: (value) => {
+                        return value > 0 ? value : '';
                     }
                 }
             }
