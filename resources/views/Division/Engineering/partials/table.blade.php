@@ -278,7 +278,7 @@
                                             class="text-xs font-bold text-slate-800 uppercase">{{ $check->diketahui_oleh ?? '-' }}</span>
                                         <span
                                             class="text-[9px] font-medium text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full mt-1 border border-indigo-100">
-                                            Foreman
+                                            {{ auth()->user()->job_level }}
                                         </span>
                                     </div>
                                 </td>
