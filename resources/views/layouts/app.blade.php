@@ -233,6 +233,181 @@
 
     {{-- Alpine.js for tooltips --}}
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    {{-- 1. CEK ROLE & HITUNG TIKET BELUM APPROVE DI SISI SERVER (LARAVEL) --}}
+    @php
+        $showReminder = false;
+        $unapprovedTickets = 0;
+
+        if (auth()->check() && in_array(auth()->user()->role, ['ga.admin', 'super.ga.admin'])) {
+            $unapprovedTickets = \App\Models\GeneralAffair\WorkOrderGeneralAffair::where(
+                'status',
+                'waiting_approval_ga',
+            )->count();
+            $pendingTickets = App\Models\GeneralAffair\WorkOrderGeneralAffair::where('status', 'pending')->count();
+            if ($unapprovedTickets > 0 && $pendingTickets > 0) {
+                $showReminder = true;
+            }
+        }
+    @endphp
+
+    @if ($showReminder)
+        <div x-data="{
+            showModal: false,
+            todayDate: new Date().toLocaleDateString(),
+            init() {
+                let lastSeenDate = localStorage.getItem('ga_daily_reminder_date');
+                if (lastSeenDate !== this.todayDate) {
+                    setTimeout(() => {
+                        this.showModal = true;
+                    }, 1000);
+                }
+            },
+            closeModal() {
+                this.showModal = false;
+                localStorage.setItem('ga_daily_reminder_date', this.todayDate);
+            }
+        }" x-init="init()" x-show="showModal" x-cloak
+            class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-0">
+
+            {{-- Backdrop --}}
+            <div x-show="showModal" x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm">
+            </div>
+
+            {{-- Modal Card --}}
+            <div x-show="showModal" x-transition:enter="transition ease-out duration-500 delay-100"
+                x-transition:enter-start="opacity-0 translate-y-8 scale-95"
+                x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                x-transition:leave-end="opacity-0 translate-y-4 scale-95"
+                class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all text-center border border-slate-100">
+
+                {{-- Animated top bar --}}
+                <div class="h-1.5 w-full bg-gradient-to-r from-rose-400 via-rose-600 to-pink-500 animate-gradient-x">
+                </div>
+
+                <div class="p-6 pt-8">
+
+                    {{-- Icon dengan pulse ring --}}
+                    <div class="relative mx-auto flex items-center justify-center h-16 w-16 mb-5">
+                        <span
+                            class="absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-30 animate-ping"></span>
+                        <span class="relative flex items-center justify-center h-16 w-16 rounded-full bg-rose-100">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-rose-600" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                        </span>
+                    </div>
+
+                    {{-- Greeting --}}
+                    <h3 class="text-xl font-extrabold text-slate-800 mb-4 animate-fade-in-down">
+                        Hi, {{ auth()->user()->name }}! 👋
+                    </h3>
+
+                    {{-- Ticket info cards --}}
+                    <div class="flex gap-3 justify-center mb-6">
+                        <div class="flex-1 bg-rose-50 border border-rose-200 rounded-xl p-3 animate-fade-in-up"
+                            style="animation-delay: 200ms;">
+                            <div class="text-3xl font-black text-rose-600 leading-none">{{ $unapprovedTickets }}</div>
+                            <div class="text-xs text-slate-500 mt-1 font-medium">Perlu Divalidasi</div>
+                        </div>
+                        <div class="flex-1 bg-amber-50 border border-amber-200 rounded-xl p-3 animate-fade-in-up"
+                            style="animation-delay: 350ms;">
+                            <div class="text-3xl font-black text-amber-500 leading-none">{{ $pendingTickets }}</div>
+                            <div class="text-xs text-slate-500 mt-1 font-medium">Perlu Dikerjakan</div>
+                        </div>
+                    </div>
+
+                    {{-- Actions --}}
+                    <div class="flex flex-col gap-3 sm:flex-row sm:justify-center mt-2 animate-fade-in-up"
+                        style="animation-delay: 500ms;">
+                        <a href="{{ route('ga.index', ['status' => 'pending']) }}"
+                            class="group w-full inline-flex justify-center items-center gap-1.5 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-amber-600 hover:shadow-amber-200 hover:shadow-md hover:-translate-y-0.5 focus:outline-none transition-all duration-150 sm:w-auto">
+                            <span>⚙️</span> Kerjakan
+                        </a>
+                        <button @click="closeModal()" type="button"
+                            class="w-full inline-flex justify-center rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:-translate-y-0.5 focus:outline-none transition-all duration-150 sm:w-auto">
+                            Nanti Saja
+                        </button>
+                        <a href="{{ route('ga.index', ['status' => 'waiting_approval_ga']) }}"
+                            class="group w-full inline-flex justify-center items-center gap-1.5 rounded-xl bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-rose-700 hover:shadow-rose-200 hover:shadow-md hover:-translate-y-0.5 focus:outline-none transition-all duration-150 sm:w-auto">
+                            <span>✅</span> Validasi
+                        </a>
+                    </div>
+                </div>
+
+                {{-- Close button --}}
+                <button @click="closeModal()"
+                    class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 hover:bg-slate-100 hover:rotate-90 p-1.5 rounded-lg transition-all duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                        stroke="currentColor" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <style>
+            /* Fade in dari atas */
+            @keyframes fadeInDown {
+                from {
+                    opacity: 0;
+                    transform: translateY(-12px);
+                }
+
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            /* Fade in dari bawah */
+            @keyframes fadeInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(12px);
+                }
+
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            /* Gradient bergerak */
+            @keyframes gradientX {
+
+                0%,
+                100% {
+                    background-position: 0% 50%;
+                }
+
+                50% {
+                    background-position: 100% 50%;
+                }
+            }
+
+            .animate-fade-in-down {
+                animation: fadeInDown 0.4s ease both;
+            }
+
+            .animate-fade-in-up {
+                animation: fadeInUp 0.4s ease both;
+                opacity: 0;
+                animation-fill-mode: forwards;
+            }
+
+            .animate-gradient-x {
+                background-size: 200% 200%;
+                animation: gradientX 3s ease infinite;
+            }
+        </style>
+    @endif
 </body>
 
 </html>
