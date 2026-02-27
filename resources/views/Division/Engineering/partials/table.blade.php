@@ -278,7 +278,7 @@
                                             class="text-xs font-bold text-slate-800 uppercase">{{ $check->diketahui_oleh ?? '-' }}</span>
                                         <span
                                             class="text-[9px] font-medium text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full mt-1 border border-indigo-100">
-                                            {{ auth()->user()->job_level }}
+                                            {{ \App\Models\User::where('name', $check->diketahui_oleh)->value('job_level') ?? 'Foreman' }}
                                         </span>
                                     </div>
                                 </td>
