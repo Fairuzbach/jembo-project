@@ -1,10 +1,7 @@
 {{-- Bungkus semuanya dengan x-data activeTab --}}
 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg transition-colors" x-data="{ activeTab: 'work_order' }">
     <div class="p-6 text-slate-900">
-
-        {{-- ============================== --}}
         {{-- HEADER: TOMBOL AKSI GLOBAL     --}}
-        {{-- ============================== --}}
         <div class="flex flex-wrap justify-end gap-3 mb-6">
             <button @click="handleExportClick()" type="button"
                 class="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-sm font-medium flex justify-center items-center gap-2 transition shadow-sm">
@@ -48,9 +45,7 @@
             </button> --}}
         </div>
 
-        {{-- ============================== --}}
-        {{-- MENU NAVIGASI TAB              --}}
-        {{-- ============================== --}}
+        {{-- MENU NAVIGASI TAB --}}
         <div class="flex space-x-4 mb-6 border-b border-slate-200">
             <button @click="activeTab = 'work_order'"
                 :class="activeTab === 'work_order' ? 'border-indigo-500 text-indigo-600' :
@@ -67,9 +62,8 @@
             </button>
         </div>
 
-        {{-- ============================== --}}
+
         {{-- KONTEN TAB 1: WORK ORDER       --}}
-        {{-- ============================== --}}
         <div x-show="activeTab === 'work_order'" x-transition.opacity>
 
             {{-- Form Pencarian Work Order --}}
@@ -214,9 +208,7 @@
             </div>
         </div>
 
-        {{-- ============================== --}}
         {{-- KONTEN TAB 2: COMPOUND         --}}
-        {{-- ============================== --}}
         <div x-show="activeTab === 'compound'" style="display: none;" x-transition.opacity>
 
             {{-- Tabel Riwayat Pengecekan Compound (Dikelompokkan per Laporan) --}}
