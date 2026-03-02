@@ -130,20 +130,16 @@ class WorkOrderService
             $updateData['completion_note'] = $data['completion_note'] ?? null;
             $updateData['cancellation_note'] = null;
         }
-
         // 3. Logika Cancelled
         if ($data['status'] === 'cancelled') {
-            // [FIX] Hapus file fisik bukti penyelesaian jika ada (karena dibatalkan)
             if ($ticket->photo_completed_path && Storage::disk('public')->exists($ticket->photo_completed_path)) {
                 Storage::disk('public')->delete($ticket->photo_completed_path);
             }
-
             $updateData['cancellation_note'] = $data['cancellation_note'] ?? null;
             $updateData['actual_completion_date'] = null;
             $updateData['completion_note'] = null;
             $updateData['photo_completed_path'] = null;
         }
-
         // 4. Update Optional Fields
         if (!empty($data['department'])) $updateData['department'] = $data['department'];
         if (!empty($data['target_date'])) {
@@ -161,23 +157,14 @@ class WorkOrderService
         // Log History
         $this->logHistory($ticket->id, 'Status Update', 'Status diubah menjadi: ' . ucfirst($data['status']));
 
-        // ==========================================================
+
         // NOTIFIKASI WHATSAPP
-        // ==========================================================
-
         $requester = \App\Models\User::where('nik', $ticket->requester_nik)->first();
-
-        // [FIX] Cek apakah requester ada untuk mencegah Error
         if ($requester) {
             $requesterPhone = $requester->no_hp ?? $requester->phone;
-            $requesterName = $requester->name; // Simpan nama di variabel
-
-            // [FIX] Link lebih spesifik (bisa tambahkan parameter search ID agar langsung ketemu)
-            // Contoh: url/ga/index?search=WO-2024-001
+            $requesterName = $requester->name;
             $ticketLink = route('ga.index', ['search' => $ticket->ticket_num]);
-
             $waMessage = "";
-
             switch ($data['status']) {
                 case 'in_progress':
                     $waMessage = "🎫 *WORK ORDER GENERAL AFFAIR*\n" .
@@ -600,6 +587,7 @@ class WorkOrderService
             }
         }
     }
+
     // =========================================================================
     // PRIVATE HELPERS
     // =========================================================================
@@ -675,143 +663,90 @@ class WorkOrderService
         }
     }
 
-
-    /**
-     * Mengatur Pengiriman Notifikasi
-     */
-    /**
-     * Mengatur Pengiriman Notifikasi (Email & WhatsApp)
-     */
     private function sendNotifications($wo, $employee, $user, string $statusAwal, string $targetDept): void
     {
-        // 1. Email ke Pelapor (Tetap Pertahankan)
+
         $pelaporEmail = $employee?->email ?? $user->email;
         if ($pelaporEmail) {
             $this->safeMail($pelaporEmail, new WorkOrderNotification($wo, 'created_info'));
         }
-
-        // 2. Notifikasi ke Approver (Manager)
         if ($statusAwal === 'waiting_approval') {
-
-            // Log untuk memastikan sistem mencari divisi yang benar
-            Log::info("Mencari Manager untuk Dept: $targetDept");
-
-            // --- CARI MANAGER ---
-            // Langsung pakai $targetDept karena di DB sudah sama-sama "PE"
-            // Pastikan parameter kedua 'MANAGER' (sesuai job_level di DB)
+            Log::info("Mencari Approver untuk Dept: $targetDept");
             $targets = ['MANAGER', 'SUPERVISOR'];
             $approvers = $this->getApproversForDept($targetDept, $targets);
-
             if ($approvers->isEmpty()) {
-                Log::warning("WO GA: Tidak ada Manager ditemukan untuk dept: $targetDept");
+                Log::warning("WO GA: Tidak ada Manager/Supervisor ditemukan untuk dept: $targetDept");
+                return;
             }
-
-            // --- LOOPING KIRIM NOTIF ---
-            // Buat Link Login/Approval untuk di WA
-            // $link = url('/wo-ga' . $wo->id);
-
+            $link = route('ga.index', ['status' => 'waiting_approval']);
             foreach ($approvers as $approver) {
-
-                // A. Kirim Email (Existing)
                 $this->safeMail($approver->email, new WorkOrderNotification($wo, 'need_approval'));
-
-                // B. [BARU] Kirim WhatsApp ke Manager
-                // Bagian inilah yang sebelumnya HILANG, makanya WA tidak masuk.
                 if (!empty($approver->no_hp)) {
+                    $panggilanJabatan = ($approver->job_level === 'SUPERVISOR') ? 'Supervisor' : 'Manager';
                     $msg = "*WORK ORDER GENERAL AFFAIR*\n" .
-                        "Halo Manager *{$approver->name}*,\n\n" .
+                        "Halo {$panggilanJabatan} *{$approver->name}*,\n\n" .
                         "🔔 *Permintaan Approval Baru*\n" .
                         "Nomor Tiket: *#{$wo->ticket_num}*\n" .
                         "Requester: {$user->name} ({$user->divisi})\n" .
                         "*Divisi*: {$wo->department}\n" .
-                        "*Kategori*: {$wo->category}\n" .
                         "*Deskripsi*: {$wo->description}\n\n" .
-                        "Mohon segera ditinjau.";
+                        "Mohon segera ditinjau. Silakan klik link berikut:\n" .
+                        $link;
 
                     try {
                         GaWhatsappService::send($approver->no_hp, $msg);
-                        Log::info("WA sent to Manager {$approver->name}");
+                        Log::info("WA sent to {$panggilanJabatan} {$approver->name}");
                     } catch (\Exception $e) {
-                        Log::error("Gagal kirim WA ke Manager {$approver->name}: " . $e->getMessage());
+                        Log::error("Gagal kirim WA ke {$panggilanJabatan} {$approver->name}: " . $e->getMessage());
                     }
                 } else {
-                    Log::warning("Manager {$approver->name} tidak punya Nomor HP, WA skip.");
+                    Log::warning("{$approver->job_level} {$approver->name} tidak punya Nomor HP, WA skip.");
                 }
             }
         }
     }
 
-    /**
-     * Mencari Approver (Manager/Supervisor) berdasarkan Keyword Departemen
-     * Logika: Mencari kata kunci departemen di dalam kolom JABATAN user.
-     */
-    private function getApproversForDept(string $targetDept): \Illuminate\Support\Collection
+    private function getApproversForDept(string $targetDept, array $levels = ['MANAGER', 'SUPERVISOR']): \Illuminate\Support\Collection
     {
-        // 1. Bersihkan Keyword (Hapus spasi berlebih & Ubah ke Huruf Besar)
-        // Contoh: "Low Voltage " -> "LOW VOLTAGE"
-        $keyword = strtoupper(trim($targetDept));
-
-        // 2. [FIX OPTIK vs OPTIC] Sesuaikan ejaan input dengan database
-        // Data User ID 21 pakai "OPTIC", Input Tiket mungkin "OPTIK"
-        $keyword = str_replace('OPTIK', 'OPTIC', $keyword);
-
-        \Log::info("🔍 Mencari Approver via Jabatan. Keyword: '{$keyword}'");
-
-        // 3. Query Database User
+        $baseKeyword = strtoupper(trim($targetDept));
+        $keywordOptic = str_replace('OPTIK', 'OPTIC', $baseKeyword);
+        $keywordOptik = str_replace('OPTIC', 'OPTIK', $baseKeyword);
+        $searchKeywords = array_unique([$keywordOptic, $keywordOptik]);
+        \Log::info("🔍 Mencari Approver. Keywords: [" . implode(' ATAU ', $searchKeywords) . "] | Levels: " . implode(', ', $levels));
         $approvers = \App\Models\User::query()
-            // FILTER UTAMA: Cari User yang JABATAN-nya mengandung kata kunci
-            // Logika: JABATAN LIKE '%LOW VOLTAGE%' akan menemukan "LOW VOLTAGE MANAGER (LV)"
-            ->where('jabatan', 'LIKE', "%{$keyword}%")
-
-            // FILTER KEDUA: Pastikan Level-nya Manager atau Supervisor
-            // Ini untuk membuang Admin/Staff/Foreman (seperti ID 47, 76, 144 di JSON Anda)
-            ->whereIn('job_level', ['MANAGER', 'SUPERVISOR'])
-
-            // FILTER TAMBAHAN: Hindari User Quality Assurance jika yang dicari bukan QA
-            // Karena ada jabatan "FOREMAN QC FIBER OPTIC" (ID 43, 132), kita harus hindari itu
-            ->when($keyword !== 'QUALITY ASSURANCE' && $keyword !== 'QA', function ($q) {
+            ->whereIn('job_level', $levels)
+            ->where(function ($query) use ($searchKeywords) {
+                foreach ($searchKeywords as $kw) {
+                    $query->orWhere('jabatan', 'LIKE', "%{$kw}%")
+                        ->orWhere('divisi', 'LIKE', "%{$kw}%")
+                        ->orWhere('divisi', $kw);
+                }
+            })
+            ->when($baseKeyword !== 'QUALITY ASSURANCE' && $baseKeyword !== 'QA', function ($q) {
                 $q->where('divisi', '!=', 'QUALITY ASSURANCE');
             })
             ->get();
-
-        // 4. Cek Hasil & Log
         if ($approvers->isEmpty()) {
-            \Log::warning("⚠️ GAGAL: Tidak ditemukan Manager/SPV dengan jabatan mengandung: '{$keyword}'");
-
-            // [OPSIONAL] Fallback Terakhir: Cari berdasarkan kolom 'divisi' (jika data user normal)
-            // Berguna untuk departemen lain yang datanya rapi (misal: HRGA, SECURITY)
-            $approvers = \App\Models\User::where('divisi', $keyword)
-                ->whereIn('job_level', ['MANAGER', 'SUPERVISOR'])
-                ->get();
-
-            if ($approvers->isNotEmpty()) {
-                \Log::info("✅ SUKSES (via Kolom Divisi): " . $approvers->pluck('name'));
-            }
+            \Log::warning("⚠️ GAGAL: Tidak ditemukan " . implode('/', $levels) . " untuk: '{$baseKeyword}'");
         } else {
-            \Log::info("✅ SUKSES (via Kolom Jabatan): " . $approvers->pluck('name'));
+            \Log::info("✅ SUKSES menemukan Approver: " . $approvers->pluck('name')->implode(', '));
         }
 
         return $approvers;
     }
 
-    /**
-     * Dispatch email ke queue daripada send langsung
-     * Ini memastikan email di-queue di database untuk reliability
-     */
+
     private function safeMail(?string $to, $mailable): void
     {
         if (empty($to)) return;
 
         try {
-            // Dispatch job ke queue 'emails'
             SendWorkOrderNotification::dispatch($to, $mailable)
                 ->onConnection(config('queue.default'))
                 ->onQueue('emails');
-
             Log::info("Email notification queued for: $to");
         } catch (\Exception $e) {
             Log::error('Queue Dispatch Error (WorkOrderService): ' . $e->getMessage());
-            // Fallback: kirim langsung jika queue gagal
             try {
                 Mail::to($to)->send($mailable);
                 Log::info("Email sent directly (fallback): $to");
@@ -821,10 +756,7 @@ class WorkOrderService
         }
     }
 
-    /**
-     * Definisi Mapping Role ke Departemen
 
-     */
     private function getRoleMapping(): array
     {
         return [
@@ -845,38 +777,24 @@ class WorkOrderService
             'ga.admin'        => ['GA', 'General Affair']
         ];
     }
-    /**
-     * Mencari Approver berdasarkan Divisi dan Level Jabatan
-     * FIX: Menggunakan kolom 'job_level' untuk Manager
-     */
+
     private function getApproversForDeptLevel($departmentName, $targetRoles)
     {
-        // 1. Normalisasi Input (Jadikan Array & Huruf Besar)
+
         $roles = is_array($targetRoles) ? $targetRoles : [$targetRoles];
-
-        // Debugging (Opsional, bisa dihapus nanti)
         Log::info("Mencari User...", ['divisi' => $departmentName, 'target' => $roles]);
-
         return \App\Models\User::query()
-            ->where('is_active', 1) // Hanya user aktif
+            ->where('is_active', 1)
             ->where(function ($query) use ($roles, $departmentName) {
 
                 foreach ($roles as $role) {
-                    // Normalize role string comparison
                     $roleUpper = strtoupper($role);
-
-                    // A. LOGIKA CARI MANAGER
-                    // Jika target yang dicari adalah 'MANAGER'
                     if ($roleUpper === 'MANAGER') {
                         $query->orWhere(function ($sub) use ($departmentName) {
-                            $sub->where('divisi', $departmentName) // Wajib divisi sama
-                                ->where('job_level', 'MANAGER');   // Kolom yang benar
+                            $sub->where('divisi', $departmentName)
+                                ->where('job_level', 'MANAGER');
                         });
-                    }
-
-                    // B. LOGIKA CARI ADMIN (Global Access)
-                    // Misal: ga.admin, super.ga.admin
-                    else {
+                    } else {
                         $query->orWhere('role', $role);
                     }
                 }
