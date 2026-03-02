@@ -98,20 +98,76 @@
                         <div x-show="form.category != 'Pemasangan Mesin' && needsMachineSelect()" x-transition>
                             <label class="block text-sm font-bold text-blue-700 mb-2">Pilih Mesin <span
                                     class="text-rose-500">*</span></label>
-                            <div class="relative">
+
+                            <div class="relative" @click.away="isMachineDropdownOpen = false">
+
                                 <div x-show="!form.plant_id"
-                                    class="absolute inset-0 bg-white/80 backdrop-blur-[1px] z-10 flex items-center justify-center rounded-xl border border-dashed border-slate-300">
-                                    <span class="text-xs text-slate-400 font-medium italic">Pilih Plant
-                                        Terlebih Dahulu</span>
+                                    class="absolute inset-0 bg-white/80 backdrop-blur-[1px] z-20 flex items-center justify-center rounded-xl border border-dashed border-slate-300">
+                                    <span class="text-xs text-slate-400 font-medium italic">Pilih Plant Terlebih
+                                        Dahulu</span>
                                 </div>
-                                <select name="machine_id" x-model="form.machine_id"
-                                    :required="form.category != 'Pemasangan Mesin' && needsMachineSelect()"
-                                    class="w-full rounded-xl border-blue-200 bg-blue-50/30 text-sm py-3">
-                                    <option value="">-- Pilih Mesin --</option>
-                                    <template x-for="machine in filteredMachines" :key="machine.id">
-                                        <option :value="machine.id" x-text="machine.name"></option>
-                                    </template>
-                                </select>
+
+                                <input type="hidden" name="machine_id" x-model="form.machine_id"
+                                    :required="form.category != 'Pemasangan Mesin' && needsMachineSelect()">
+
+                                <button type="button" @click="isMachineDropdownOpen = !isMachineDropdownOpen"
+                                    class="w-full flex justify-between items-center rounded-xl border border-blue-200 bg-blue-50/30 text-sm py-3 px-4 text-left focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                                    <span x-text="selectedMachineName"
+                                        :class="form.machine_id ? 'text-slate-800 font-semibold' : 'text-slate-500'"></span>
+                                    <svg class="w-4 h-4 text-slate-400 transition-transform"
+                                        :class="isMachineDropdownOpen ? 'rotate-180' : ''" fill="none"
+                                        stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+
+                                <div x-show="isMachineDropdownOpen" x-transition.opacity.duration.200ms
+                                    class="absolute z-30 w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden"
+                                    style="display: none;">
+
+                                    <div class="p-2 border-b border-slate-100 bg-slate-50">
+                                        <div class="relative">
+                                            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                            </svg>
+                                            <input type="text" x-model="searchMachine"
+                                                placeholder="Ketik nama mesin..."
+                                                class="w-full pl-9 pr-3 py-2 text-sm border-slate-200 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                                @click.stop>
+                                        </div>
+                                    </div>
+
+                                    <ul class="max-h-60 overflow-y-auto py-1">
+                                        <li x-show="searchedMachines.length === 0"
+                                            class="px-4 py-3 text-sm text-slate-500 italic text-center">
+                                            Mesin tidak ditemukan
+                                        </li>
+
+                                        <li @click="form.machine_id = ''; isMachineDropdownOpen = false; searchMachine = ''"
+                                            class="px-4 py-2.5 text-sm cursor-pointer hover:bg-slate-100 text-slate-500 transition-colors">
+                                            -- Pilih Mesin --
+                                        </li>
+
+                                        <template x-for="machine in searchedMachines" :key="machine.id">
+                                            <li @click="form.machine_id = machine.id; isMachineDropdownOpen = false; searchMachine = ''"
+                                                class="px-4 py-2.5 text-sm cursor-pointer hover:bg-blue-50 hover:text-blue-700 transition-colors flex items-center justify-between"
+                                                :class="form.machine_id == machine.id ? 'bg-blue-50 text-blue-700 font-bold' :
+                                                    'text-slate-700'">
+                                                <span x-text="machine.name"></span>
+
+                                                <svg x-show="form.machine_id == machine.id"
+                                                    class="w-4 h-4 text-blue-600" fill="none"
+                                                    stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                                </svg>
+                                            </li>
+                                        </template>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
 

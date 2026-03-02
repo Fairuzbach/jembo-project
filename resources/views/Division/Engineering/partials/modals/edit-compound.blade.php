@@ -412,9 +412,11 @@
                             {{-- ========================================== --}}
                         @elseif ($plantName === 'Autowire')
                             @php
-                                // Untuk Edit Autowire, karena difilter per tanggal, biasanya hanya ada 1 record
+                                // Ambil baris pertama saja karena laporannya sekarang 1 hari = 1 data
                                 $dataAuto = $checks->first();
-                                $stdMesinAuto = $stdAutowire['cek_1'] ?? collect(); // Ambil std default cek 1
+
+                                // Standar untuk Autowire
+                                $stdMesinAuto = $stdAutowire['cek_1'] ?? collect();
                                 $stdDrawAuto = $stdMesinAuto->where('proses', 'drawing')->first();
                                 $stdAnnAuto = $stdMesinAuto->where('proses', 'annealing')->first();
                             @endphp
@@ -422,16 +424,16 @@
                             <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden mb-4">
                                 <div
                                     class="bg-slate-50 px-4 py-2 border-b border-slate-200 flex justify-between items-center">
-                                    <span class="text-xs font-bold text-slate-700 uppercase">Pengecekan Mesin Autowire
-                                        (Cek 1)</span>
-                                    <span class="text-[10px] text-slate-500 italic font-medium">Geser tabel ke samping
-                                        →</span>
+                                    <span class="text-xs font-bold text-slate-700 uppercase">Pengecekan Mesin Multi
+                                        Drawing 3 Honta</span>
                                 </div>
-                                <div class="p-4 bg-white border-b border-slate-100">
-                                    <label class="font-bold text-xs text-slate-700 uppercase">Tanggal Cek:</label>
-                                    <input type="date" name="autowire[cek_1][tanggal]"
-                                        value="{{ $tanggal }}"
-                                        class="ml-2 rounded border-slate-300 text-sm py-1 focus:ring-blue-500 bg-slate-50"
+
+                                {{-- Input Tanggal --}}
+                                <div class="p-4 bg-white border-b border-slate-100 flex items-center">
+                                    <label class="font-bold text-xs text-slate-700 uppercase w-32">Tanggal Cek:</label>
+                                    <input type="date" name="autowire_tanggal"
+                                        value="{{ $dataAuto->tanggal_cek ?? $tanggal }}"
+                                        class="rounded border-slate-300 text-sm py-1.5 focus:ring-blue-500 shadow-sm bg-slate-50"
                                         readonly>
                                 </div>
 
@@ -456,23 +458,21 @@
                                                 <td
                                                     class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-4">
                                                     Type Item</td>
-                                                <td class="p-2 align-top">
-                                                    <input type="text" name="autowire[cek_1][draw_type]"
+                                                <td class="p-2 align-top text-center">
+                                                    <input type="text" name="autowire[draw_type]"
                                                         value="{{ $dataAuto->draw_type ?? '' }}"
-                                                        class="w-full border-slate-200 rounded text-xs p-1.5 focus:ring-blue-500 text-center bg-slate-50/50"
-                                                        placeholder="...">
+                                                        class="w-full border-slate-200 rounded text-xs p-1.5 text-center bg-slate-50/50">
                                                     <span
-                                                        class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
+                                                        class="block text-[10px] text-slate-400 mt-1 leading-none">Std:
                                                         <span
                                                             class="font-bold text-slate-600">{{ $stdDrawAuto->std_tipe ?? '-' }}</span></span>
                                                 </td>
-                                                <td class="p-2 align-top">
-                                                    <input type="text" name="autowire[cek_1][ann_type]"
+                                                <td class="p-2 align-top text-center">
+                                                    <input type="text" name="autowire[ann_type]"
                                                         value="{{ $dataAuto->ann_type ?? '' }}"
-                                                        class="w-full border-slate-200 rounded text-xs p-1.5 focus:ring-emerald-500 text-center bg-slate-50/50"
-                                                        placeholder="...">
+                                                        class="w-full border-slate-200 rounded text-xs p-1.5 text-center bg-slate-50/50">
                                                     <span
-                                                        class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
+                                                        class="block text-[10px] text-slate-400 mt-1 leading-none">Std:
                                                         <span
                                                             class="font-bold text-slate-600">{{ $stdAnnAuto->std_tipe ?? '-' }}</span></span>
                                                 </td>
@@ -481,25 +481,23 @@
                                             {{-- Supplier --}}
                                             <tr>
                                                 <td
-                                                    class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-4">
+                                                    class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 align-top pt-4">
                                                     Supplier</td>
-                                                <td class="p-2 align-top">
-                                                    <input type="text" name="autowire[cek_1][draw_supplier]"
+                                                <td class="p-2 align-top text-center">
+                                                    <input type="text" name="autowire[draw_supplier]"
                                                         value="{{ $dataAuto->draw_supplier ?? '' }}"
-                                                        class="w-full border-slate-200 rounded text-xs p-1.5 focus:ring-blue-500 text-center"
-                                                        placeholder="...">
+                                                        class="w-full border-slate-200 rounded text-xs p-1.5 text-center">
                                                     <span
-                                                        class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
+                                                        class="block text-[10px] text-slate-400 mt-1 leading-none">Std:
                                                         <span
                                                             class="font-bold text-slate-600">{{ $stdDrawAuto->std_supplier ?? '-' }}</span></span>
                                                 </td>
-                                                <td class="p-2 align-top">
-                                                    <input type="text" name="autowire[cek_1][ann_supplier]"
+                                                <td class="p-2 align-top text-center">
+                                                    <input type="text" name="autowire[ann_supplier]"
                                                         value="{{ $dataAuto->ann_supplier ?? '' }}"
-                                                        class="w-full border-slate-200 rounded text-xs p-1.5 focus:ring-emerald-500 text-center"
-                                                        placeholder="...">
+                                                        class="w-full border-slate-200 rounded text-xs p-1.5 text-center">
                                                     <span
-                                                        class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
+                                                        class="block text-[10px] text-slate-400 mt-1 leading-none">Std:
                                                         <span
                                                             class="font-bold text-slate-600">{{ $stdAnnAuto->std_supplier ?? '-' }}</span></span>
                                                 </td>
@@ -508,25 +506,23 @@
                                             {{-- Warna --}}
                                             <tr>
                                                 <td
-                                                    class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-4">
+                                                    class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 align-top pt-4">
                                                     Warna</td>
-                                                <td class="p-2 align-top">
-                                                    <input type="text" name="autowire[cek_1][draw_warna]"
+                                                <td class="p-2 align-top text-center">
+                                                    <input type="text" name="autowire[draw_warna]"
                                                         value="{{ $dataAuto->draw_warna ?? '' }}"
-                                                        class="w-full border-slate-200 rounded text-xs p-1.5 focus:ring-blue-500 text-center"
-                                                        placeholder="...">
+                                                        class="w-full border-slate-200 rounded text-xs p-1.5 text-center">
                                                     <span
-                                                        class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
+                                                        class="block text-[10px] text-slate-400 mt-1 leading-none">Std:
                                                         <span
                                                             class="font-bold text-slate-600">{{ $stdDrawAuto->std_warna ?? '-' }}</span></span>
                                                 </td>
-                                                <td class="p-2 align-top">
-                                                    <input type="text" name="autowire[cek_1][ann_warna]"
+                                                <td class="p-2 align-top text-center">
+                                                    <input type="text" name="autowire[ann_warna]"
                                                         value="{{ $dataAuto->ann_warna ?? '' }}"
-                                                        class="w-full border-slate-200 rounded text-xs p-1.5 focus:ring-emerald-500 text-center"
-                                                        placeholder="...">
+                                                        class="w-full border-slate-200 rounded text-xs p-1.5 text-center">
                                                     <span
-                                                        class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
+                                                        class="block text-[10px] text-slate-400 mt-1 leading-none">Std:
                                                         <span
                                                             class="font-bold text-slate-600">{{ $stdAnnAuto->std_warna ?? '-' }}</span></span>
                                                 </td>
@@ -535,35 +531,33 @@
                                             {{-- Konsentrasi --}}
                                             <tr>
                                                 <td
-                                                    class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-4">
+                                                    class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 align-top pt-4">
                                                     Konsentrasi</td>
-                                                <td class="p-2 align-top">
+                                                <td class="p-2 align-top text-center">
                                                     <div class="flex items-center">
                                                         <input type="number" step="0.1"
-                                                            name="autowire[cek_1][draw_konsentrasi]"
+                                                            name="autowire[draw_konsentrasi]"
                                                             value="{{ isset($dataAuto->draw_konsentrasi) ? str_replace('%', '', $dataAuto->draw_konsentrasi) : '' }}"
-                                                            class="w-full border-slate-200 rounded-l text-xs p-1.5 text-center font-bold text-blue-600 focus:ring-blue-500"
-                                                            placeholder="0.0">
+                                                            class="w-full border-slate-200 rounded-l text-xs p-1.5 text-center font-bold text-blue-600">
                                                         <span
                                                             class="bg-slate-100 border border-l-0 border-slate-200 px-2 py-1.5 text-[10px] font-bold text-slate-500 rounded-r">%</span>
                                                     </div>
                                                     <span
-                                                        class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
+                                                        class="block text-[10px] text-slate-400 mt-1 leading-none">Std:
                                                         <span
                                                             class="font-bold text-slate-600">{{ $stdDrawAuto->std_konsentrasi ?? '-' }}</span></span>
                                                 </td>
-                                                <td class="p-2 align-top">
+                                                <td class="p-2 align-top text-center">
                                                     <div class="flex items-center">
                                                         <input type="number" step="0.01"
-                                                            name="autowire[cek_1][ann_konsentrasi]"
+                                                            name="autowire[ann_konsentrasi]"
                                                             value="{{ isset($dataAuto->ann_konsentrasi) ? str_replace('%', '', $dataAuto->ann_konsentrasi) : '' }}"
-                                                            class="w-full border-slate-200 rounded-l text-xs p-1.5 text-center font-bold text-emerald-600 focus:ring-emerald-500"
-                                                            placeholder="0.0">
+                                                            class="w-full border-slate-200 rounded-l text-xs p-1.5 text-center font-bold text-emerald-600">
                                                         <span
                                                             class="bg-slate-100 border border-l-0 border-slate-200 px-2 py-1.5 text-[10px] font-bold text-slate-500 rounded-r">%</span>
                                                     </div>
                                                     <span
-                                                        class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
+                                                        class="block text-[10px] text-slate-400 mt-1 leading-none">Std:
                                                         <span
                                                             class="font-bold text-slate-600">{{ $stdAnnAuto->std_konsentrasi ?? '-' }}</span></span>
                                                 </td>
@@ -572,27 +566,23 @@
                                             {{-- pH Level --}}
                                             <tr>
                                                 <td
-                                                    class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-4">
+                                                    class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 align-top pt-4">
                                                     pH Level</td>
-                                                <td class="p-2 align-top">
-                                                    <input type="number" step="0.1"
-                                                        name="autowire[cek_1][draw_ph]"
+                                                <td class="p-2 align-top text-center">
+                                                    <input type="number" step="0.1" name="autowire[draw_ph]"
                                                         value="{{ $dataAuto->draw_ph ?? '' }}"
-                                                        class="w-full border-slate-200 rounded text-xs p-1.5 text-center font-bold text-emerald-700 focus:ring-blue-500"
-                                                        placeholder="0.0">
+                                                        class="w-full border-slate-200 rounded text-xs p-1.5 text-center font-bold text-blue-700">
                                                     <span
-                                                        class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
+                                                        class="block text-[10px] text-slate-400 mt-1 leading-none">Std:
                                                         <span
                                                             class="font-bold text-slate-600">{{ $stdDrawAuto->std_ph ?? '-' }}</span></span>
                                                 </td>
-                                                <td class="p-2 align-top">
-                                                    <input type="number" step="0.1"
-                                                        name="autowire[cek_1][ann_ph]"
+                                                <td class="p-2 align-top text-center">
+                                                    <input type="number" step="0.1" name="autowire[ann_ph]"
                                                         value="{{ $dataAuto->ann_ph ?? '' }}"
-                                                        class="w-full border-slate-200 rounded text-xs p-1.5 text-center font-bold text-emerald-700 focus:ring-emerald-500"
-                                                        placeholder="0.0">
+                                                        class="w-full border-slate-200 rounded text-xs p-1.5 text-center font-bold text-emerald-700">
                                                     <span
-                                                        class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
+                                                        class="block text-[10px] text-slate-400 mt-1 leading-none">Std:
                                                         <span
                                                             class="font-bold text-slate-600">{{ $stdAnnAuto->std_ph ?? '-' }}</span></span>
                                                 </td>
@@ -601,35 +591,31 @@
                                             {{-- Temperatur --}}
                                             <tr>
                                                 <td
-                                                    class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-4">
+                                                    class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 align-top pt-4">
                                                     Temperatur</td>
-                                                <td class="p-2 align-top">
+                                                <td class="p-2 align-top text-center">
                                                     <div class="flex items-center">
-                                                        <input type="number" step="1"
-                                                            name="autowire[cek_1][draw_temp]"
+                                                        <input type="number" name="autowire[draw_temp]"
                                                             value="{{ isset($dataAuto->draw_temp) ? str_replace(['°C', 'C'], '', $dataAuto->draw_temp) : '' }}"
-                                                            class="w-full border-slate-200 rounded-l text-xs p-1.5 text-center focus:ring-blue-500"
-                                                            placeholder="0">
+                                                            class="w-full border-slate-200 rounded-l text-xs p-1.5 text-center">
                                                         <span
                                                             class="bg-slate-100 border border-l-0 border-slate-200 px-1 py-1.5 text-[10px] font-bold text-slate-500 rounded-r">°C</span>
                                                     </div>
                                                     <span
-                                                        class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
+                                                        class="block text-[10px] text-slate-400 mt-1 leading-none">Std:
                                                         <span
                                                             class="font-bold text-slate-600">{{ $stdDrawAuto->std_temp ?? '-' }}</span></span>
                                                 </td>
-                                                <td class="p-2 align-top">
+                                                <td class="p-2 align-top text-center">
                                                     <div class="flex items-center">
-                                                        <input type="number" step="1"
-                                                            name="autowire[cek_1][ann_temp]"
+                                                        <input type="number" name="autowire[ann_temp]"
                                                             value="{{ isset($dataAuto->ann_temp) ? str_replace(['°C', 'C'], '', $dataAuto->ann_temp) : '' }}"
-                                                            class="w-full border-slate-200 rounded-l text-xs p-1.5 text-center focus:ring-emerald-500"
-                                                            placeholder="0">
+                                                            class="w-full border-slate-200 rounded-l text-xs p-1.5 text-center">
                                                         <span
                                                             class="bg-slate-100 border border-l-0 border-slate-200 px-1 py-1.5 text-[10px] font-bold text-slate-500 rounded-r">°C</span>
                                                     </div>
                                                     <span
-                                                        class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
+                                                        class="block text-[10px] text-slate-400 mt-1 leading-none">Std:
                                                         <span
                                                             class="font-bold text-slate-600">{{ $stdAnnAuto->std_temp ?? '-' }}</span></span>
                                                 </td>
@@ -660,8 +646,9 @@
                                     </div>
                                 </div>
                                 <p class="text-[10px] text-slate-400 mt-2 font-bold">Terakhir diperbarui:
-                                    <span
-                                        class="font-normal">{{ $checks->first()->updated_at ?? 'Belum pernah diupdate' }}</span>
+                                    <span class="font-normal">
+                                        {{ $checks->first()?->updated_at ? $checks->first()->updated_at->timezone('Asia/Jakarta')->format('d M Y, H:i') . ' WIB' : 'Belum pernah diupdate' }}
+                                    </span>
                                 </p>
                             </div>
                         </div>
