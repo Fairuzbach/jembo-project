@@ -63,6 +63,9 @@
             showDetailModal: false,
             ticket: null,
 
+            isMachineDropdownOpen: false,
+            searchMachine: '',
+
             // --- FORM DATA ---
             form: {
                 requester_name: '',
@@ -97,6 +100,19 @@
             currentDateDB: '',
             currentTime: '',
             currentShift: '',
+
+            get searchedMachines() {
+                if (this.searchMachine.trim() === '') {
+                    return this.filteredMachines;
+                }
+                return this.filteredMachines.filter(m => m.name.toLowerCase().includes(this.searchMachine
+                    .toLowerCase()));
+            },
+
+            get selectedMachineName() {
+                const machine = this.filteredMachines.find(m => m.id == this.form.machine_id);
+                return machine ? machine.name : '-- Pilih Mesin --';
+            },
 
             // =====================================================================
             // 1. INIT & WATCHER 
@@ -189,6 +205,8 @@
 
             filterMachines() {
                 this.form.machine_id = '';
+                this.searchMachine = '';
+                this.isMachineDropdownOpen = false;
                 this.filteredMachines = this.machinesData.filter(m => m.plant_id == this.form.plant_id);
             },
 
@@ -204,6 +222,8 @@
                     photo: null
                 };
                 this.filteredMachines = [];
+                this.searhMachine = '';
+                this.isMachineDropdownOpen = false;
             },
 
             needsMachineSelect() {
