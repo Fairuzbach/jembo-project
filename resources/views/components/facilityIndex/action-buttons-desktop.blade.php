@@ -30,7 +30,7 @@
 
     <div class="flex items-center {{ $isMobile ? '' : 'justify-end' }} gap-2">
         {{-- TOMBOL DETAIL --}}
-        <button @click="openDetail({{ $wo->id }})"
+        <button @click="$dispatch('open-detail-modal', {{ json_encode($wo) }})"
             class="group px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs font-semibold transition-all duration-200 hover:bg-slate-200 hover:text-slate-800 flex items-center gap-1">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
