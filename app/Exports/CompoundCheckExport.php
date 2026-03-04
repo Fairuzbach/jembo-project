@@ -3,14 +3,10 @@
 namespace App\Exports;
 
 use App\Models\Engineering\EngCompoundCheck;
-use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithMapping;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
-use Maatwebsite\Excel\Concerns\WithStyles;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use App\Exports\CompoundCheckPerBakSheet;
+use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 
-class CompoundCheckExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithStyles
+class CompoundCheckExport implements WithMultipleSheets
 {
     protected $plantId;
     protected $bulan;
@@ -23,66 +19,29 @@ class CompoundCheckExport implements FromCollection, WithHeadings, WithMapping, 
         $this->tahun = $tahun;
     }
 
-    public function collection()
+    public function sheets(): array
     {
-        return EngCompoundCheck::with(['machine']) // pastikan relasi 'machine' sudah benar di model
-            ->where('plant_id', $this->plantId)
+        $sheets = [];
+
+        // 1. Cari mesin_id (Bak) apa saja yang ada datanya pada bulan & plant ini
+        $machineIds = EngCompoundCheck::where('plant_id', $this->plantId)
             ->whereMonth('tanggal_cek', $this->bulan)
             ->whereYear('tanggal_cek', $this->tahun)
-            ->orderBy('tanggal_cek', 'asc')
+            ->select('machine_id')
+            ->distinct()
             ->orderBy('machine_id', 'asc')
-            ->get();
-    }
+            ->pluck('machine_id');
 
-    public function headings(): array
-    {
-        return [
-            'Tanggal Cek',
-            'Nama Mesin / Bak',
-            'Drawing Type',
-            'Drawing Supplier',
-            'Drawing Warna',
-            'Drawing Konsentrasi (%)',
-            'Drawing pH',
-            'Drawing Temp (°C)',
-            'Annealing Type',
-            'Annealing Supplier',
-            'Annealing Warna',
-            'Annealing Konsentrasi (%)',
-            'Annealing pH',
-            'Annealing Temp (°C)',
-            'Diperiksa Oleh',
-            'Keterangan',
-        ];
-    }
+        // 2. Jika tidak ada data sama sekali, buat 1 sheet kosong sebagai info
+        if ($machineIds->isEmpty()) {
+            return [new CompoundCheckPerBakSheet($this->plantId, $this->bulan, $this->tahun, null)];
+        }
 
-    public function map($row): array
-    {
-        return [
-            \Carbon\Carbon::parse($row->tanggal_cek)->format('d-m-Y'),
-            $row->machine->name ?? 'Unknown Machine', // Sesuaikan jika nama kolom mesin berbeda
-            $row->draw_type,
-            $row->draw_supplier,
-            $row->draw_warna,
-            $row->draw_konsentrasi,
-            $row->draw_ph,
-            $row->draw_temp,
-            $row->ann_type,
-            $row->ann_supplier,
-            $row->ann_warna,
-            $row->ann_konsentrasi,
-            $row->ann_ph,
-            $row->ann_temp,
-            $row->diperiksa_oleh,
-            $row->keterangan,
-        ];
-    }
+        // 3. Buat 1 Sheet untuk setiap Bak (Mesin)
+        foreach ($machineIds as $machineId) {
+            $sheets[] = new CompoundCheckPerBakSheet($this->plantId, $this->bulan, $this->tahun, $machineId);
+        }
 
-    public function styles(Worksheet $sheet)
-    {
-        return [
-            // Style the first row as bold text
-            1    => ['font' => ['bold' => true]],
-        ];
+        return $sheets;
     }
 }
