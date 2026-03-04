@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Engineering;
 
 use App\Http\Controllers\Controller;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\CompoundCheckExport;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -517,5 +520,28 @@ class EngCompoundCheckController extends Controller
             'plantAMachines',
             'stdValues'
         ));
+    }
+    public function export(Request $request)
+    {
+        $request->validate([
+            'plant_id' => 'required',
+            'bulan' => 'required|numeric|min:1|max:12',
+            'tahun' => 'required|numeric',
+        ]);
+
+        // TAMBAHKAN (int) DI SINI UNTUK MENGUBAH STRING MENJADI INTEGER
+        $plantId = (int) $request->plant_id;
+        $bulan = (int) $request->bulan;
+        $tahun = (int) $request->tahun;
+
+        // Ambil nama plant untuk penamaan file
+        $plantName = Plant::find($plantId)->name ?? 'Unknown_Plant';
+
+        // Sekarang Carbon tidak akan error karena $bulan sudah murni angka (integer)
+        $namaBulan = Carbon::create()->month($bulan)->translatedFormat('F');
+
+        $fileName = 'Compound_Parameter_Check_' . str_replace(' ', '_', $plantName) . '_' . $namaBulan . '_' . $tahun . '.xlsx';
+
+        return Excel::download(new CompoundCheckExport($plantId, $bulan, $tahun), $fileName);
     }
 }

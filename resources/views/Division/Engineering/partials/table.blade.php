@@ -25,6 +25,16 @@
                 </svg>
                 Compound Parameter Checking
             </button>
+            <button @click="showExportCompoundModal = true" type="button"
+                class="group bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold py-2.5 px-5 rounded-lg text-sm transition-all border border-indigo-200 hover:border-indigo-300 flex items-center gap-2 w-full md:w-auto justify-center focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                <svg class="w-5 h-5 text-indigo-500 group-hover:text-indigo-700 transition-colors" fill="none"
+                    stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                    </path>
+                </svg>
+                Export Compound
+            </button>
             {{-- <button @click="showSpkModal = true" type="button"
                 class="group bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-5 rounded-lg text-sm transition-all shadow-md hover:shadow-lg flex items-center gap-2 w-full md:w-auto justify-center focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                 <svg class="w-5 h-5 text-blue-100 group-hover:text-white transition-colors" fill="none"

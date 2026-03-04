@@ -43,6 +43,7 @@
         @include('Division.Engineering.partials.modals.detail')
         @include('Division.Engineering.partials.modals.edit')
         @include('Division.Engineering.partials.modals.export')
+        @include('Division.Engineering.partials.modals.compound-export')
 
     </div> {{-- Closing X-DATA div --}}
 
@@ -58,6 +59,7 @@
                 showConfirmModal: false,
                 showEditModal: false,
                 showExportModal: false,
+                showExportCompoundModal: false,
 
                 // 2. DATA EXPORT
                 selectedTickets: [],

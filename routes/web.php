@@ -134,6 +134,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/operator/search', [OperatorController::class, 'searchOperator'])->name('operator.search');
         Route::post('/operator/import', [OperatorController::class, 'importOperator'])->name('operator.import');
         Route::get('/compound/statistics', [EngCompoundCheckController::class, 'statistics'])->name('compound.stats');
+        Route::get('/eng/compound/export', [EngCompoundCheckController::class, 'export'])->name('compound.export');
     });
 
 
