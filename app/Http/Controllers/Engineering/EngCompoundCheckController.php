@@ -173,7 +173,7 @@ class EngCompoundCheckController extends Controller
     public function editCompound($plant_id, $tanggal)
     {
         $plant = Plant::findOrFail($plant_id);
-        $plantName = ($plant->name === 'Plant A - Autowire' || str_contains(str_tolower($plant->name), 'autowire')) ? 'Autowire' : 'Plant A';
+        $plantName = ($plant->name === 'Plant A - Autowire' || str_contains(strtolower($plant->name), 'autowire')) ? 'Autowire' : 'Plant A';
 
         if ($plantName === 'Autowire') {
             $bulan = \Carbon\Carbon::parse($tanggal)->month;
