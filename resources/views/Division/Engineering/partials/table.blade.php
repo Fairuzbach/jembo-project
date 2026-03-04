@@ -3,10 +3,24 @@
     <div class="p-6 text-slate-900">
         {{-- HEADER: TOMBOL AKSI GLOBAL     --}}
         <div class="flex flex-wrap justify-end gap-3 mb-6">
-            <button @click="handleExportClick()" type="button"
-                class="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-sm font-medium flex justify-center items-center gap-2 transition shadow-sm">
-                <svg class="w-5 h-5 text-emerald-100 group-hover:text-white transition-colors" fill="none"
+
+            {{-- Export Compound Data — Abu-abu/Slate, aksi sekunder --}}
+            <button @click="showExportCompoundModal = true" type="button"
+                class="group bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold py-2.5 px-5 rounded-lg text-sm transition-all border border-slate-300 hover:border-slate-400 flex items-center gap-2 w-full md:w-auto justify-center focus:ring-2 focus:ring-slate-400 focus:ring-offset-2">
+                <svg class="w-5 h-5 text-slate-400 group-hover:text-slate-600 transition-colors" fill="none"
                     stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                    </path>
+                </svg>
+                Export Compound Data
+            </button>
+
+            {{-- Export Data / Export Terpilih — Hijau Emerald, aksi export utama --}}
+            <button @click="handleExportClick()" type="button"
+                class="group w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold flex justify-center items-center gap-2 transition-all shadow-sm hover:shadow-md focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
+                <svg class="w-5 h-5 text-emerald-100 transition-colors" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
                     </path>
@@ -15,44 +29,18 @@
                     x-text="selectedTickets.length > 0 ? 'Export (' + selectedTickets.length + ') Terpilih' : 'Export Data'"></span>
             </button>
 
+            {{-- Compound Parameter Checking — Violet/Ungu, aksi analisis --}}
             <button @click="showCompoundModal = true" type="button"
-                class="group bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-5 rounded-lg text-sm transition-all shadow-md hover:shadow-lg flex items-center gap-2 w-full md:w-auto justify-center focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                <svg class="w-5 h-5 text-blue-100 group-hover:text-white transition-colors" fill="none"
-                    stroke="currentColor" viewBox="0 0 24 24">
+                class="group bg-violet-600 hover:bg-violet-700 text-white font-semibold py-2.5 px-5 rounded-lg text-sm transition-all shadow-md hover:shadow-lg flex items-center gap-2 w-full md:w-auto justify-center focus:ring-2 focus:ring-violet-500 focus:ring-offset-2">
+                <svg class="w-5 h-5 text-violet-100 transition-colors" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01">
                     </path>
                 </svg>
                 Compound Parameter Checking
             </button>
-            <button @click="showExportCompoundModal = true" type="button"
-                class="group bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold py-2.5 px-5 rounded-lg text-sm transition-all border border-indigo-200 hover:border-indigo-300 flex items-center gap-2 w-full md:w-auto justify-center focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                <svg class="w-5 h-5 text-indigo-500 group-hover:text-indigo-700 transition-colors" fill="none"
-                    stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                    </path>
-                </svg>
-                Export Compound
-            </button>
-            {{-- <button @click="showSpkModal = true" type="button"
-                class="group bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-5 rounded-lg text-sm transition-all shadow-md hover:shadow-lg flex items-center gap-2 w-full md:w-auto justify-center focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                <svg class="w-5 h-5 text-blue-100 group-hover:text-white transition-colors" fill="none"
-                    stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                    </path>
-                </svg>
-                Buat SPK (Form Lengkap)
-            </button>
-            <button @click="showCreateModal = true" type="button"
-                class="group bg-gradient-to-r from-indigo-600 to-indigo-600 hover:from-indigo-700 hover:to-indigo-700 text-white font-semibold py-2.5 px-5 rounded-lg text-sm transition-all shadow-md hover:shadow-lg flex items-center gap-2 w-full md:w-auto justify-center focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                <svg class="w-5 h-5 text-indigo-100 group-hover:text-white transition-colors" fill="none"
-                    stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                </svg>
-                Buat Laporan Baru
-            </button> --}}
+
         </div>
 
         {{-- MENU NAVIGASI TAB --}}
