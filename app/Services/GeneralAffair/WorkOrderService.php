@@ -771,7 +771,7 @@ class WorkOrderService
             'ss.admin'        => ['SS', 'ss'],
             'fa.admin'        => ['FA', 'fa'],
             'it.admin'        => ['IT', 'it'],
-            'hc.admin'        => ['HC', 'hc'],
+            'hc.admin'        => ['HC', 'hc', 'HUMAN CAPITAL'],
             'sales.admin'     => ['Sales', 'sales'],
             'marketing.admin' => ['Marketing', 'marketing'],
             'ga.admin'        => ['GA', 'General Affair']
