@@ -774,10 +774,10 @@ class WorkOrderService
             'ss.admin'        => ['SS', 'ss', 'SALES SUPPORT'],
             'fa.admin'        => ['FA', 'fa', 'FINANCE'],
             'accounting.admin'        => ['ACCOUNTING'],
-            'it.admin'        => ['IT', 'it'],
+            'it.admin'        => ['IT', 'it', 'INFORMATION TECHNOLOGY'],
             'hc.admin'        => ['HC', 'hc', 'HUMAN CAPITAL'],
-            'sales2.admin'     => ['Sales 2'],
-            'sales1.admin'     => ['Sales', 'sales'],
+            'sales1.admin'     => ['SALES 1'],
+            'sales2.admin'     => ['SALES 2'],
             'marketing.admin' => ['Marketing', 'marketing'],
             'ga.admin'        => ['GA', 'General Affair'],
             'pp.admin'        => ['PRODUCTION PLANNING']
