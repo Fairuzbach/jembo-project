@@ -96,12 +96,18 @@
                             class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-4">
 
                             {{-- Input Tanggal --}}
-                            <div
-                                class="p-3 bg-blue-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center gap-2">
-                                <label class="font-bold text-sm text-slate-700">Tanggal Pengecekan Plant A:</label>
-                                <input type="date" name="plant_a_tanggal"
-                                    class="rounded border-slate-300 text-sm py-1.5 w-full sm:w-auto"
-                                    :required="compoundForm.plant === 'Plant A'">
+                            <div class="mb-5 flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-3 px-1">
+                                <label
+                                    class="font-extrabold text-[10px] text-slate-700 uppercase tracking-wider min-w-[100px]">
+                                    Tanggal Cek <span class="text-red-500">*</span>:
+                                </label>
+                                <div class="relative w-full md:w-1/3">
+                                    <input type="date" name="plant_a_tanggal" id="plant_a_tanggal"
+                                        value="{{ $tanggal ?? date('Y-m-d') }}" max="{{ date('Y-m-d') }}" required
+                                        class="w-full rounded border-slate-300 text-sm py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all duration-200 bg-white cursor-pointer">
+                                    <small class="text-[9px] text-slate-400 mt-1 block italic">* Maksimal tanggal
+                                        hari ini</small>
+                                </div>
                             </div>
 
                             @php
@@ -133,10 +139,13 @@
                             <div class="p-2 sm:p-5">
                                 @foreach ($plantABaks as $key => $namaBak)
                                     @php
-                                        // AMBIL DATA STANDAR DARI DATABASE
                                         $stdMesin = $stdPlantA['bak_' . $key] ?? collect();
-                                        $stdDraw = $stdMesin->where('proses', 'drawing')->first();
-                                        $stdAnn = $stdMesin->where('proses', 'annealing')->first();
+                                        $stdDraw = $stdMesin->first(
+                                            fn($item) => strtolower($item->proses) === 'drawing',
+                                        );
+                                        $stdAnn = $stdMesin->first(
+                                            fn($item) => strtolower($item->proses) === 'annealing',
+                                        );
                                     @endphp
 
                                     <div x-show="activePlantATab === {{ $key }}" style="display: none;"
@@ -639,7 +648,34 @@
                                                         </span>
                                                     </td>
                                                 </tr>
-
+                                                <tr>
+                                                    <td
+                                                        class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-4">
+                                                        Warna
+                                                    </td>
+                                                    <td class="p-2 align-top">
+                                                        {{-- Input Warna Drawing --}}
+                                                        <input type="text" name="autowire[draw_warna]"
+                                                            class="w-full border-slate-200 rounded text-xs p-1.5 text-center focus:ring-blue-500 font-bold text-blue-600"
+                                                            placeholder="Masukkan Warna">
+                                                        <span
+                                                            class="block text-[10px] text-slate-400 text-center mt-1">Std:
+                                                            <span
+                                                                class="font-bold text-slate-600">{{ $stdDrawAuto->std_warna ?? '-' }}</span>
+                                                        </span>
+                                                    </td>
+                                                    <td class="p-2 align-top">
+                                                        {{-- Input Warna Annealing --}}
+                                                        <input type="text" name="autowire[ann_warna]"
+                                                            class="w-full border-slate-200 rounded text-xs p-1.5 text-center focus:ring-emerald-500 font-bold text-emerald-600"
+                                                            placeholder="Masukkan Warna">
+                                                        <span
+                                                            class="block text-[10px] text-slate-400 text-center mt-1">Std:
+                                                            <span
+                                                                class="font-bold text-slate-600">{{ $stdAnnAuto->std_warna ?? '-' }}</span>
+                                                        </span>
+                                                    </td>
+                                                </tr>
                                                 {{-- Konsentrasi --}}
                                                 <tr>
                                                     <td

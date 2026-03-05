@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Engineering;
 
 use App\Http\Controllers\Controller;
-use Maatwebsite\Excel\Facades\Excel;
-use App\Exports\CompoundCheckExport;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+
+
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -12,6 +14,7 @@ use Illuminate\Support\Facades\Log;
 use App\Models\Engineering\Plant;
 use App\Models\Engineering\EngCompoundCheck;
 use App\Models\Engineering\EngCompoundStandard;
+use App\Models\Engineering\Machine;
 use App\Services\Engineering\CompoundCheckService;
 
 class EngCompoundCheckController extends Controller
@@ -529,19 +532,184 @@ class EngCompoundCheckController extends Controller
             'tahun' => 'required|numeric',
         ]);
 
-        // TAMBAHKAN (int) DI SINI UNTUK MENGUBAH STRING MENJADI INTEGER
         $plantId = (int) $request->plant_id;
         $bulan = (int) $request->bulan;
         $tahun = (int) $request->tahun;
 
-        // Ambil nama plant untuk penamaan file
-        $plantName = Plant::find($plantId)->name ?? 'Unknown_Plant';
+        // 1. PENENTUAN FILE TEMPLATE BERDASARKAN PLANT
+        if ($plantId == 1) {
+            $templatePath = storage_path('app/templates/template_compound.xlsx');
+            $plantLabel = 'Plant_A';
+        } else {
+            $templatePath = storage_path('app/templates/template_compound_autowire.xlsx');
+            $plantLabel = 'Autowire';
+        }
 
-        // Sekarang Carbon tidak akan error karena $bulan sudah murni angka (integer)
+        if (!file_exists($templatePath)) {
+            return back()->with('error', "File template tidak ditemukan di: " . $templatePath);
+        }
+
+        // 2. Load File Excel Template
+        $spreadsheet = IOFactory::load($templatePath);
+
+        // 3. Ambil data transaksi
+        $dataChecks = EngCompoundCheck::where('plant_id', $plantId)
+            ->whereMonth('tanggal_cek', $bulan)
+            ->whereYear('tanggal_cek', $tahun)
+            ->orderBy('tanggal_cek', 'asc')
+            ->get();
+
+        // if ($plantId == 2) { // 2 adalah ID dari form Autowire
+        //     $daftarMesin = [];
+        //     foreach ($dataChecks as $cek) {
+        //         $mesin = Machine::find($cek->machine_id);
+        //         $daftarMesin[] = $mesin ? $mesin->name : 'ID Mesin tidak ditemukan: ' . $cek->machine_id;
+        //     }
+
+        //     dd([
+        //         'Plant ID yang dicari' => $plantId,
+        //         'Bulan' => $bulan,
+        //         'Tahun' => $tahun,
+        //         'Total Data Ditemukan' => $dataChecks->count(),
+        //         'Daftar Nama Mesin Autowire' => array_unique($daftarMesin)
+        //     ]);
+        // }
+
+        // Kelompokkan data berdasarkan mesin/bak
+        $groupedData = $dataChecks->groupBy('machine_id');
+
+        // 4. Isi data ke masing-masing Sheet
+        foreach ($groupedData as $machineId => $checks) {
+            $machine = Machine::find($machineId);
+            $rawName = $machine ? strtoupper($machine->name) : '';
+
+            // Bersihkan nama database dari spasi/simbol untuk pencocokan "Anti-Gagal"
+            $cleanDbName = preg_replace('/[^A-Z0-9]/', '', $rawName);
+
+            // PENCARIAN NAMA MESIN TANPA BERGANTUNG PADA KATA "BAK"
+            $targetKeyword = '';
+            if (str_contains($cleanDbName, 'HD10')) {
+                $targetKeyword = 'BAK1';
+            } elseif (str_contains($cleanDbName, 'MD1')) {
+                $targetKeyword = 'BAK2';
+            } elseif (str_contains($cleanDbName, 'QDMD')) {
+                $targetKeyword = 'BAK3';
+            } elseif (str_contains($cleanDbName, 'MULTI2')) {
+                $targetKeyword = 'BAK4';
+            } elseif (str_contains($cleanDbName, 'MULTI1')) {
+                $targetKeyword = 'BAK5';
+            } elseif (str_contains($cleanDbName, 'TWIN') || str_contains($cleanDbName, 'RBD')) {
+                // Jika ada kata Twin atau RBD, otomatis ini Bak 6
+                $targetKeyword = 'BAK6';
+            } elseif (str_contains($cleanDbName, 'HONTA') || str_contains($cleanDbName, 'AUTOWIRE') || str_contains($cleanDbName, 'MULTIDRAWING3')) {
+                $targetKeyword = 'HONTA';
+            }
+
+            // Cari sheet template
+            $sheet = null;
+            foreach ($spreadsheet->getSheetNames() as $templateSheetName) {
+                $cleanTemplateName = preg_replace('/[^A-Z0-9]/', '', strtoupper($templateSheetName));
+                if ($targetKeyword !== '' && str_contains($cleanTemplateName, $targetKeyword)) {
+                    $sheet = $spreadsheet->getSheetByName($templateSheetName);
+                    break;
+                }
+            }
+
+            if ($sheet) {
+                // A. SUNTIKKAN NILAI STANDAR KE HEADER (Baris ke-6)
+                $stdDraw = DB::table('eng_compound_standards')->where('machine_id', $machineId)->where('proses', 'drawing')->first();
+                $stdAnn = DB::table('eng_compound_standards')->where('machine_id', $machineId)->where('proses', 'annealing')->first();
+
+                $rowStd = 6;
+                $formatStd = function ($val) {
+                    return "Standard :\n" . ($val ?? '-');
+                };
+
+                // Suntik Standar Drawing (Kolom C - H)
+                $sheet->setCellValue('C' . $rowStd, $formatStd($stdDraw->std_tipe ?? null));
+                $sheet->setCellValue('D' . $rowStd, $formatStd($stdDraw->std_supplier ?? null));
+                $sheet->setCellValue('E' . $rowStd, $formatStd($stdDraw->std_warna ?? null));
+                $sheet->setCellValue('F' . $rowStd, $formatStd($stdDraw->std_konsentrasi ?? null));
+                $sheet->setCellValue('G' . $rowStd, $formatStd($stdDraw->std_ph ?? null));
+                $sheet->setCellValue('H' . $rowStd, $formatStd($stdDraw->std_temp ?? null));
+
+                // Suntik Standar Annealing 1 (Kolom I - N)
+                $sheet->setCellValue('I' . $rowStd, $formatStd($stdAnn->std_tipe ?? null));
+                $sheet->setCellValue('J' . $rowStd, $formatStd($stdAnn->std_supplier ?? null));
+                $sheet->setCellValue('K' . $rowStd, $formatStd($stdAnn->std_warna ?? null));
+                $sheet->setCellValue('L' . $rowStd, $formatStd($stdAnn->std_konsentrasi ?? null));
+                $sheet->setCellValue('M' . $rowStd, $formatStd($stdAnn->std_ph ?? null));
+                $sheet->setCellValue('N' . $rowStd, $formatStd($stdAnn->std_temp ?? null));
+
+                if ($targetKeyword === 'BAK6') {
+                    // Suntik Standar Annealing 2 (Kolom O - T) khusus Bak 6
+                    $sheet->setCellValue('O' . $rowStd, $formatStd($stdAnn->std_tipe ?? null));
+                    $sheet->setCellValue('P' . $rowStd, $formatStd($stdAnn->std_supplier ?? null));
+                    $sheet->setCellValue('Q' . $rowStd, $formatStd($stdAnn->std_warna ?? null));
+                    $sheet->setCellValue('R' . $rowStd, $formatStd($stdAnn->std_konsentrasi ?? null));
+                    $sheet->setCellValue('S' . $rowStd, $formatStd($stdAnn->std_ph ?? null));
+                    $sheet->setCellValue('T' . $rowStd, $formatStd($stdAnn->std_temp ?? null));
+                }
+
+                // B. TULIS DATA AKTUAL KE BAWAHNYA (Mulai Baris ke-7)
+                $rowData = 7;
+
+                foreach ($checks as $check) {
+                    $sheet->setCellValue('B' . $rowData, Carbon::parse($check->tanggal_cek)->format('d-m-Y'));
+
+                    // Drawing Aktual (Kolom C - H)
+                    $sheet->setCellValue('C' . $rowData, $check->draw_type);
+                    $sheet->setCellValue('D' . $rowData, $check->draw_supplier);
+                    $sheet->setCellValue('E' . $rowData, $check->draw_warna);
+                    $sheet->setCellValue('F' . $rowData, $check->draw_konsentrasi);
+                    $sheet->setCellValue('G' . $rowData, $check->draw_ph);
+                    $sheet->setCellValue('H' . $rowData, $check->draw_temp);
+
+                    // Annealing 1 Aktual (Kolom I - N)
+                    $sheet->setCellValue('I' . $rowData, $check->ann_type);
+                    $sheet->setCellValue('J' . $rowData, $check->ann_supplier);
+                    $sheet->setCellValue('K' . $rowData, $check->ann_warna);
+                    $sheet->setCellValue('L' . $rowData, $check->ann_konsentrasi);
+                    $sheet->setCellValue('M' . $rowData, $check->ann_ph);
+                    $sheet->setCellValue('N' . $rowData, $check->ann_temp);
+
+                    if ($targetKeyword === 'BAK6') {
+                        // Annealing 2 Aktual untuk Bak 6 (Kolom O - T)
+                        $sheet->setCellValue('O' . $rowData, $check->ann_type_2 ?? '-');
+                        $sheet->setCellValue('P' . $rowData, $check->ann_supplier_2 ?? '-');
+                        $sheet->setCellValue('Q' . $rowData, $check->ann_warna_2 ?? '-');
+                        $sheet->setCellValue('R' . $rowData, $check->ann_konsentrasi_2 ?? '-');
+                        $sheet->setCellValue('S' . $rowData, $check->ann_ph_2 ?? '-');
+                        $sheet->setCellValue('T' . $rowData, $check->ann_temp_2 ?? '-');
+
+                        // Diperiksa & Keterangan di Kolom U & V
+                        $sheet->setCellValue('U' . $rowData, $check->diperiksa_oleh);
+                        $sheet->setCellValue('V' . $rowData, $check->keterangan);
+                    } else {
+                        // Diperiksa & Keterangan di Kolom O & P (Bak Normal)
+                        $sheet->setCellValue('O' . $rowData, $check->diperiksa_oleh);
+                        $sheet->setCellValue('P' . $rowData, $check->keterangan);
+                    }
+
+                    $rowData++;
+                }
+            }
+        }
+
+        // 5. Download File
         $namaBulan = Carbon::create()->month($bulan)->translatedFormat('F');
+        $fileName = 'Hasil_Cek_Compound_' . $plantLabel . '_' . $namaBulan . '_' . $tahun . '.xlsx';
 
-        $fileName = 'Compound_Parameter_Check_' . str_replace(' ', '_', $plantName) . '_' . $namaBulan . '_' . $tahun . '.xlsx';
+        $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
 
-        return Excel::download(new CompoundCheckExport($plantId, $bulan, $tahun), $fileName);
+        $response = new StreamedResponse(function () use ($writer) {
+            $writer->save('php://output');
+        });
+
+        $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $response->headers->set('Content-Disposition', 'attachment;filename="' . $fileName . '"');
+        $response->headers->set('Cache-Control', 'max-age=0');
+
+        return $response;
     }
 }
