@@ -140,10 +140,21 @@
                                                             Type Item</td>
                                                         {{-- Drawing --}}
                                                         <td class="p-3 align-top">
-                                                            <input type="text"
-                                                                name="plant_a[bak_{{ $key }}][draw_type]"
-                                                                value="{{ $dataExisting->draw_type ?? '' }}"
-                                                                class="w-full border-slate-300 rounded text-sm p-2 text-center bg-slate-50 font-medium">
+                                                            <select name="plant_a[bak_{{ $key }}][draw_type]"
+                                                                class="w-full border-slate-300 rounded text-sm p-2 text-center bg-slate-50 font-medium focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                                                                <option value="">-- Pilih --</option>
+                                                                @if (!empty($stdDraw->std_tipe))
+                                                                    <option value="{{ $stdDraw->std_tipe }}"
+                                                                        {{ ($dataExisting->draw_type ?? '') == $stdDraw->std_tipe ? 'selected' : '' }}>
+                                                                        {{ $stdDraw->std_tipe }}
+                                                                    </option>
+                                                                @endif
+                                                                @if (!empty($dataExisting->draw_type) && $dataExisting->draw_type != ($stdDraw->std_tipe ?? ''))
+                                                                    <option value="{{ $dataExisting->draw_type }}"
+                                                                        selected>{{ $dataExisting->draw_type }}
+                                                                    </option>
+                                                                @endif
+                                                            </select>
                                                             <span
                                                                 class="block text-[11px] text-slate-500 text-center mt-1.5">Std:
                                                                 <b>{{ $stdDraw->std_tipe ?? '-' }}</b></span>
@@ -151,10 +162,20 @@
                                                         {{-- Annealing Bak A --}}
                                                         <td
                                                             class="p-3 align-top {{ $key == 6 ? 'border-r border-slate-300' : '' }}">
-                                                            <input type="text"
-                                                                name="plant_a[bak_{{ $key }}][ann_type]"
-                                                                value="{{ $dataExisting->ann_type ?? '' }}"
-                                                                class="w-full border-slate-300 rounded text-sm p-2 text-center bg-slate-50 font-medium">
+                                                            <select name="plant_a[bak_{{ $key }}][ann_type]"
+                                                                class="w-full border-slate-300 rounded text-sm p-2 text-center bg-slate-50 font-medium focus:ring-2 focus:ring-emerald-500 cursor-pointer">
+                                                                <option value="">-- Pilih --</option>
+                                                                @if (!empty($stdAnn->std_tipe))
+                                                                    <option value="{{ $stdAnn->std_tipe }}"
+                                                                        {{ ($dataExisting->ann_type ?? '') == $stdAnn->std_tipe ? 'selected' : '' }}>
+                                                                        {{ $stdAnn->std_tipe }}
+                                                                    </option>
+                                                                @endif
+                                                                @if (!empty($dataExisting->ann_type) && $dataExisting->ann_type != ($stdAnn->std_tipe ?? ''))
+                                                                    <option value="{{ $dataExisting->ann_type }}"
+                                                                        selected>{{ $dataExisting->ann_type }}</option>
+                                                                @endif
+                                                            </select>
                                                             <span
                                                                 class="block text-[11px] text-slate-500 text-center mt-1.5">Std:
                                                                 <b>{{ $stdAnn->std_tipe ?? '-' }}</b></span>
@@ -162,10 +183,22 @@
                                                         {{-- Annealing Bak B (Hanya Bak 6) --}}
                                                         @if ($key == 6)
                                                             <td class="p-3 align-top bg-indigo-50/30">
-                                                                <input type="text"
+                                                                <select
                                                                     name="plant_a[bak_{{ $key }}][ann_type_2]"
-                                                                    value="{{ $dataExisting->ann_type_2 ?? '' }}"
-                                                                    class="w-full border-indigo-300 rounded text-sm p-2 text-center bg-white font-medium">
+                                                                    class="w-full border-indigo-300 rounded text-sm p-2 text-center bg-white font-medium focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+                                                                    <option value="">-- Pilih --</option>
+                                                                    @if (!empty($stdAnn->std_tipe))
+                                                                        <option value="{{ $stdAnn->std_tipe }}"
+                                                                            {{ ($dataExisting->ann_type_2 ?? '') == $stdAnn->std_tipe ? 'selected' : '' }}>
+                                                                            {{ $stdAnn->std_tipe }}
+                                                                        </option>
+                                                                    @endif
+                                                                    @if (!empty($dataExisting->ann_type_2) && $dataExisting->ann_type_2 != ($stdAnn->std_tipe ?? ''))
+                                                                        <option value="{{ $dataExisting->ann_type_2 }}"
+                                                                            selected>{{ $dataExisting->ann_type_2 }}
+                                                                        </option>
+                                                                    @endif
+                                                                </select>
                                                                 <span
                                                                     class="block text-[11px] text-indigo-500 text-center mt-1.5">Std:
                                                                     <b>{{ $stdAnn->std_tipe ?? '-' }}</b></span>
@@ -180,10 +213,22 @@
                                                             Supplier</td>
                                                         {{-- Drawing --}}
                                                         <td class="p-3 align-top">
-                                                            <input type="text"
+                                                            <select
                                                                 name="plant_a[bak_{{ $key }}][draw_supplier]"
-                                                                value="{{ $dataExisting->draw_supplier ?? '' }}"
-                                                                class="w-full border-slate-300 rounded text-sm p-2 text-center">
+                                                                class="w-full border-slate-300 rounded text-sm p-2 text-center focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                                                                <option value="">-- Pilih --</option>
+                                                                @if (!empty($stdDraw->std_supplier))
+                                                                    <option value="{{ $stdDraw->std_supplier }}"
+                                                                        {{ ($dataExisting->draw_supplier ?? '') == $stdDraw->std_supplier ? 'selected' : '' }}>
+                                                                        {{ $stdDraw->std_supplier }}
+                                                                    </option>
+                                                                @endif
+                                                                @if (!empty($dataExisting->draw_supplier) && $dataExisting->draw_supplier != ($stdDraw->std_supplier ?? ''))
+                                                                    <option value="{{ $dataExisting->draw_supplier }}"
+                                                                        selected>{{ $dataExisting->draw_supplier }}
+                                                                    </option>
+                                                                @endif
+                                                            </select>
                                                             <span
                                                                 class="block text-[11px] text-slate-500 text-center mt-1.5">Std:
                                                                 <b>{{ $stdDraw->std_supplier ?? '-' }}</b></span>
@@ -191,10 +236,22 @@
                                                         {{-- Annealing Bak A --}}
                                                         <td
                                                             class="p-3 align-top {{ $key == 6 ? 'border-r border-slate-300' : '' }}">
-                                                            <input type="text"
+                                                            <select
                                                                 name="plant_a[bak_{{ $key }}][ann_supplier]"
-                                                                value="{{ $dataExisting->ann_supplier ?? '' }}"
-                                                                class="w-full border-slate-300 rounded text-sm p-2 text-center">
+                                                                class="w-full border-slate-300 rounded text-sm p-2 text-center focus:ring-2 focus:ring-emerald-500 cursor-pointer">
+                                                                <option value="">-- Pilih --</option>
+                                                                @if (!empty($stdAnn->std_supplier))
+                                                                    <option value="{{ $stdAnn->std_supplier }}"
+                                                                        {{ ($dataExisting->ann_supplier ?? '') == $stdAnn->std_supplier ? 'selected' : '' }}>
+                                                                        {{ $stdAnn->std_supplier }}
+                                                                    </option>
+                                                                @endif
+                                                                @if (!empty($dataExisting->ann_supplier) && $dataExisting->ann_supplier != ($stdAnn->std_supplier ?? ''))
+                                                                    <option value="{{ $dataExisting->ann_supplier }}"
+                                                                        selected>{{ $dataExisting->ann_supplier }}
+                                                                    </option>
+                                                                @endif
+                                                            </select>
                                                             <span
                                                                 class="block text-[11px] text-slate-500 text-center mt-1.5">Std:
                                                                 <b>{{ $stdAnn->std_supplier ?? '-' }}</b></span>
@@ -202,10 +259,24 @@
                                                         {{-- Annealing Bak B (Hanya Bak 6) --}}
                                                         @if ($key == 6)
                                                             <td class="p-3 align-top bg-indigo-50/30">
-                                                                <input type="text"
+                                                                <select
                                                                     name="plant_a[bak_{{ $key }}][ann_supplier_2]"
-                                                                    value="{{ $dataExisting->ann_supplier_2 ?? '' }}"
-                                                                    class="w-full border-indigo-300 rounded text-sm p-2 text-center bg-white">
+                                                                    class="w-full border-indigo-300 rounded text-sm p-2 text-center bg-white focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+                                                                    <option value="">-- Pilih --</option>
+                                                                    @if (!empty($stdAnn->std_supplier))
+                                                                        <option value="{{ $stdAnn->std_supplier }}"
+                                                                            {{ ($dataExisting->ann_supplier_2 ?? '') == $stdAnn->std_supplier ? 'selected' : '' }}>
+                                                                            {{ $stdAnn->std_supplier }}
+                                                                        </option>
+                                                                    @endif
+                                                                    @if (!empty($dataExisting->ann_supplier_2) && $dataExisting->ann_supplier_2 != ($stdAnn->std_supplier ?? ''))
+                                                                        <option
+                                                                            value="{{ $dataExisting->ann_supplier_2 }}"
+                                                                            selected>
+                                                                            {{ $dataExisting->ann_supplier_2 }}
+                                                                        </option>
+                                                                    @endif
+                                                                </select>
                                                                 <span
                                                                     class="block text-[11px] text-indigo-500 text-center mt-1.5">Std:
                                                                     <b>{{ $stdAnn->std_supplier ?? '-' }}</b></span>
@@ -459,18 +530,40 @@
                                                     class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-4">
                                                     Type Item</td>
                                                 <td class="p-2 align-top text-center">
-                                                    <input type="text" name="autowire[draw_type]"
-                                                        value="{{ $dataAuto->draw_type ?? '' }}"
-                                                        class="w-full border-slate-200 rounded text-xs p-1.5 text-center bg-slate-50/50">
+                                                    <select name="autowire[draw_type]"
+                                                        class="w-full border-slate-200 rounded text-xs p-1.5 text-center bg-slate-50/50 cursor-pointer focus:ring-blue-500">
+                                                        <option value="">-- Pilih --</option>
+                                                        @if (!empty($stdDrawAuto->std_tipe))
+                                                            <option value="{{ $stdDrawAuto->std_tipe }}"
+                                                                {{ ($dataAuto->draw_type ?? '') == $stdDrawAuto->std_tipe ? 'selected' : '' }}>
+                                                                {{ $stdDrawAuto->std_tipe }}
+                                                            </option>
+                                                        @endif
+                                                        @if (!empty($dataAuto->draw_type) && $dataAuto->draw_type != ($stdDrawAuto->std_tipe ?? ''))
+                                                            <option value="{{ $dataAuto->draw_type }}" selected>
+                                                                {{ $dataAuto->draw_type }}</option>
+                                                        @endif
+                                                    </select>
                                                     <span
                                                         class="block text-[10px] text-slate-400 mt-1 leading-none">Std:
                                                         <span
                                                             class="font-bold text-slate-600">{{ $stdDrawAuto->std_tipe ?? '-' }}</span></span>
                                                 </td>
                                                 <td class="p-2 align-top text-center">
-                                                    <input type="text" name="autowire[ann_type]"
-                                                        value="{{ $dataAuto->ann_type ?? '' }}"
-                                                        class="w-full border-slate-200 rounded text-xs p-1.5 text-center bg-slate-50/50">
+                                                    <select name="autowire[ann_type]"
+                                                        class="w-full border-slate-200 rounded text-xs p-1.5 text-center bg-slate-50/50 cursor-pointer focus:ring-emerald-500">
+                                                        <option value="">-- Pilih --</option>
+                                                        @if (!empty($stdAnnAuto->std_tipe))
+                                                            <option value="{{ $stdAnnAuto->std_tipe }}"
+                                                                {{ ($dataAuto->ann_type ?? '') == $stdAnnAuto->std_tipe ? 'selected' : '' }}>
+                                                                {{ $stdAnnAuto->std_tipe }}
+                                                            </option>
+                                                        @endif
+                                                        @if (!empty($dataAuto->ann_type) && $dataAuto->ann_type != ($stdAnnAuto->std_tipe ?? ''))
+                                                            <option value="{{ $dataAuto->ann_type }}" selected>
+                                                                {{ $dataAuto->ann_type }}</option>
+                                                        @endif
+                                                    </select>
                                                     <span
                                                         class="block text-[10px] text-slate-400 mt-1 leading-none">Std:
                                                         <span
@@ -484,18 +577,40 @@
                                                     class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 align-top pt-4">
                                                     Supplier</td>
                                                 <td class="p-2 align-top text-center">
-                                                    <input type="text" name="autowire[draw_supplier]"
-                                                        value="{{ $dataAuto->draw_supplier ?? '' }}"
-                                                        class="w-full border-slate-200 rounded text-xs p-1.5 text-center">
+                                                    <select name="autowire[draw_supplier]"
+                                                        class="w-full border-slate-200 rounded text-xs p-1.5 text-center cursor-pointer focus:ring-blue-500">
+                                                        <option value="">-- Pilih --</option>
+                                                        @if (!empty($stdDrawAuto->std_supplier))
+                                                            <option value="{{ $stdDrawAuto->std_supplier }}"
+                                                                {{ ($dataAuto->draw_supplier ?? '') == $stdDrawAuto->std_supplier ? 'selected' : '' }}>
+                                                                {{ $stdDrawAuto->std_supplier }}
+                                                            </option>
+                                                        @endif
+                                                        @if (!empty($dataAuto->draw_supplier) && $dataAuto->draw_supplier != ($stdDrawAuto->std_supplier ?? ''))
+                                                            <option value="{{ $dataAuto->draw_supplier }}" selected>
+                                                                {{ $dataAuto->draw_supplier }}</option>
+                                                        @endif
+                                                    </select>
                                                     <span
                                                         class="block text-[10px] text-slate-400 mt-1 leading-none">Std:
                                                         <span
                                                             class="font-bold text-slate-600">{{ $stdDrawAuto->std_supplier ?? '-' }}</span></span>
                                                 </td>
                                                 <td class="p-2 align-top text-center">
-                                                    <input type="text" name="autowire[ann_supplier]"
-                                                        value="{{ $dataAuto->ann_supplier ?? '' }}"
-                                                        class="w-full border-slate-200 rounded text-xs p-1.5 text-center">
+                                                    <select name="autowire[ann_supplier]"
+                                                        class="w-full border-slate-200 rounded text-xs p-1.5 text-center cursor-pointer focus:ring-emerald-500">
+                                                        <option value="">-- Pilih --</option>
+                                                        @if (!empty($stdAnnAuto->std_supplier))
+                                                            <option value="{{ $stdAnnAuto->std_supplier }}"
+                                                                {{ ($dataAuto->ann_supplier ?? '') == $stdAnnAuto->std_supplier ? 'selected' : '' }}>
+                                                                {{ $stdAnnAuto->std_supplier }}
+                                                            </option>
+                                                        @endif
+                                                        @if (!empty($dataAuto->ann_supplier) && $dataAuto->ann_supplier != ($stdAnnAuto->std_supplier ?? ''))
+                                                            <option value="{{ $dataAuto->ann_supplier }}" selected>
+                                                                {{ $dataAuto->ann_supplier }}</option>
+                                                        @endif
+                                                    </select>
                                                     <span
                                                         class="block text-[10px] text-slate-400 mt-1 leading-none">Std:
                                                         <span
