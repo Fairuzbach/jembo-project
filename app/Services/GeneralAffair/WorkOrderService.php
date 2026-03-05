@@ -760,21 +760,27 @@ class WorkOrderService
     private function getRoleMapping(): array
     {
         return [
-            'eng.admin'       => ['Engineering', 'engineering', 'ENGINEERING', 'PE'],
+            'eng.admin'       => ['Engineering', 'engineering', 'ENGINEERING', 'PE', 'PROCESS ENGINEERING', 'PROCESS ENGINEER'],
+            'autowire.admin'       => ['PLANT A - AUTOWIRE'],
+            'ccv.admin'       => ['PLANT D - CCV'],
             'fh.admin'        => ['Facility', 'FH', 'FACILITY'],
             'mt.admin'        => ['Maintenance', 'maintenance', 'MT', 'MAINTENANCE', 'mt'],
             'lv.admin'        => ['Low Voltage', 'LOW VOLTAGE', 'low voltage', 'LV', 'lv'],
             'mv.admin'        => ['Medium Voltage', 'medium voltage', 'MV', 'mv'],
             'qr.admin'        => ['QR', 'qr'],
-            'sc.admin'        => ['SC', 'sc'],
-            'fo.admin'        => ['FO', 'fo'],
-            'ss.admin'        => ['SS', 'ss'],
-            'fa.admin'        => ['FA', 'fa'],
+            'qa.admin'        => ['QUALITY ASSURANCE', 'qr'],
+            'sc.admin'        => ['SC', 'sc', 'SUPPLY CHAIN'],
+            'fo.admin'        => ['FO', 'fo', 'FIBER OPTIK'],
+            'ss.admin'        => ['SS', 'ss', 'SALES SUPPORT'],
+            'fa.admin'        => ['FA', 'fa', 'FINANCE'],
+            'accounting.admin'        => ['ACCOUNTING'],
             'it.admin'        => ['IT', 'it'],
             'hc.admin'        => ['HC', 'hc', 'HUMAN CAPITAL'],
-            'sales.admin'     => ['Sales', 'sales'],
+            'sales2.admin'     => ['Sales 2'],
+            'sales1.admin'     => ['Sales', 'sales'],
             'marketing.admin' => ['Marketing', 'marketing'],
-            'ga.admin'        => ['GA', 'General Affair']
+            'ga.admin'        => ['GA', 'General Affair'],
+            'pp.admin'        => ['PRODUCTION PLANNING']
         ];
     }
 
