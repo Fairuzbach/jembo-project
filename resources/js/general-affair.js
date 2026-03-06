@@ -263,32 +263,60 @@ window.confirmSubmit = function(event, title, text, icon = 'warning', confirmCol
 };
 
 // 3. Reject Reason
-window.confirmRejectWithReason = function(event) {
-    event.preventDefault();
-    const formEl = event.target.closest('form');
-    if(!formEl){
-        console.error('Form tidak ditemukan!');
-        return;
-    }
-    Swal.fire({
-        title: 'Tolak Tiket?', input: 'textarea',
-        inputLabel: 'Alasan Penolakan (Opsional)', inputPlaceholder: 'Tulis alasan...',
-        icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc2626',
-        cancelButtonColor: '#64748b', confirmButtonText: 'Ya, Tolak', cancelButtonText: 'Batal'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            let reasonInput = formEl.querySelector('input[name="reason"]');
-            if(!reasonInput){
-                reasonInput = document.createElement('input');
-                reasonInput.type = 'hidden';
-                reasonInput.name = 'reason';
-                formEl.appendChild(reasonInput);
-            }
-            reasonInput.value = result.value ? result.value : '-';
-            formEl.submit();
-        }
-    });
-};
+// document.addEventListener('DOMContentLoaded', function () {
+//     // Tangkap semua tombol dengan class .js-action-btn
+//     document.querySelectorAll('.js-action-btn').forEach(button => {
+//         button.addEventListener('click', function(event) {
+//             event.preventDefault();
+
+//             // 1. Ambil data dari atribut tombol
+//             const id = this.getAttribute('data-id');
+//             const action = this.getAttribute('data-action'); // isinya: 'approve' atau 'reject'
+//             const view = this.getAttribute('data-view'); // isinya: 'desktop' atau 'mobile'
+
+//             // 2. Cari form dan input spesifik berdasarkan ID
+//             const formEl = document.getElementById(`form-tech-${view}-${id}`);
+//             const actionInput = document.getElementById(`input-action-${view}-${id}`);
+//             const reasonInput = document.getElementById(`input-reason-${view}-${id}`);
+
+//             if (!formEl || !actionInput) {
+//                 console.error('Form atau Input Action tidak ditemukan!');
+//                 return;
+//             }
+
+//             // 3. SET NILAI ACTION ('approve' / 'reject') KE DALAM FORM
+//             actionInput.value = action;
+
+//             // 4. Logika Jika Action = Reject (Munculkan SweetAlert)
+//             if (action === 'reject') {
+//                 Swal.fire({
+//                     title: 'Tolak Tiket?', 
+//                     input: 'textarea',
+//                     inputLabel: 'Alasan Penolakan (Opsional)', 
+//                     inputPlaceholder: 'Tulis alasan...',
+//                     icon: 'warning', 
+//                     showCancelButton: true, 
+//                     confirmButtonColor: '#dc2626',
+//                     cancelButtonColor: '#64748b', 
+//                     confirmButtonText: 'Ya, Tolak', 
+//                     cancelButtonText: 'Batal'
+//                 }).then((result) => {
+//                     if (result.isConfirmed) {
+//                         // Set alasan penolakan
+//                         reasonInput.value = result.value ? result.value : '-';
+//                         formEl.submit();
+//                     }
+//                 });
+//             } 
+//             // 5. Logika Jika Action = Approve (Langsung Submit)
+//             else if (action === 'approve') {
+//                 // (Opsional) Jika ingin pakai konfirmasi SweetAlert untuk Approve, bisa ditambahkan di sini.
+//                 // Jika tidak, biarkan langsung submit.
+//                 formEl.submit();
+//             }
+//         });
+//     });
+// });
 
 // 4. Modal Proses GA
 window.openProcessModal = function(id, ticketNum, requesterName) {

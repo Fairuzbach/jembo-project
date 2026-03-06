@@ -231,15 +231,17 @@
                                     @endif
                                     @if ($showApproveButton)
                                         <div class="flex gap-1 justify-end mt-2 items-center">
+                                            {{-- Form dipisahkan dengan jelas --}}
                                             <form id="form-tech-desktop-{{ $item->id }}"
                                                 action="{{ route('ga.approve-technical', $item->id) }}" method="POST"
                                                 style="display: none;">
                                                 @csrf
                                                 <input type="hidden" name="action"
-                                                    id="input-action-desktop-{{ $item->id }}">
+                                                    id="input-action-desktop-{{ $item->id }}" value="">
                                                 <input type="hidden" name="reason"
-                                                    id="input-reason-desktop-{{ $item->id }}">
+                                                    id="input-reason-desktop-{{ $item->id }}" value="">
                                             </form>
+
                                             @if ($isGaAdmin)
                                                 <button type="button"
                                                     @click="$dispatch('open-accept-modal', {{ json_encode($item->load('plantInfo')) }})"
@@ -247,17 +249,18 @@
                                                     Validasi
                                                 </button>
                                             @else
+                                                {{-- Tombol Approve memanggil fungsi submitApprove --}}
                                                 <button type="button"
-                                                    class="js-action-btn bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1 px-2 rounded text-[10px] uppercase shadow-sm"
-                                                    data-id="{{ $item->id }}" data-action="approve"
-                                                    data-view="desktop">
+                                                    onclick="submitApprove('{{ $item->id }}', 'desktop')"
+                                                    class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1 px-2 rounded text-[10px] uppercase shadow-sm">
                                                     Approve
                                                 </button>
                                             @endif
+
+                                            {{-- Tombol Reject memanggil fungsi submitReject --}}
                                             <button type="button"
-                                                class="js-action-btn bg-rose-600 hover:bg-rose-700 text-white font-bold py-1 px-2 rounded text-[10px] uppercase shadow-sm"
-                                                data-id="{{ $item->id }}" data-action="decline"
-                                                data-view="desktop">
+                                                onclick="submitReject('{{ $item->id }}', 'desktop')"
+                                                class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-1 px-2 rounded text-[10px] uppercase shadow-sm">
                                                 Reject
                                             </button>
                                         </div>
@@ -435,7 +438,7 @@
                                 <button onclick="confirmTechnicalAction('{{ $item->id }}', 'approve', 'mobile')"
                                     class="flex-1 bg-emerald-600 text-white py-2 rounded-lg text-xs font-bold uppercase">Approve</button>
                             @endif
-                            <button onclick="confirmTechnicalAction('{{ $item->id }}', 'decline', 'mobile')"
+                            <button onclick="confirmTechnicalAction('{{ $item->id }}', 'reject', 'mobile')"
                                 class="w-10 bg-rose-600 text-white py-2 rounded-lg text-xs font-bold flex items-center justify-center">
                                 X
                             </button>
@@ -454,4 +457,5 @@
     <div class="bg-slate-50 px-6 py-4 border-t border-slate-200">
         {{ $workOrders->appends(request()->all())->links() }}
     </div>
+
 </div>

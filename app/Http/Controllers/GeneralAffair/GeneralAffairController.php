@@ -275,7 +275,7 @@ class GeneralAffairController extends Controller
     public function approveByTechnical(Request $request, $id)
     {
         \Log::Emergency("Koneksi Masuk ke Controller! ID: " . $id);
-        $action = ($request->action === 'decline') ? 'reject' : 'approve';
+        $action = ($request->action === 'reject' || $request->action === 'decline') ? 'reject' : 'approve';
 
         try {
             $result = $this->gaService->processTicket(
