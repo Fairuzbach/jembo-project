@@ -62,10 +62,11 @@ require __DIR__ . '/auth.php';
 Route::middleware(['auth', 'verified'])->group(function () {
 
     // --- A. DASHBOARD UTAMA (Fallback) ---
-    Route::get('/dashboard', function () {
+    Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
         auth()->guard('web')->logout();
-        $request->session->invalidate();
-        $request->session->regenerateToken();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
         return redirect()->route('login')->with('error', 'Access Denied');
     })->name('dashboard');
@@ -91,7 +92,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/', [FacilitiesController::class, 'index'])->name('index');
         Route::get('/dashboard', [FacilitiesController::class, 'dashboard'])->name('dashboard');
         Route::post('/store', [FacilitiesController::class, 'store'])->name('store');
-        Route::get('/export', [FacilitiesController::class, 'index'])->name('export');
+        Route::get('/export', [FacilitiesController::class, 'export'])->name('export');
 
         // Status Actions
         Route::put('/{id}/update-status', [FacilitiesController::class, 'updateStatus'])->name('updateStatus');
@@ -114,7 +115,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/{id}/approve-technical', [GeneralAffairController::class, 'approveByTechnical'])->name('approve-technical');
         Route::put('/update-status/{id}', [GeneralAffairController::class, 'updateStatus'])->name('update-status');
         Route::get('/get-departments/{plant_id}', [GeneralAffairController::class, 'getDepartmentsByPlant'])->name('get.departments');
-        Route::get('detail/{id}', [GeneralAffairController::class, 'show'])->name('show');
+        Route::get('/detail/{id}', [GeneralAffairController::class, 'show'])->name('show');
     });
 
 
