@@ -243,36 +243,37 @@
         });
     </script>
     <script>
-        function submitReject(id, view) {
+        // Daftarkan ke window agar bisa diakses darimana saja oleh onclick
+        window.submitReject = function(id, view) {
             Swal.fire({
                 title: 'Tolak Tiket?',
                 input: 'textarea',
-                inputLabel: 'Alasan Penolakan (Wajib)', // Ubah labelnya
-                inputPlaceholder: 'Tulis alasan penolakan di sini...',
+                inputLabel: 'Alasan Penolakan (Wajib)',
+                inputPlaceholder: 'Tulis alasan di sini...',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#dc2626',
                 cancelButtonColor: '#64748b',
                 confirmButtonText: 'Ya, Tolak',
                 cancelButtonText: 'Batal',
-
-                // TAMBAHKAN VALIDATOR INI:
                 inputValidator: (value) => {
                     if (!value || value.trim() === '') {
                         return 'Alasan penolakan wajib diisi!';
                     }
                 }
-
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // 1. Tembak nilai ke input hidden
                     document.getElementById(`input-action-${view}-${id}`).value = 'reject';
                     document.getElementById(`input-reason-${view}-${id}`).value = result.value.trim();
-
-                    // 2. Submit form
                     document.getElementById(`form-tech-${view}-${id}`).submit();
                 }
             });
-        }
+        };
+
+        // Daftarkan juga fungsi Approve ke window
+        window.submitApprove = function(id, view) {
+            document.getElementById(`input-action-${view}-${id}`).value = 'approve';
+            document.getElementById(`form-tech-${view}-${id}`).submit();
+        };
     </script>
 </x-app-layout>
