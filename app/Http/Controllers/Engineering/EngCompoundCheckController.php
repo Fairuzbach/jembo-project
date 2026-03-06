@@ -47,9 +47,9 @@ class EngCompoundCheckController extends Controller
                 $machineMap = [
                     'bak_1' => 1,
                     'bak_2' => 3,
-                    'bak_3' => 52,
-                    'bak_4' => 53,
-                    'bak_5' => 54,
+                    'bak_3' => 226,
+                    'bak_4' => 228,
+                    'bak_5' => 227,
                     'bak_6' => 2,
                 ];
                 $tanggal = $request->plant_a_tanggal;
@@ -203,9 +203,9 @@ class EngCompoundCheckController extends Controller
         $machineMap = [
             'bak_1' => 1,
             'bak_2' => 3,
-            'bak_3' => 52,
-            'bak_4' => 53,
-            'bak_5' => 54,
+            'bak_3' => 226,
+            'bak_4' => 228,
+            'bak_5' => 227,
             'bak_6' => 2, // Bak 6 / Twin RBD
         ];
 
@@ -381,6 +381,62 @@ class EngCompoundCheckController extends Controller
         }
     }
 
+    public function report(Request $request)
+    {
+        $plantId = $request->input('plant_id');
+        $bulan = (int) $request->input('bulan', date('n'));
+        $tahun = (int) $request->input('tahun', date('Y'));
+
+        $dataChecks = collect();
+        $standards = collect();
+        $baksMap = [];
+        $plantName = '';
+        $namaBulan = Carbon::create()->month($bulan)->translatedFormat('F');
+
+        if ($plantId) {
+            if ($plantId == 1) {
+                $baksMap = [
+                    1 => ['id_mesin' => 1, 'nama' => 'BAK 1 (HD 10C)', 'is_bak_6' => false],
+                    2 => ['id_mesin' => 3, 'nama' => 'BAK 2 (MD 1)', 'is_bak_6' => false],
+                    3 => ['id_mesin' => 226, 'nama' => 'BAK 3 (QDMD Deyang)', 'is_bak_6' => false],
+                    4 => ['id_mesin' => 228, 'nama' => 'BAK 4 (Multi 2 Samp)', 'is_bak_6' => false],
+                    5 => ['id_mesin' => 227, 'nama' => 'BAK 5 (Multi 1 Samp)', 'is_bak_6' => false],
+                    6 => ['id_mesin' => 2, 'nama' => 'BAK 6 (Twin RBD Cu)', 'is_bak_6' => true],
+                ];
+                $plantName = 'Plant A';
+            } else {
+                $baksMap = [
+                    1 => ['id_mesin' => 52, 'nama' => 'Multi Drawing 3 HONTA', 'is_bak_6' => false],
+                ];
+                $plantName = 'Autowire (Multi 3 HONTA)';
+            }
+            $dataChecks = EngCompoundCheck::with(['pemeriksa'])
+                ->where('plant_id', $plantId)
+                ->whereMonth('tanggal_cek', $bulan)
+                ->whereYear('tanggal_cek', $tahun)
+                ->orderBy('tanggal_cek', 'asc')
+                ->get()
+                ->groupBy('machine_id');
+
+            // 3. Ambil Data Standar
+            $machineIds = collect($baksMap)->pluck('id_mesin');
+            $standards = DB::table('eng_compound_standards')
+                ->whereIn('machine_id', $machineIds)
+                ->get()
+                ->groupBy('machine_id');
+        }
+        return view('Division.Engineering.compound.report', compact(
+            'dataChecks',
+            'baksMap',
+            'standards',
+            'bulan',
+            'tahun',
+            'namaBulan',
+            'plantName',
+            'plantId'
+        ));
+    }
+
     public function statistics(Request $request)
     {
         if (auth()->user()->role !== 'eng.admin') {
@@ -499,9 +555,9 @@ class EngCompoundCheckController extends Controller
             'all' => 'Gabungan (Semua BAK)',
             1 => 'BAK 1 (HD 10 C)',
             3 => 'BAK 2 (MD 1)',
-            52 => 'BAK 3 (QDMD)',
-            53 => 'BAK 4 (Multi 2 Samp)',
-            54 => 'BAK 5 (Multi 1 Samp)',
+            226 => 'BAK 3 (QDMD)',
+            228 => 'BAK 4 (Multi 2 Samp)',
+            227 => 'BAK 5 (Multi 1 Samp)',
             2 => 'BAK 6 (Twin RBD Cu)',
         ];
 
