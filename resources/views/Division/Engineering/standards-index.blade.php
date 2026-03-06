@@ -37,7 +37,9 @@
                 @php
                     // Kelompokkan data agar rapi saat ditampilkan
                     $plantAStandards = $standards->where('plant', 'Plant A');
-                    $autowireStandards = $standards->where('plant', 'Autowire');
+
+                    // Filter khusus Autowire agar hanya memanggil Mesin Multi Drawing 3 Honta (ID: 55)
+                    $autowireStandards = $standards->where('plant', 'Autowire')->where('machine_id', 55);
                 @endphp
 
                 <div class="p-0 sm:p-6 bg-slate-50">
