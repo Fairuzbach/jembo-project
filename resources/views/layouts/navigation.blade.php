@@ -104,58 +104,58 @@
                     @endif
 
                     {{-- ── Compound Dropdown ─────────────────────── --}}
-                    @if (auth()->check() && auth()->user()->role === 'eng.admin')
-                        <div class="relative" @click.outside="compoundOpen = false">
 
-                            {{-- Trigger button --}}
-                            <button @click="compoundOpen = !compoundOpen"
-                                class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold
+                    <div class="relative" @click.outside="compoundOpen = false">
+
+                        {{-- Trigger button --}}
+                        <button @click="compoundOpen = !compoundOpen"
+                            class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold
                                        transition-colors duration-150
                                        {{ $isCompoundActive
                                            ? 'text-indigo-700 bg-indigo-50'
                                            : 'text-slate-600 hover:text-slate-800 hover:bg-slate-100' }}">
 
-                                {{-- Icon --}}
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                                </svg>
+                            {{-- Icon --}}
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                            </svg>
 
-                                Compound
+                            Compound
 
-                                {{-- Active dot --}}
-                                @if ($isCompoundActive)
-                                    <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-                                @endif
+                            {{-- Active dot --}}
+                            @if ($isCompoundActive)
+                                <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                            @endif
 
-                                {{-- Chevron --}}
-                                <svg class="w-3.5 h-3.5 transition-transform duration-200"
-                                    :class="compoundOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                        d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </button>
+                            {{-- Chevron --}}
+                            <svg class="w-3.5 h-3.5 transition-transform duration-200"
+                                :class="compoundOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                    d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
 
-                            {{-- Dropdown Panel --}}
-                            <div x-show="compoundOpen" x-transition:enter="transition ease-out duration-150"
-                                x-transition:enter-start="opacity-0 scale-95 -translate-y-1"
-                                x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-                                x-transition:leave="transition ease-in duration-100"
-                                x-transition:leave-start="opacity-100 scale-100 translate-y-0"
-                                x-transition:leave-end="opacity-0 scale-95 -translate-y-1" style="display:none;"
-                                class="absolute left-0 top-full mt-2 w-56 bg-white rounded-xl shadow-lg
+                        {{-- Dropdown Panel --}}
+                        <div x-show="compoundOpen" x-transition:enter="transition ease-out duration-150"
+                            x-transition:enter-start="opacity-0 scale-95 -translate-y-1"
+                            x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                            x-transition:leave="transition ease-in duration-100"
+                            x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                            x-transition:leave-end="opacity-0 scale-95 -translate-y-1" style="display:none;"
+                            class="absolute left-0 top-full mt-2 w-56 bg-white rounded-xl shadow-lg
                                        border border-slate-200/80 overflow-hidden origin-top-left">
 
-                                {{-- Header dropdown --}}
-                                <div class="px-3 py-2.5 bg-slate-50 border-b border-slate-100">
-                                    <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
-                                        Compound Menu
-                                    </p>
-                                </div>
+                            {{-- Header dropdown --}}
+                            <div class="px-3 py-2.5 bg-slate-50 border-b border-slate-100">
+                                <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
+                                    Compound Menu
+                                </p>
+                            </div>
 
-                                <div class="p-1.5 space-y-0.5">
-
+                            <div class="p-1.5 space-y-0.5">
+                                @if (auth()->check() && auth()->user()->role === 'eng.admin')
                                     {{-- Statistik --}}
                                     <a href="{{ route('eng.compound.stats') }}" @click="compoundOpen = false"
                                         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold
@@ -177,57 +177,57 @@
                                             <span class="ml-auto w-1.5 h-1.5 rounded-full bg-white/70"></span>
                                         @endif
                                     </a>
-
-                                    {{-- Master Standard --}}
-                                    <a href="{{ route('eng.compound.standards') }}" @click="compoundOpen = false"
-                                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold
+                                @endif
+                                {{-- Master Standard --}}
+                                <a href="{{ route('eng.compound.standards') }}" @click="compoundOpen = false"
+                                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold
                                                transition-colors duration-100
                                                {{ request()->routeIs('eng.compound.standards')
                                                    ? 'bg-indigo-600 text-white'
                                                    : 'text-slate-600 hover:bg-indigo-50 hover:text-indigo-700' }}">
-                                        <span
-                                            class="flex items-center justify-center w-7 h-7 rounded-lg flex-shrink-0
+                                    <span
+                                        class="flex items-center justify-center w-7 h-7 rounded-lg flex-shrink-0
                                                      {{ request()->routeIs('eng.compound.standards') ? 'bg-indigo-500/30' : 'bg-slate-100' }}">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            </svg>
-                                        </span>
-                                        Master Standard
-                                        @if (request()->routeIs('eng.compound.standards'))
-                                            <span class="ml-auto w-1.5 h-1.5 rounded-full bg-white/70"></span>
-                                        @endif
-                                    </a>
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        </svg>
+                                    </span>
+                                    Master Standard
+                                    @if (request()->routeIs('eng.compound.standards'))
+                                        <span class="ml-auto w-1.5 h-1.5 rounded-full bg-white/70"></span>
+                                    @endif
+                                </a>
 
-                                    {{-- Laporan Compound --}}
-                                    <a href="{{ route('eng.compound.report') }}" @click="compoundOpen = false"
-                                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold
+                                {{-- Laporan Compound --}}
+                                <a href="{{ route('eng.compound.report') }}" @click="compoundOpen = false"
+                                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold
                                                transition-colors duration-100
                                                {{ request()->routeIs('eng.compound.report')
                                                    ? 'bg-emerald-600 text-white'
                                                    : 'text-slate-600 hover:bg-emerald-50 hover:text-emerald-700' }}">
-                                        <span
-                                            class="flex items-center justify-center w-7 h-7 rounded-lg flex-shrink-0
+                                    <span
+                                        class="flex items-center justify-center w-7 h-7 rounded-lg flex-shrink-0
                                                      {{ request()->routeIs('eng.compound.report') ? 'bg-emerald-500/30' : 'bg-slate-100' }}">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                            </svg>
-                                        </span>
-                                        Laporan Compound
-                                        @if (request()->routeIs('eng.compound.report'))
-                                            <span class="ml-auto w-1.5 h-1.5 rounded-full bg-white/70"></span>
-                                        @endif
-                                    </a>
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                    </span>
+                                    Laporan Compound
+                                    @if (request()->routeIs('eng.compound.report'))
+                                        <span class="ml-auto w-1.5 h-1.5 rounded-full bg-white/70"></span>
+                                    @endif
+                                </a>
 
-                                </div>
                             </div>
                         </div>
-                    @endif
+                    </div>
+
 
                 </div>
             </div>
@@ -298,11 +298,11 @@
             @endcan
 
             {{-- Mobile Compound Links --}}
-            @if (auth()->check() && auth()->user()->role === 'eng.admin')
-                <div class="pt-2 pb-1 px-1">
-                    <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Compound</p>
-                </div>
 
+            <div class="pt-2 pb-1 px-1">
+                <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Compound</p>
+            </div>
+            @if (auth()->check() && auth()->user()->role === 'eng.admin')
                 <x-responsive-nav-link :href="route('eng.compound.stats')" :active="request()->routeIs('eng.compound.stats')">
                     <span class="flex items-center gap-3">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -312,29 +312,29 @@
                         Statistik Compound
                     </span>
                 </x-responsive-nav-link>
-
-                <x-responsive-nav-link :href="route('eng.compound.standards')" :active="request()->routeIs('eng.compound.standards')">
-                    <span class="flex items-center gap-3">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        Master Standard
-                    </span>
-                </x-responsive-nav-link>
-
-                <x-responsive-nav-link :href="route('eng.compound.report')" :active="request()->routeIs('eng.compound.report')">
-                    <span class="flex items-center gap-3">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        Laporan Compound
-                    </span>
-                </x-responsive-nav-link>
             @endif
+            <x-responsive-nav-link :href="route('eng.compound.standards')" :active="request()->routeIs('eng.compound.standards')">
+                <span class="flex items-center gap-3">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Master Standard
+                </span>
+            </x-responsive-nav-link>
+
+            <x-responsive-nav-link :href="route('eng.compound.report')" :active="request()->routeIs('eng.compound.report')">
+                <span class="flex items-center gap-3">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Laporan Compound
+                </span>
+            </x-responsive-nav-link>
+
         </div>
 
         {{-- Mobile User Info --}}
