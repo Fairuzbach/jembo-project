@@ -117,7 +117,7 @@ class EngCompoundCheckController extends Controller
                     ]);
                 }
             } elseif ($plantName === 'Autowire') {
-                $autowireMachineId = 55;
+                $autowireMachineId = 52;
                 $data = $request->autowire;
                 $tanggalCek = $request->autowire_tanggal;
                 if (!$tanggalCek) {
@@ -250,9 +250,9 @@ class EngCompoundCheckController extends Controller
                 $machineMap = [
                     'bak_1' => 1,
                     'bak_2' => 3,
-                    'bak_3' => 52,
-                    'bak_4' => 53,
-                    'bak_5' => 54,
+                    'bak_3' => 226,
+                    'bak_4' => 228,
+                    'bak_5' => 227,
                     'bak_6' => 2,
                 ];
 
@@ -335,7 +335,7 @@ class EngCompoundCheckController extends Controller
                     }
                 }
             } elseif ($plantName === 'Autowire') {
-                $autowireMachineId = 55;
+                $autowireMachineId = 52;
                 $data = $request->autowire;
                 $tglCekAuto = $request->autowire_tanggal;
 
