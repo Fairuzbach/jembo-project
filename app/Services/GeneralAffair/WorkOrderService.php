@@ -70,8 +70,9 @@ class WorkOrderService
                 ...$approvalData // Merge approval data jika ada
             ]);
 
-
-            $this->sendNotifications($wo, $employee, $user, $statusAwal, $data['department']);
+            if (!$isAdminGA) {
+                $this->sendNotifications($wo, $employee, $user, $statusAwal, $data['department']);
+            }
 
             return [
                 'ticket' => $wo,
