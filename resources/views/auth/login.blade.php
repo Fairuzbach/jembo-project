@@ -126,13 +126,28 @@
                     </span>
                 </label>
 
-                <div class="flex gap-3 text-sm">
-                    @if (Route::has('password.request'))
-                        <a class="font-medium text-gray-600 hover:text-red-600 hover:underline transition-all decoration-2 underline-offset-2"
-                            href="{{ route('password.request') }}">
-                            {{ __('Lupa password?') }}
-                        </a>
-                    @endif
+                {{-- Blok PHP untuk Link WhatsApp --}}
+                @php
+                    // 1. Ganti dengan nomor WhatsApp Anda (Gunakan awalan 62, tanpa 0 atau +)
+                    $waNumber = '6285156469296';
+
+                    // 2. Format pesan form yang akan otomatis muncul di WA user
+                    $waMessage =
+                        'Halo Admin, saya lupa password akun WO JEMBO saya. Berikut data untuk reset password:%0A%0A' .
+                        'Nama Lengkap : %0A' .
+                        'NIK : %0A' .
+                        'Departemen : %0A%0A' .
+                        'Mohon bantuannya. Terima kasih.';
+
+                    $waLink = "https://wa.me/{$waNumber}?text={$waMessage}";
+                @endphp
+
+                <div class="flex items-center justify-end mt-4">
+                    {{-- Tombol Lupa Password Mengarah ke WA --}}
+                    <a href="{{ $waLink }}" target="_blank" rel="noopener noreferrer"
+                        class="underline text-sm text-slate-600 hover:text-slate-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Lupa Password?
+                    </a>
                 </div>
             </div>
 
