@@ -112,12 +112,13 @@
                         $canViewCompound =
                             auth()->user()->role === 'eng.admin' ||
                             str_contains($userDiv, 'PROCESS ENGINEERING') ||
-                            str_contains($userDiv, 'PLANT A') ||
-                            str_contains($userDiv, 'PLANT A - AUTOWIRE') ||
-                            str_contains($userDiv, 'PLANT B') ||
-                            str_contains($userDiv, 'PLANT C') ||
-                            str_contains($userDiv, 'PLANT D') ||
-                            str_contains($userDiv, 'PLANT E');
+                            str_contains($userDiv, 'PLANT A');
+                        // str_contains($userDiv, 'PLANT A - AUTOWIRE') ||
+                        // str_contains($userDiv, 'PLANT B') ||
+                        // str_contains($userDiv, 'PLANT C') ||
+                        // str_contains($userDiv, 'PLANT D') ||
+                        // str_contains($userDiv, 'PLANT D - CCV') ||
+                        // str_contains($userDiv, 'PLANT E');
                     @endphp
                     @if ($canViewCompound)
 
