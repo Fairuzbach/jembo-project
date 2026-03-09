@@ -1,5 +1,28 @@
 {{-- Bungkus semuanya dengan x-data activeTab --}}
-<div class="bg-white overflow-hidden shadow-sm sm:rounded-lg transition-colors" x-data="{ activeTab: 'work_order' }">
+<div class="bg-white overflow-hidden shadow-sm sm:rounded-lg transition-colors" x-data="{
+    activeTab: 'work_order',
+
+    {{-- STATE UNTUK MODAL EDIT COMPOUND --}}
+    showEditModal: false,
+    editHtml: '',
+
+    async openCompoundEdit(url) {
+        // Munculkan layar loading sementara
+        this.showEditModal = true;
+        this.editHtml = '<div class=\'fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm\'><div class=\'animate-spin w-10 h-10 border-4 border-white border-t-transparent rounded-full\'></div></div>';
+
+        try {
+            // Fetch template modal dari server
+            let response = await fetch(url);
+            if (!response.ok) throw new Error('Gagal memuat data');
+
+            // Inject HTML ke dalam DOM (Alpine akan otomatis membacanya)
+            this.editHtml = await response.text();
+        } catch (error) {
+            this.editHtml = '<div class=\'fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm\'><div class=\'bg-white p-6 rounded-xl text-center shadow-xl\'><p class=\'text-rose-600 font-bold mb-4\'>Gagal Memuat Data dari Server</p><button @click=\'showEditModal = false\' class=\'px-5 py-2 bg-slate-100 rounded-lg hover:bg-slate-200 text-sm font-bold text-slate-700\'>Tutup</button></div></div>';
+        }
+    }
+}">
     <div class="p-6 text-slate-900">
         {{-- HEADER: TOMBOL AKSI GLOBAL     --}}
         <div class="flex flex-wrap justify-end gap-3 mb-6">
@@ -276,8 +299,9 @@
                                 {{-- Kolom Aksi --}}
                                 <td class="p-4 text-right">
                                     <div class="flex justify-end gap-2">
-                                        <a href="{{ route('eng.compound.edit', [$check->plant_id, $check->tanggal_cek]) }}"
-                                            class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all border border-transparent hover:border-indigo-100"
+                                        <button type="button"
+                                            @click="openCompoundEdit('{{ route('eng.compound.edit', [$check->plant_id, $check->tanggal_cek]) }}')"
+                                            class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all border border-transparent hover:border-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                             title="Edit Data">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor"
                                                 viewBox="0 0 24 24">
@@ -285,7 +309,7 @@
                                                     d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
                                                     stroke-width="2" />
                                             </svg>
-                                        </a>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -301,6 +325,6 @@
                 </div>
             @endif
         </div>
-
+        <div x-html="editHtml"></div>
     </div>
 </div>
