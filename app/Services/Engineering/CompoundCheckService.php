@@ -98,4 +98,27 @@ class CompoundCheckService
         }
         return $requestName;
     }
+
+    public function parseStandardRange($stdString)
+    {
+        if (!$stdString) return ['min' => null, 'max' => null];
+        preg_match_all('/[0-9]+(?:\.[0-9]+)?/', $stdString, $matches);
+        if (empty($matches[0])) return ['min' => null, 'max' => null];
+
+        $nums = array_map('floatval', $matches[0]);
+        if (count($nums) >= 2) return ['min' => min($nums), 'max' => max($nums)];
+        return ['min' => $nums[0], 'max' => null];
+    }
+
+    public function checkIsOos($actualValue, $stdString)
+    {
+        if ($actualValue === null || $actualValue === '' || empty($stdString)) return false;
+        $actualNum = floatval(preg_replace('/[^0-9.-]/', '', $actualValue));
+        $std = $this->parseStandardRange($stdString);
+
+        if ($std['min'] !== null && $actualNum < $std['min']) return true;
+        if ($std['max'] !== null && $actualNum > $std['max']) return true;
+
+        return false;
+    }
 }

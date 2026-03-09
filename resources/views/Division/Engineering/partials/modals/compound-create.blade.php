@@ -17,14 +17,8 @@
                     return;
                 }
     
-                // Auto-pad NIK menjadi 4 digit (misal: 931 -> 0931)
-                if (nikInput.length > 0 && nikInput.length < 4) {
-                    nikInput = nikInput.padStart(4, '0');
-                }
-    
                 this.isSearching = true;
     
-                // SESUAIKAN JALUR: Tambahkan /eng sebelum /operator
                 const targetUrl = `${window.location.origin}/eng/operator/search`;
     
                 fetch(`${targetUrl}?nik=${nikInput}`)
@@ -63,7 +57,7 @@
                         <h3 class="text-[10px] sm:text-sm font-bold text-blue-600 uppercase">Engineering Department</h3>
                     </div>
                     <button type="button" @click="showCompoundModal = false"
-                        class="text-slate-400 hover:text-red-500 bg-slate-100 rounded-full p-2">
+                        class="text-slate-400 hover:text-red-500 bg-slate-100 rounded-full p-2 transition-colors">
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M6 18L18 6M6 6l12 12"></path>
@@ -71,8 +65,52 @@
                     </button>
                 </div>
 
-                <form action="{{ route('eng.storeCompound') }}" method="POST">
+                <form id="formCompound" action="{{ route('eng.storeCompound') }}" method="POST">
                     @csrf
+
+                    {{-- FUNGSI GENERATOR OPSI DROPDOWN --}}
+                    @php
+                        if (!function_exists('generateDropdownOptions')) {
+                            function generateDropdownOptions($stdString, $type)
+                            {
+                                if (empty($stdString)) {
+                                    return [];
+                                }
+                                preg_match_all('/[0-9]+(?:\.[0-9]+)?/', $stdString, $matches);
+                                if (empty($matches[0])) {
+                                    return [];
+                                }
+
+                                $nums = array_map('floatval', $matches[0]);
+                                $stdMin = count($nums) >= 2 ? min($nums) : $nums[0];
+                                $stdMax = count($nums) >= 2 ? max($nums) : $nums[0];
+
+                                $minLimit = $stdMin;
+                                $maxLimit = $stdMax;
+                                $step = 1;
+
+                                if ($type === 'draw_kons' || str_contains($type, 'ph')) {
+                                    $minLimit = $stdMin - 3;
+                                    $maxLimit = $stdMax + 3;
+                                    $step = 0.5;
+                                } elseif ($type === 'ann_kons') {
+                                    $minLimit = $stdMin - 0.5;
+                                    $maxLimit = $stdMax + 0.5;
+                                    $step = 0.5;
+                                }
+
+                                if ($minLimit < 0) {
+                                    $minLimit = 0;
+                                }
+
+                                $options = [];
+                                for ($i = $minLimit; $i <= $maxLimit + 0.01; $i += $step) {
+                                    $options[] = floatval(number_format($i, 1, '.', ''));
+                                }
+                                return array_unique($options);
+                            }
+                        }
+                    @endphp
 
                     <div class="px-3 sm:px-6 py-4 bg-slate-50">
                         {{-- PILIH PLANT --}}
@@ -83,7 +121,7 @@
                                 class="w-full rounded border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2.5 font-bold bg-white"
                                 required>
                                 <option value="">-- Pilih Area --</option>
-                                <option value="Plant A">Plant A </option>
+                                <option value="Plant A">Plant A</option>
                                 <option value="Autowire">Plant A - Autowire (Mesin Drawing Multi 3 HONTA)</option>
                             </select>
                         </div>
@@ -105,13 +143,12 @@
                                     <input type="date" name="plant_a_tanggal" id="plant_a_tanggal"
                                         value="{{ $tanggal ?? date('Y-m-d') }}" max="{{ date('Y-m-d') }}" required
                                         class="w-full rounded border-slate-300 text-sm py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all duration-200 bg-white cursor-pointer">
-                                    <small class="text-[9px] text-slate-400 mt-1 block italic">* Maksimal tanggal
-                                        hari ini</small>
+                                    <small class="text-[9px] text-slate-400 mt-1 block italic">* Maksimal tanggal hari
+                                        ini</small>
                                 </div>
                             </div>
 
                             @php
-                                // Array ini sekarang hanya menyimpan Nama Bak saja
                                 $plantABaks = [
                                     1 => 'BAK 1 (HD 10 C)',
                                     2 => 'BAK 2 (MD 1)',
@@ -122,7 +159,7 @@
                                 ];
                             @endphp
 
-                            {{-- Navigasi Tab (Bisa di-swipe horizontal di HP) --}}
+                            {{-- Navigasi Tab --}}
                             <div
                                 class="flex overflow-x-auto whitespace-nowrap bg-slate-100 border-b border-slate-200 p-2 gap-2 snap-x">
                                 @foreach ($plantABaks as $key => $namaBak)
@@ -171,13 +208,11 @@
                                                             <th
                                                                 class="p-3 text-[10px] font-extrabold text-blue-600 uppercase border-b text-center min-w-[140px]">
                                                                 Drawing</th>
-                                                            {{-- HEADER ANNEALING DINAMIS --}}
                                                             <th class="p-3 text-[10px] font-extrabold text-emerald-600 uppercase border-b text-center {{ $key == 6 ? 'min-w-[280px]' : 'min-w-[140px]' }}"
                                                                 colspan="{{ $key == 6 ? 2 : 1 }}">
                                                                 Annealing {{ $key == 6 ? '(Twin RBD CU)' : '' }}
                                                             </th>
                                                         </tr>
-                                                        {{-- SUB-HEADER KHUSUS BAK 6 --}}
                                                         @if ($key == 6)
                                                             <tr
                                                                 class="bg-slate-100/50 text-[9px] uppercase font-bold text-slate-500">
@@ -192,12 +227,12 @@
                                                         @endif
                                                     </thead>
                                                     <tbody class="divide-y divide-slate-200">
+
                                                         {{-- BARIS TYPE ITEM --}}
                                                         <tr>
                                                             <td
                                                                 class="p-4 text-sm font-extrabold text-slate-800 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-5">
-                                                                Type Item
-                                                            </td>
+                                                                Type Item</td>
                                                             <td class="p-3 align-top">
                                                                 <select
                                                                     name="plant_a[bak_{{ $key }}][draw_type]"
@@ -211,8 +246,7 @@
                                                                 <span
                                                                     class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
                                                                     <span
-                                                                        class="font-bold text-slate-700">{{ $stdDraw->std_tipe ?? '-' }}</span>
-                                                                </span>
+                                                                        class="font-bold text-slate-700">{{ $stdDraw->std_tipe ?? '-' }}</span></span>
                                                             </td>
                                                             <td
                                                                 class="p-3 align-top {{ $key == 6 ? 'border-r border-slate-300' : '' }}">
@@ -228,8 +262,7 @@
                                                                 <span
                                                                     class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
                                                                     <span
-                                                                        class="font-bold text-slate-700">{{ $stdAnn->std_tipe ?? '-' }}</span>
-                                                                </span>
+                                                                        class="font-bold text-slate-700">{{ $stdAnn->std_tipe ?? '-' }}</span></span>
                                                             </td>
                                                             @if ($key == 6)
                                                                 <td class="p-3 align-top bg-indigo-50/40">
@@ -245,8 +278,7 @@
                                                                     <span
                                                                         class="block text-[11px] text-indigo-500 text-center mt-1.5 leading-none">Std:
                                                                         <span
-                                                                            class="font-bold text-indigo-700">{{ $stdAnn->std_tipe ?? '-' }}</span>
-                                                                    </span>
+                                                                            class="font-bold text-indigo-700">{{ $stdAnn->std_tipe ?? '-' }}</span></span>
                                                                 </td>
                                                             @endif
                                                         </tr>
@@ -255,8 +287,7 @@
                                                         <tr>
                                                             <td
                                                                 class="p-4 text-sm font-extrabold text-slate-800 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-5">
-                                                                Supplier
-                                                            </td>
+                                                                Supplier</td>
                                                             <td class="p-3 align-top">
                                                                 <select
                                                                     name="plant_a[bak_{{ $key }}][draw_supplier]"
@@ -270,8 +301,7 @@
                                                                 <span
                                                                     class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
                                                                     <span
-                                                                        class="font-bold text-slate-700">{{ $stdDraw->std_supplier ?? '-' }}</span>
-                                                                </span>
+                                                                        class="font-bold text-slate-700">{{ $stdDraw->std_supplier ?? '-' }}</span></span>
                                                             </td>
                                                             <td
                                                                 class="p-3 align-top {{ $key == 6 ? 'border-r border-slate-300' : '' }}">
@@ -287,8 +317,7 @@
                                                                 <span
                                                                     class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
                                                                     <span
-                                                                        class="font-bold text-slate-700">{{ $stdAnn->std_supplier ?? '-' }}</span>
-                                                                </span>
+                                                                        class="font-bold text-slate-700">{{ $stdAnn->std_supplier ?? '-' }}</span></span>
                                                             </td>
                                                             @if ($key == 6)
                                                                 <td class="p-3 align-top bg-indigo-50/40">
@@ -305,8 +334,7 @@
                                                                     <span
                                                                         class="block text-[11px] text-indigo-500 text-center mt-1.5 leading-none">Std:
                                                                         <span
-                                                                            class="font-bold text-indigo-700">{{ $stdAnn->std_supplier ?? '-' }}</span>
-                                                                    </span>
+                                                                            class="font-bold text-indigo-700">{{ $stdAnn->std_supplier ?? '-' }}</span></span>
                                                                 </td>
                                                             @endif
                                                         </tr>
@@ -317,10 +345,16 @@
                                                                 class="p-4 text-sm font-extrabold text-slate-800 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-5">
                                                                 Warna</td>
                                                             <td class="p-3 align-top">
-                                                                <input type="text"
+                                                                <select
                                                                     name="plant_a[bak_{{ $key }}][draw_warna]"
-                                                                    class="w-full border-slate-300 rounded text-sm p-2 text-center focus:ring-2 focus:ring-blue-500"
-                                                                    placeholder="...">
+                                                                    class="check-oos w-full border-slate-300 rounded text-sm p-2 text-center font-medium focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                                                                    data-std="{{ $stdDraw->std_warna ?? '' }}">
+                                                                    <option value="">- Pilih Warna -</option>
+                                                                    <option value="Hijau Putih">Hijau Putih</option>
+                                                                    <option value="Putih">Putih</option>
+                                                                    <option value="Cokelat Kekuningan">Cokelat
+                                                                        Kekuningan</option>
+                                                                </select>
                                                                 <span
                                                                     class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
                                                                     <span
@@ -328,10 +362,16 @@
                                                             </td>
                                                             <td
                                                                 class="p-3 align-top {{ $key == 6 ? 'border-r border-slate-300' : '' }}">
-                                                                <input type="text"
+                                                                <select
                                                                     name="plant_a[bak_{{ $key }}][ann_warna]"
-                                                                    class="w-full border-slate-300 rounded text-sm p-2 text-center focus:ring-2 focus:ring-emerald-500"
-                                                                    placeholder="...">
+                                                                    class="check-oos w-full border-slate-300 rounded text-sm p-2 text-center font-medium focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                                                                    data-std="{{ $stdAnn->std_warna ?? '' }}">
+                                                                    <option value="">- Pilih Warna -</option>
+                                                                    <option value="Hijau Putih">Hijau Putih</option>
+                                                                    <option value="Putih">Putih</option>
+                                                                    <option value="Cokelat Kekuningan">Cokelat
+                                                                        Kekuningan</option>
+                                                                </select>
                                                                 <span
                                                                     class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
                                                                     <span
@@ -339,10 +379,17 @@
                                                             </td>
                                                             @if ($key == 6)
                                                                 <td class="p-3 align-top bg-indigo-50/40">
-                                                                    <input type="text"
+                                                                    <select
                                                                         name="plant_a[bak_{{ $key }}][ann_warna_2]"
-                                                                        class="w-full border-indigo-300 rounded text-sm p-2 text-center bg-white shadow-sm focus:ring-2 focus:ring-indigo-500"
-                                                                        placeholder="...">
+                                                                        class="check-oos w-full border-indigo-300 rounded text-sm p-2 text-center font-medium bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                                                                        data-std="{{ $stdAnn->std_warna ?? '' }}">
+                                                                        <option value="">- Pilih Warna -</option>
+                                                                        <option value="Hijau Putih">Hijau Putih
+                                                                        </option>
+                                                                        <option value="Putih">Putih</option>
+                                                                        <option value="Cokelat Kekuningan">Cokelat
+                                                                            Kekuningan</option>
+                                                                    </select>
                                                                     <span
                                                                         class="block text-[11px] text-indigo-500 text-center mt-1.5 leading-none">Std:
                                                                         <span
@@ -357,13 +404,16 @@
                                                                 class="p-4 text-sm font-extrabold text-slate-800 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-5">
                                                                 Konsentrasi</td>
                                                             <td class="p-3 align-top">
-                                                                <div class="flex items-center">
-                                                                    <input type="number" step="0.1"
-                                                                        name="plant_a[bak_{{ $key }}][draw_konsentrasi]"
-                                                                        class="w-full border-slate-300 rounded-l text-sm p-2 text-center font-bold text-blue-700 focus:ring-2 focus:ring-blue-500">
-                                                                    <span
-                                                                        class="bg-slate-200 border border-l-0 border-slate-300 px-3 py-2 text-xs font-bold text-slate-600 rounded-r">%</span>
-                                                                </div>
+                                                                <select
+                                                                    name="plant_a[bak_{{ $key }}][draw_konsentrasi]"
+                                                                    class="check-oos w-full border-slate-300 rounded text-sm p-2 text-center font-bold text-blue-700 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                                                                    data-std="{{ $stdDraw->std_konsentrasi }}">
+                                                                    <option value="">- Pilih -</option>
+                                                                    @foreach (generateDropdownOptions($stdDraw->std_konsentrasi, 'draw_kons') as $opt)
+                                                                        <option value="{{ $opt }}">
+                                                                            {{ $opt }} %</option>
+                                                                    @endforeach
+                                                                </select>
                                                                 <span
                                                                     class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
                                                                     <span
@@ -371,13 +421,16 @@
                                                             </td>
                                                             <td
                                                                 class="p-3 align-top {{ $key == 6 ? 'border-r border-slate-300' : '' }}">
-                                                                <div class="flex items-center">
-                                                                    <input type="number" step="0.01"
-                                                                        name="plant_a[bak_{{ $key }}][ann_konsentrasi]"
-                                                                        class="w-full border-slate-300 rounded-l text-sm p-2 text-center font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500">
-                                                                    <span
-                                                                        class="bg-slate-200 border border-l-0 border-slate-300 px-3 py-2 text-xs font-bold text-slate-600 rounded-r">%</span>
-                                                                </div>
+                                                                <select
+                                                                    name="plant_a[bak_{{ $key }}][ann_konsentrasi]"
+                                                                    class="check-oos w-full border-slate-300 rounded text-sm p-2 text-center font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                                                                    data-std="{{ $stdAnn->std_konsentrasi }}">
+                                                                    <option value="">- Pilih -</option>
+                                                                    @foreach (generateDropdownOptions($stdAnn->std_konsentrasi, 'ann_kons') as $opt)
+                                                                        <option value="{{ $opt }}">
+                                                                            {{ $opt }} %</option>
+                                                                    @endforeach
+                                                                </select>
                                                                 <span
                                                                     class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
                                                                     <span
@@ -385,13 +438,16 @@
                                                             </td>
                                                             @if ($key == 6)
                                                                 <td class="p-3 align-top bg-indigo-50/40">
-                                                                    <div class="flex items-center">
-                                                                        <input type="number" step="0.01"
-                                                                            name="plant_a[bak_{{ $key }}][ann_konsentrasi_2]"
-                                                                            class="w-full border-indigo-300 rounded-l text-sm p-2 text-center font-bold text-indigo-700 focus:ring-2 focus:ring-indigo-500 bg-white">
-                                                                        <span
-                                                                            class="bg-indigo-100 border border-l-0 border-indigo-300 px-3 py-2 text-xs font-bold text-indigo-600 rounded-r">%</span>
-                                                                    </div>
+                                                                    <select
+                                                                        name="plant_a[bak_{{ $key }}][ann_konsentrasi_2]"
+                                                                        class="check-oos w-full border-indigo-300 rounded text-sm p-2 text-center font-bold text-indigo-700 bg-white focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                                                                        data-std="{{ $stdAnn->std_konsentrasi }}">
+                                                                        <option value="">- Pilih -</option>
+                                                                        @foreach (generateDropdownOptions($stdAnn->std_konsentrasi, 'ann_kons') as $opt)
+                                                                            <option value="{{ $opt }}">
+                                                                                {{ $opt }} %</option>
+                                                                        @endforeach
+                                                                    </select>
                                                                     <span
                                                                         class="block text-[11px] text-indigo-500 text-center mt-1.5 leading-none">Std:
                                                                         <span
@@ -406,9 +462,16 @@
                                                                 class="p-4 text-sm font-extrabold text-slate-800 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-5">
                                                                 pH Level</td>
                                                             <td class="p-3 align-top">
-                                                                <input type="number" step="0.1"
+                                                                <select
                                                                     name="plant_a[bak_{{ $key }}][draw_ph]"
-                                                                    class="w-full border-slate-300 rounded text-sm p-2 text-center font-bold text-emerald-800 focus:ring-2 focus:ring-emerald-500">
+                                                                    class="check-oos w-full border-slate-300 rounded text-sm p-2 text-center font-bold text-emerald-800 focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                                                                    data-std="{{ $stdDraw->std_ph }}">
+                                                                    <option value="">- Pilih -</option>
+                                                                    @foreach (generateDropdownOptions($stdDraw->std_ph, 'ph') as $opt)
+                                                                        <option value="{{ $opt }}">
+                                                                            {{ $opt }}</option>
+                                                                    @endforeach
+                                                                </select>
                                                                 <span
                                                                     class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
                                                                     <span
@@ -416,9 +479,16 @@
                                                             </td>
                                                             <td
                                                                 class="p-3 align-top {{ $key == 6 ? 'border-r border-slate-300' : '' }}">
-                                                                <input type="number" step="0.1"
+                                                                <select
                                                                     name="plant_a[bak_{{ $key }}][ann_ph]"
-                                                                    class="w-full border-slate-300 rounded text-sm p-2 text-center font-bold text-emerald-800 focus:ring-2 focus:ring-emerald-500">
+                                                                    class="check-oos w-full border-slate-300 rounded text-sm p-2 text-center font-bold text-emerald-800 focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                                                                    data-std="{{ $stdAnn->std_ph }}">
+                                                                    <option value="">- Pilih -</option>
+                                                                    @foreach (generateDropdownOptions($stdAnn->std_ph, 'ph') as $opt)
+                                                                        <option value="{{ $opt }}">
+                                                                            {{ $opt }}</option>
+                                                                    @endforeach
+                                                                </select>
                                                                 <span
                                                                     class="block text-[11px] text-slate-500 text-center mt-1.5 leading-none">Std:
                                                                     <span
@@ -426,9 +496,16 @@
                                                             </td>
                                                             @if ($key == 6)
                                                                 <td class="p-3 align-top bg-indigo-50/40">
-                                                                    <input type="number" step="0.1"
+                                                                    <select
                                                                         name="plant_a[bak_{{ $key }}][ann_ph_2]"
-                                                                        class="w-full border-indigo-300 rounded text-sm p-2 text-center font-bold text-indigo-800 bg-white shadow-sm focus:ring-2 focus:ring-indigo-500">
+                                                                        class="check-oos w-full border-indigo-300 rounded text-sm p-2 text-center font-bold text-indigo-800 bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                                                                        data-std="{{ $stdAnn->std_ph }}">
+                                                                        <option value="">- Pilih -</option>
+                                                                        @foreach (generateDropdownOptions($stdAnn->std_ph, 'ph') as $opt)
+                                                                            <option value="{{ $opt }}">
+                                                                                {{ $opt }}</option>
+                                                                        @endforeach
+                                                                    </select>
                                                                     <span
                                                                         class="block text-[11px] text-indigo-500 text-center mt-1.5 leading-none">Std:
                                                                         <span
@@ -446,7 +523,8 @@
                                                                 <div class="flex items-center">
                                                                     <input type="number"
                                                                         name="plant_a[bak_{{ $key }}][draw_temp]"
-                                                                        class="w-full border-slate-300 rounded-l text-sm p-2 text-center font-bold focus:ring-2 focus:ring-blue-500">
+                                                                        class="check-oos w-full border-slate-300 rounded-l text-sm p-2 text-center font-bold focus:ring-2 focus:ring-blue-500"
+                                                                        data-std="{{ $stdDraw->std_temp }}">
                                                                     <span
                                                                         class="bg-slate-200 border border-l-0 border-slate-300 px-3 py-2 text-xs font-bold text-slate-600 rounded-r">°C</span>
                                                                 </div>
@@ -460,7 +538,8 @@
                                                                 <div class="flex items-center">
                                                                     <input type="number"
                                                                         name="plant_a[bak_{{ $key }}][ann_temp]"
-                                                                        class="w-full border-slate-300 rounded-l text-sm p-2 text-center font-bold focus:ring-2 focus:ring-emerald-500">
+                                                                        class="check-oos w-full border-slate-300 rounded-l text-sm p-2 text-center font-bold focus:ring-2 focus:ring-emerald-500"
+                                                                        data-std="{{ $stdAnn->std_temp }}">
                                                                     <span
                                                                         class="bg-slate-200 border border-l-0 border-slate-300 px-3 py-2 text-xs font-bold text-slate-600 rounded-r">°C</span>
                                                                 </div>
@@ -474,7 +553,8 @@
                                                                     <div class="flex items-center">
                                                                         <input type="number"
                                                                             name="plant_a[bak_{{ $key }}][ann_temp_2]"
-                                                                            class="w-full border-indigo-300 rounded-l text-sm p-2 text-center font-bold bg-white focus:ring-2 focus:ring-indigo-500">
+                                                                            class="check-oos w-full border-indigo-300 rounded-l text-sm p-2 text-center font-bold bg-white focus:ring-2 focus:ring-indigo-500"
+                                                                            data-std="{{ $stdAnn->std_temp }}">
                                                                         <span
                                                                             class="bg-indigo-100 border border-l-0 border-indigo-300 px-3 py-2 text-xs font-bold text-indigo-600 rounded-r">°C</span>
                                                                     </div>
@@ -494,21 +574,22 @@
                                         <div class="mt-4 flex justify-between items-center px-1">
                                             <button type="button" @click="activePlantATab = {{ $key - 1 }}"
                                                 x-show="{{ $key }} > 1"
-                                                class="text-[10px] bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded font-bold shadow-sm hover:bg-slate-50 transition">
-                                                ← Sebelumnya
-                                            </button>
+                                                class="text-[10px] bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded font-bold shadow-sm hover:bg-slate-50 transition">←
+                                                Sebelumnya</button>
                                             <div x-show="{{ $key }} == 1"></div>
                                             <button type="button" @click="activePlantATab = {{ $key + 1 }}"
                                                 x-show="{{ $key }} < 6"
-                                                class="text-[10px] bg-slate-800 text-white px-5 py-2 rounded font-bold shadow flex items-center gap-2 hover:bg-slate-700 transition">
-                                                Lanjut BAK {{ $key + 1 }} →
-                                            </button>
+                                                class="text-[10px] bg-slate-800 text-white px-5 py-2 rounded font-bold shadow flex items-center gap-2 hover:bg-slate-700 transition">Lanjut
+                                                BAK {{ $key + 1 }} →</button>
                                         </div>
                                     </div>
                                 @endforeach
                             </div>
                         </div>
+
+                        {{-- ========================================================== --}}
                         {{-- UI MOBILE-FRIENDLY: AUTOWIRE (TABS PER TANGGAL CEK)        --}}
+                        {{-- ========================================================== --}}
                         <div x-show="compoundForm.plant === 'Autowire'" style="display: none;"
                             class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-4">
 
@@ -525,7 +606,6 @@
                                     class="bg-blue-600 text-white shadow-md px-4 py-2 rounded-lg text-[10px] font-extrabold uppercase tracking-widest transition-all duration-200">
                                     Data Pengecekan Harian
                                 </div>
-
                             </div>
 
                             {{-- Konten Tab Autowire --}}
@@ -539,9 +619,8 @@
                                 <div
                                     class="mb-5 flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-3 px-1">
                                     <label
-                                        class="font-extrabold text-[10px] text-slate-700 uppercase tracking-wider min-w-[100px]">
-                                        Tanggal Cek <span class="text-red-500">*</span>:
-                                    </label>
+                                        class="font-extrabold text-[10px] text-slate-700 uppercase tracking-wider min-w-[100px]">Tanggal
+                                        Cek <span class="text-red-500">*</span>:</label>
                                     <div class="relative w-full md:w-1/3">
                                         <input type="date" name="autowire_tanggal" id="autowire_tanggal"
                                             value="{{ $tanggal ?? date('Y-m-d') }}" max="{{ date('Y-m-d') }}"
@@ -552,7 +631,6 @@
                                     </div>
                                 </div>
 
-                                {{-- Tabel Single Row --}}
                                 <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                                     <div class="overflow-x-auto">
                                         <table class="w-full text-sm text-left border-collapse">
@@ -560,25 +638,22 @@
                                                 <tr class="bg-slate-50">
                                                     <th
                                                         class="p-3 text-[10px] font-extrabold text-slate-500 uppercase border-b sticky left-0 bg-slate-50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
-                                                        Parameter
-                                                    </th>
+                                                        Parameter</th>
                                                     <th
                                                         class="p-3 text-[10px] font-extrabold text-blue-600 uppercase border-b text-center min-w-[150px]">
-                                                        Drawing Compound
-                                                    </th>
+                                                        Drawing Compound</th>
                                                     <th
                                                         class="p-3 text-[10px] font-extrabold text-emerald-600 uppercase border-b text-center min-w-[150px]">
-                                                        Annealing Compound
-                                                    </th>
+                                                        Annealing Compound</th>
                                                 </tr>
                                             </thead>
                                             <tbody class="divide-y divide-slate-100">
+
                                                 {{-- Type Item --}}
                                                 <tr>
                                                     <td
                                                         class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-4">
-                                                        Type Item
-                                                    </td>
+                                                        Type Item</td>
                                                     <td class="p-2 align-top">
                                                         <select name="autowire[draw_type]"
                                                             class="w-full border-slate-200 rounded text-xs p-1.5 text-center focus:ring-blue-500 bg-slate-50/50 cursor-pointer">
@@ -589,10 +664,9 @@
                                                             @endif
                                                         </select>
                                                         <span
-                                                            class="block text-[10px] text-slate-400 text-center mt-1">Std:
+                                                            class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
                                                             <span
-                                                                class="font-bold text-slate-600">{{ $stdDrawAuto->std_tipe ?? '-' }}</span>
-                                                        </span>
+                                                                class="font-bold text-slate-600">{{ $stdDrawAuto->std_tipe ?? '-' }}</span></span>
                                                     </td>
                                                     <td class="p-2 align-top">
                                                         <select name="autowire[ann_type]"
@@ -604,10 +678,9 @@
                                                             @endif
                                                         </select>
                                                         <span
-                                                            class="block text-[10px] text-slate-400 text-center mt-1">Std:
+                                                            class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
                                                             <span
-                                                                class="font-bold text-slate-600">{{ $stdAnnAuto->std_tipe ?? '-' }}</span>
-                                                        </span>
+                                                                class="font-bold text-slate-600">{{ $stdAnnAuto->std_tipe ?? '-' }}</span></span>
                                                     </td>
                                                 </tr>
 
@@ -615,11 +688,10 @@
                                                 <tr>
                                                     <td
                                                         class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-4">
-                                                        Supplier
-                                                    </td>
-                                                    <td class="p-2 align-top">
+                                                        Supplier</td>
+                                                    <td class="p-2 align-top text-center">
                                                         <select name="autowire[draw_supplier]"
-                                                            class="w-full border-slate-200 rounded text-xs p-1.5 text-center focus:ring-blue-500 cursor-pointer">
+                                                            class="w-full border-slate-200 rounded text-xs p-1.5 text-center cursor-pointer focus:ring-blue-500">
                                                             <option value="">-- Pilih --</option>
                                                             @if (!empty($stdDrawAuto->std_supplier))
                                                                 <option value="{{ $stdDrawAuto->std_supplier }}">
@@ -627,14 +699,13 @@
                                                             @endif
                                                         </select>
                                                         <span
-                                                            class="block text-[10px] text-slate-400 text-center mt-1">Std:
+                                                            class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
                                                             <span
-                                                                class="font-bold text-slate-600">{{ $stdDrawAuto->std_supplier ?? '-' }}</span>
-                                                        </span>
+                                                                class="font-bold text-slate-600">{{ $stdDrawAuto->std_supplier ?? '-' }}</span></span>
                                                     </td>
-                                                    <td class="p-2 align-top">
+                                                    <td class="p-2 align-top text-center">
                                                         <select name="autowire[ann_supplier]"
-                                                            class="w-full border-slate-200 rounded text-xs p-1.5 text-center focus:ring-emerald-500 cursor-pointer">
+                                                            class="w-full border-slate-200 rounded text-xs p-1.5 text-center cursor-pointer focus:ring-emerald-500">
                                                             <option value="">-- Pilih --</option>
                                                             @if (!empty($stdAnnAuto->std_supplier))
                                                                 <option value="{{ $stdAnnAuto->std_supplier }}">
@@ -642,75 +713,83 @@
                                                             @endif
                                                         </select>
                                                         <span
-                                                            class="block text-[10px] text-slate-400 text-center mt-1">Std:
+                                                            class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
                                                             <span
-                                                                class="font-bold text-slate-600">{{ $stdAnnAuto->std_supplier ?? '-' }}</span>
-                                                        </span>
+                                                                class="font-bold text-slate-600">{{ $stdAnnAuto->std_supplier ?? '-' }}</span></span>
                                                     </td>
                                                 </tr>
+
+                                                {{-- Warna --}}
                                                 <tr>
                                                     <td
                                                         class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-4">
-                                                        Warna
+                                                        Warna</td>
+                                                    <td class="p-2 align-top">
+                                                        <select name="autowire[draw_warna]"
+                                                            class="check-oos w-full border-slate-200 rounded text-xs p-1.5 text-center focus:ring-blue-500 font-bold text-blue-600 cursor-pointer"
+                                                            data-std="{{ $stdDrawAuto->std_warna ?? '' }}">
+                                                            <option value="">- Pilih Warna -</option>
+                                                            <option value="Hijau Putih">Hijau Putih</option>
+                                                            <option value="Putih">Putih</option>
+                                                            <option value="Cokelat Kekuningan">Cokelat Kekuningan
+                                                            </option>
+                                                        </select>
+                                                        <span
+                                                            class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
+                                                            <span
+                                                                class="font-bold text-slate-600">{{ $stdDrawAuto->std_warna ?? '-' }}</span></span>
                                                     </td>
                                                     <td class="p-2 align-top">
-                                                        {{-- Input Warna Drawing --}}
-                                                        <input type="text" name="autowire[draw_warna]"
-                                                            class="w-full border-slate-200 rounded text-xs p-1.5 text-center focus:ring-blue-500 font-bold text-blue-600"
-                                                            placeholder="Masukkan Warna">
+                                                        <select name="autowire[ann_warna]"
+                                                            class="check-oos w-full border-slate-200 rounded text-xs p-1.5 text-center focus:ring-emerald-500 font-bold text-emerald-600 cursor-pointer"
+                                                            data-std="{{ $stdAnnAuto->std_warna ?? '' }}">
+                                                            <option value="">- Pilih Warna -</option>
+                                                            <option value="Hijau Putih">Hijau Putih</option>
+                                                            <option value="Putih">Putih</option>
+                                                            <option value="Cokelat Kekuningan">Cokelat Kekuningan
+                                                            </option>
+                                                        </select>
                                                         <span
-                                                            class="block text-[10px] text-slate-400 text-center mt-1">Std:
+                                                            class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
                                                             <span
-                                                                class="font-bold text-slate-600">{{ $stdDrawAuto->std_warna ?? '-' }}</span>
-                                                        </span>
-                                                    </td>
-                                                    <td class="p-2 align-top">
-                                                        {{-- Input Warna Annealing --}}
-                                                        <input type="text" name="autowire[ann_warna]"
-                                                            class="w-full border-slate-200 rounded text-xs p-1.5 text-center focus:ring-emerald-500 font-bold text-emerald-600"
-                                                            placeholder="Masukkan Warna">
-                                                        <span
-                                                            class="block text-[10px] text-slate-400 text-center mt-1">Std:
-                                                            <span
-                                                                class="font-bold text-slate-600">{{ $stdAnnAuto->std_warna ?? '-' }}</span>
-                                                        </span>
+                                                                class="font-bold text-slate-600">{{ $stdAnnAuto->std_warna ?? '-' }}</span></span>
                                                     </td>
                                                 </tr>
+
                                                 {{-- Konsentrasi --}}
                                                 <tr>
                                                     <td
                                                         class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-4">
-                                                        Konsentrasi
+                                                        Konsentrasi</td>
+                                                    <td class="p-2 align-top">
+                                                        <select name="autowire[draw_konsentrasi]"
+                                                            class="check-oos w-full border-slate-200 rounded text-xs p-1.5 text-center focus:ring-blue-500 font-bold text-blue-600 cursor-pointer"
+                                                            data-std="{{ $stdDrawAuto->std_konsentrasi }}">
+                                                            <option value="">- Pilih -</option>
+                                                            @foreach (generateDropdownOptions($stdDrawAuto->std_konsentrasi, 'draw_kons') as $opt)
+                                                                <option value="{{ $opt }}">
+                                                                    {{ $opt }} %</option>
+                                                            @endforeach
+                                                        </select>
+                                                        <span
+                                                            class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
+                                                            <span
+                                                                class="font-bold text-slate-600">{{ $stdDrawAuto->std_konsentrasi ?? '-' }}</span></span>
                                                     </td>
                                                     <td class="p-2 align-top">
-                                                        <div class="flex items-center">
-                                                            <input type="number" step="0.1"
-                                                                name="autowire[draw_konsentrasi]"
-                                                                class="w-full border-slate-200 rounded-l text-xs p-1.5 text-center focus:ring-blue-500 font-bold text-blue-600"
-                                                                placeholder="0.0">
-                                                            <span
-                                                                class="bg-slate-50 border border-l-0 border-slate-200 px-2 py-1.5 text-[10px] font-bold text-slate-400 rounded-r">%</span>
-                                                        </div>
+                                                        <select name="autowire[ann_konsentrasi]"
+                                                            class="check-oos w-full border-slate-200 rounded text-xs p-1.5 text-center focus:ring-emerald-500 font-bold text-emerald-600 cursor-pointer"
+                                                            data-std="{{ $stdAnnAuto->std_konsentrasi }}">
+                                                            <option value="">- Pilih -</option>
+                                                            @foreach (generateDropdownOptions($stdAnnAuto->std_konsentrasi, 'ann_kons') as $opt)
+                                                                <option value="{{ $opt }}">
+                                                                    {{ $opt }} %</option>
+                                                            @endforeach
+                                                        </select>
                                                         <span
-                                                            class="block text-[10px] text-slate-400 text-center mt-1">Std:
+                                                            class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
                                                             <span
-                                                                class="font-bold text-slate-600">{{ $stdDrawAuto->std_konsentrasi ?? '-' }}</span>
-                                                        </span>
-                                                    </td>
-                                                    <td class="p-2 align-top">
-                                                        <div class="flex items-center">
-                                                            <input type="number" step="0.1"
-                                                                name="autowire[ann_konsentrasi]"
-                                                                class="w-full border-slate-200 rounded-l text-xs p-1.5 text-center focus:ring-emerald-500 font-bold text-emerald-600"
-                                                                placeholder="0.0">
-                                                            <span
-                                                                class="bg-slate-50 border border-l-0 border-slate-200 px-2 py-1.5 text-[10px] font-bold text-slate-400 rounded-r">%</span>
-                                                        </div>
-                                                        <span
-                                                            class="block text-[10px] text-slate-400 text-center mt-1">Std:
-                                                            <span
-                                                                class="font-bold text-slate-600">{{ $stdAnnAuto->std_konsentrasi ?? '-' }}</span>
-                                                        </span>
+                                                                class="font-bold text-slate-600">{{ $stdAnnAuto->std_konsentrasi ?? '-' }}</span></span>
                                                     </td>
                                                 </tr>
 
@@ -718,27 +797,36 @@
                                                 <tr>
                                                     <td
                                                         class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-4">
-                                                        pH Level
-                                                    </td>
-                                                    <td class="p-2 align-top">
-                                                        <input type="number" step="0.1" name="autowire[draw_ph]"
-                                                            class="w-full border-slate-200 rounded text-xs p-1.5 text-center font-bold text-blue-600"
-                                                            placeholder="0.0">
+                                                        pH Level</td>
+                                                    <td class="p-2 align-top text-center">
+                                                        <select name="autowire[draw_ph]"
+                                                            class="check-oos w-full border-slate-200 rounded text-xs p-1.5 text-center focus:ring-emerald-500 font-bold text-blue-700 cursor-pointer"
+                                                            data-std="{{ $stdDrawAuto->std_ph }}">
+                                                            <option value="">- Pilih -</option>
+                                                            @foreach (generateDropdownOptions($stdDrawAuto->std_ph, 'ph') as $opt)
+                                                                <option value="{{ $opt }}">
+                                                                    {{ $opt }}</option>
+                                                            @endforeach
+                                                        </select>
                                                         <span
-                                                            class="block text-[10px] text-slate-400 text-center mt-1">Std:
+                                                            class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
                                                             <span
-                                                                class="font-bold text-slate-600">{{ $stdDrawAuto->std_ph ?? '-' }}</span>
-                                                        </span>
+                                                                class="font-bold text-slate-600">{{ $stdDrawAuto->std_ph ?? '-' }}</span></span>
                                                     </td>
-                                                    <td class="p-2 align-top">
-                                                        <input type="number" step="0.1" name="autowire[ann_ph]"
-                                                            class="w-full border-slate-200 rounded text-xs p-1.5 text-center font-bold text-emerald-600"
-                                                            placeholder="0.0">
+                                                    <td class="p-2 align-top text-center">
+                                                        <select name="autowire[ann_ph]"
+                                                            class="check-oos w-full border-slate-200 rounded text-xs p-1.5 text-center focus:ring-emerald-500 font-bold text-emerald-700 cursor-pointer"
+                                                            data-std="{{ $stdAnnAuto->std_ph }}">
+                                                            <option value="">- Pilih -</option>
+                                                            @foreach (generateDropdownOptions($stdAnnAuto->std_ph, 'ph') as $opt)
+                                                                <option value="{{ $opt }}">
+                                                                    {{ $opt }}</option>
+                                                            @endforeach
+                                                        </select>
                                                         <span
-                                                            class="block text-[10px] text-slate-400 text-center mt-1">Std:
+                                                            class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
                                                             <span
-                                                                class="font-bold text-slate-600">{{ $stdAnnAuto->std_ph ?? '-' }}</span>
-                                                        </span>
+                                                                class="font-bold text-slate-600">{{ $stdAnnAuto->std_ph ?? '-' }}</span></span>
                                                     </td>
                                                 </tr>
 
@@ -746,35 +834,32 @@
                                                 <tr>
                                                     <td
                                                         class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-4">
-                                                        Temperatur
-                                                    </td>
-                                                    <td class="p-2 align-top">
+                                                        Temperatur</td>
+                                                    <td class="p-2 align-top text-center">
                                                         <div class="flex items-center">
                                                             <input type="number" name="autowire[draw_temp]"
-                                                                class="w-full border-slate-200 rounded-l text-xs p-1.5 text-center"
-                                                                placeholder="0">
+                                                                class="check-oos w-full border-slate-200 rounded-l text-xs p-1.5 text-center focus:ring-blue-500"
+                                                                data-std="{{ $stdDrawAuto->std_temp }}">
                                                             <span
-                                                                class="bg-slate-50 border border-l-0 border-slate-200 px-1 py-1.5 text-[10px] font-bold text-slate-400 rounded-r">°C</span>
+                                                                class="bg-slate-50 border border-l-0 border-slate-200 px-2 py-1.5 text-[10px] font-bold text-slate-400 rounded-r">°C</span>
                                                         </div>
                                                         <span
-                                                            class="block text-[10px] text-slate-400 text-center mt-1">Std:
+                                                            class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
                                                             <span
-                                                                class="font-bold text-slate-600">{{ $stdDrawAuto->std_temp ?? '-' }}</span>
-                                                        </span>
+                                                                class="font-bold text-slate-600">{{ $stdDrawAuto->std_temp ?? '-' }}</span></span>
                                                     </td>
-                                                    <td class="p-2 align-top">
+                                                    <td class="p-2 align-top text-center">
                                                         <div class="flex items-center">
                                                             <input type="number" name="autowire[ann_temp]"
-                                                                class="w-full border-slate-200 rounded-l text-xs p-1.5 text-center"
-                                                                placeholder="0">
+                                                                class="check-oos w-full border-slate-200 rounded-l text-xs p-1.5 text-center focus:ring-emerald-500"
+                                                                data-std="{{ $stdAnnAuto->std_temp }}">
                                                             <span
-                                                                class="bg-slate-50 border border-l-0 border-slate-200 px-1 py-1.5 text-[10px] font-bold text-slate-400 rounded-r">°C</span>
+                                                                class="bg-slate-50 border border-l-0 border-slate-200 px-2 py-1.5 text-[10px] font-bold text-slate-400 rounded-r">°C</span>
                                                         </div>
                                                         <span
-                                                            class="block text-[10px] text-slate-400 text-center mt-1">Std:
+                                                            class="block text-[10px] text-slate-400 text-center mt-1 leading-none">Std:
                                                             <span
-                                                                class="font-bold text-slate-600">{{ $stdAnnAuto->std_temp ?? '-' }}</span>
-                                                        </span>
+                                                                class="font-bold text-slate-600">{{ $stdAnnAuto->std_temp ?? '-' }}</span></span>
                                                     </td>
                                                 </tr>
                                             </tbody>
@@ -787,6 +872,7 @@
                         {{-- KETERANGAN, CATATAN & TANDA TANGAN --}}
                         <div x-show="compoundForm.plant" style="display: none;"
                             class="mt-4 flex flex-col md:flex-row gap-4 text-left items-end">
+
                             <div class="w-full md:w-1/3">
                                 <label class="block text-sm font-bold text-slate-700 mb-1">Keterangan / Notes</label>
                                 <textarea name="keterangan" rows="4"
@@ -805,16 +891,16 @@
                                 </ul>
                             </div>
 
-                            <div class="w-full md:w-1/2 flex justify-end">
+                            <div class="w-full md:w-1/3 flex justify-end">
                                 <div class="w-full max-w-sm border-2 border-slate-800 bg-white shadow-sm">
                                     {{-- Bagian Operator --}}
                                     <div class="flex border-b-2 border-slate-800">
                                         <div
-                                            class="w-2/5 p-2 font-bold border-r-2 border-slate-800 bg-slate-50 text-[10px] uppercase flex flex-col justify-center text-left">
-                                            Diperiksa Oleh:
+                                            class="w-2/5 p-2 font-bold border-r-2 border-slate-800 bg-rose-50 text-[10px] uppercase flex flex-col justify-center text-left">
+                                            <span class="text-rose-700">Diperiksa Oleh (Wajib NIK):</span>
                                             <input type="text" x-model="operatorNik"
                                                 @keyup.debounce.500ms="searchOperator()" placeholder="Ketik NIK..."
-                                                class="mt-1 text-[10px] p-1 border-slate-300 rounded focus:ring-indigo-500 font-bold uppercase w-full">
+                                                class="mt-1 text-[10px] p-1 border-rose-300 rounded focus:ring-rose-500 font-bold uppercase w-full">
                                         </div>
                                         <div
                                             class="w-3/5 p-3 text-sm font-black text-center uppercase truncate text-blue-700 bg-blue-50/50 flex items-center justify-center">
@@ -823,8 +909,6 @@
                                             <span x-show="!isSearching" x-text="operatorName"
                                                 :class="operatorName === 'DATA TIDAK DITEMUKAN' ?
                                                     'text-red-500 font-bold text-[10px]' : ''"></span>
-
-                                            {{-- Hidden input untuk mengirim nama ke server --}}
                                             <input type="hidden" name="nama_pemeriksa" :value="operatorName">
                                         </div>
                                     </div>
@@ -850,9 +934,15 @@
                     <div class="bg-slate-100 px-4 py-3 flex justify-end gap-2 border-t border-slate-200">
                         <button type="button" @click="showCompoundModal = false"
                             class="px-4 py-2 border border-slate-300 rounded text-sm font-medium text-slate-700 bg-white hover:bg-slate-50">Batal</button>
-                        <button type="submit"
-                            class="px-6 py-2 bg-blue-600 text-white rounded text-sm font-bold hover:bg-blue-700 shadow">Simpan
-                            Data</button>
+
+                        <button type="button" @click.prevent="submitCompoundForm($event, 'formCompound')"
+                            :disabled="operatorName === 'DATA TIDAK DITEMUKAN' || operatorName === 'ERROR KONEKSI' ||
+                                operatorName === '........................'"
+                            :class="(operatorName === 'DATA TIDAK DITEMUKAN' || operatorName === 'ERROR KONEKSI' ||
+                                operatorName === '........................') ?
+                            'bg-slate-300 cursor-not-allowed text-slate-500' :
+                            'bg-blue-600 hover:bg-blue-700 text-white'"
+                            class="px-6 py-2 rounded text-sm font-bold shadow transition-all">Simpan Data</button>
                     </div>
                 </form>
 
@@ -860,3 +950,115 @@
         </div>
     </div>
 </template>
+
+<script>
+    // 1. Fungsi pemecah standar dari teks
+    function parseStdJS(stdString) {
+        if (!stdString) return null;
+        let matches = stdString.match(/[0-9]+(?:\.[0-9]+)?/g);
+        if (!matches) return null;
+        let nums = matches.map(Number);
+        if (nums.length >= 2) return {
+            min: Math.min(...nums),
+            max: Math.max(...nums)
+        };
+        return {
+            min: nums[0],
+            max: null
+        };
+    }
+
+    // 2. Fungsi untuk mengecek dan mewarnai inputan (Bisa baca Angka & Teks Warna)
+    function checkRealtimeOos(el) {
+        let rawVal = el.value;
+        if (rawVal === '') {
+            el.classList.remove('border-rose-500', 'bg-rose-50', 'text-rose-700', 'ring-rose-500');
+            return false;
+        }
+
+        let isOos = false;
+        let stdStr = el.getAttribute('data-std');
+        let name = el.getAttribute('name') || '';
+
+        // JIKA YANG DICEK ADALAH KOLOM WARNA (Pencocokan Teks)
+        if (name.includes('warna')) {
+            if (stdStr && rawVal !== stdStr) {
+                isOos = true;
+            }
+        }
+        // JIKA YANG DICEK ADALAH ANGKA (Konsentrasi, pH, Temperatur)
+        else {
+            let valStr = rawVal.replace(/[^0-9.-]/g, '');
+            let val = parseFloat(valStr);
+            let std = parseStdJS(stdStr);
+
+            if (!isNaN(val) && std) {
+                if ((std.min !== null && val < std.min) || (std.max !== null && val > std.max)) {
+                    isOos = true;
+                }
+            }
+        }
+
+        // Terapkan warna merah jika Out of Spec (OOS)
+        if (isOos) {
+            el.classList.add('border-rose-500', 'bg-rose-50', 'text-rose-700', 'ring-rose-500');
+        } else {
+            el.classList.remove('border-rose-500', 'bg-rose-50', 'text-rose-700', 'ring-rose-500');
+        }
+        return isOos;
+    }
+
+    // 3. SENSOR KETIKAN & DROPDOWN (Real-Time Warning Warna Merah)
+    document.body.addEventListener('input', function(event) {
+        if (event.target && event.target.classList.contains('check-oos')) {
+            checkRealtimeOos(event.target);
+        }
+    });
+
+    // 4. INTERCEPT TOMBOL SIMPAN (Pop-up Validasi Data Aktual / OOS)
+    function submitCompoundForm(event, formId) {
+        event.preventDefault();
+        let form = document.getElementById(formId);
+        let inputs = form.querySelectorAll('.check-oos');
+        let hasOos = false;
+
+        // Cek ulang semua kotak
+        inputs.forEach(el => {
+            if (checkRealtimeOos(el)) hasOos = true;
+        });
+
+        // Jika ada kotak merah
+        if (hasOos) {
+            Swal.fire({
+                title: 'Konfirmasi Data Aktual',
+                html: `<b>Ada beberapa data yang tidak sesuai standard, apakah ini data aktual?</b><br><br>Jika ya, sistem mewajibkan Anda untuk memberikan keterangan/alasan:`,
+                icon: 'warning',
+                input: 'textarea',
+                inputPlaceholder: 'Contoh: Mesin trouble / Sedang proses kuras / Menunggu material...',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Ini Aktual (Simpan)',
+                cancelButtonText: 'Batal (Periksa Ulang)',
+                allowOutsideClick: false,
+                inputValidator: (value) => {
+                    if (!value || value.trim() === '') {
+                        return 'Keterangan WAJIB diisi jika ada data aktual yang keluar standar!';
+                    }
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    let ketInput = form.querySelector('input[name="keterangan"], textarea[name="keterangan"]');
+                    if (ketInput) {
+                        ketInput.value = ketInput.value +
+                        ` \n[Catatan Aktualisasi OOS: ${result.value.trim()}]`;
+                    }
+                    form.submit();
+                }
+            });
+        } else {
+            // Aman, langsung simpan
+            form.submit();
+        }
+    }
+</script>

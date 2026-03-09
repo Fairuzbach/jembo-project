@@ -1,4 +1,7 @@
 <x-app-layout>
+    @php
+        $checkService = app(\App\Services\Engineering\CompoundCheckService::class);
+    @endphp
     {{-- x-cloak di parent: sembunyikan SEMUA konten sampai Alpine siap --}}
     <div class="py-8" x-data="{ activeTab: 1 }" x-cloak>
         <div class="max-w-screen-2xl mx-auto sm:px-6 lg:px-8">
@@ -152,7 +155,25 @@
                                     <span class="text-slate-300 font-light mx-0.5">/</span>
                                     <span class="text-blue-600">{{ $namaBulan }} {{ $tahun }}</span>
                                 </h3>
-                                <p class="text-xs text-slate-400 mt-0.5">Data pengecekan compound harian</p>
+
+                                {{-- GABUNGAN TEKS & INFO WARNA MERAH (LEGEND) --}}
+                                <div class="flex items-center gap-3 mt-1.5">
+                                    <p class="text-xs text-slate-500 font-medium">Data pengecekan compound harian</p>
+
+                                    {{-- Legend Badge --}}
+                                    <div class="flex items-center gap-1.5 px-2 py-0.5 bg-rose-50 border border-rose-200 rounded shadow-sm text-rose-700"
+                                        title="Data yang di-highlight merah menandakan nilainya tidak sesuai standar">
+                                        <span class="relative flex h-2.5 w-2.5">
+                                            <span
+                                                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                            <span
+                                                class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+                                        </span>
+                                        <span class="text-[10px] font-extrabold tracking-wider uppercase">Nilai TIdak
+                                            Sesuai
+                                            Standar</span>
+                                    </div>
+                                </div>
                             </div>
 
                             <form action="{{ route('eng.compound.export') }}" method="GET">
@@ -188,7 +209,6 @@
                             @endforeach
                         </div>
 
-                        {{-- Konten Per Tab — tanpa x-transition, pakai CSS opacity saja --}}
                         @foreach ($baksMap as $key => $bak)
                             @php
                                 $mesinId = $bak['id_mesin'];
@@ -198,7 +218,6 @@
                                 $stdAnn = $stdMesin->first(fn($item) => strtolower($item->proses) === 'annealing');
                             @endphp
 
-                            {{-- Tidak pakai x-transition sama sekali: instant show/hide, tidak ada flicker --}}
                             <div x-show="activeTab === {{ $key }}" style="display:none;">
                                 <div class="rounded-xl border border-slate-200 overflow-hidden shadow-sm">
                                     <div class="overflow-x-auto max-h-[600px] compound-scrollbar">
@@ -305,7 +324,7 @@
                                                                shadow-[2px_0_6px_-1px_rgba(0,0,0,0.1)]">
                                                         STD
                                                     </td>
-                                                    <td class="px-2 py-1.5 bg-blue-50 text-blue-800">
+                                                    <td class="px-2 py-1.5 bg-blue-50 text-blue-800 ">
                                                         {{ $stdDraw->std_tipe ?? '—' }}</td>
                                                     <td class="px-2 py-1.5 bg-blue-50 text-blue-800">
                                                         {{ $stdDraw->std_supplier ?? '—' }}</td>
@@ -370,11 +389,14 @@
                                                             {{ $cek->draw_supplier ?? '—' }}</td>
                                                         <td class="px-2 py-2 text-slate-600">
                                                             {{ $cek->draw_warna ?? '—' }}</td>
-                                                        <td class="px-2 py-2 font-bold text-blue-700 bg-blue-50/50">
+                                                        <td
+                                                            class="px-2 py-2 font-bold text-blue-700 bg-blue-50/50 {{ $checkService->checkIsOos($cek->draw_konsentrasi, $stdDraw->std_konsentrasi ?? '') ? 'bg-rose-100 text-rose-700 font-extrabold border-rose-300' : '' }}">
                                                             {{ $cek->draw_konsentrasi ?? '—' }}</td>
-                                                        <td class="px-2 py-2 text-slate-600">
+                                                        <td
+                                                            class="px-2 py-2 text-slate-600 {{ $checkService->checkIsOos($cek->draw_ph, $stdDraw->std_ph ?? '') ? 'bg-rose-100 text-rose-700 font-extrabold border-rose-300' : '' }}">
                                                             {{ $cek->draw_ph ?? '—' }}</td>
-                                                        <td class="px-2 py-2 text-slate-600">
+                                                        <td
+                                                            class="px-2 py-2 text-slate-600 {{ $checkService->checkIsOos($cek->draw_temp, $stdDraw->std_temp ?? '') ? 'bg-rose-100 text-rose-700 font-extrabold border-rose-300' : '' }}">
                                                             {{ $cek->draw_temp ?? '—' }}</td>
 
                                                         {{-- Annealing 1 --}}
@@ -384,11 +406,15 @@
                                                             {{ $cek->ann_supplier ?? '—' }}</td>
                                                         <td class="px-2 py-2 text-slate-600">
                                                             {{ $cek->ann_warna ?? '—' }}</td>
-                                                        <td class="px-2 py-2 font-bold text-teal-700 bg-teal-50/50">
+                                                        <td
+                                                            class="px-2 py-2 font-bold text-teal-700 bg-teal-50/50 {{ $checkService->checkIsOos($cek->ann_konsentrasi, $stdAnn->ann_konsentrasi ?? '') ? 'bg-rose-100 text-rose-700 font-extrabold border-rose-300' : '' }}">
                                                             {{ $cek->ann_konsentrasi ?? '—' }}</td>
-                                                        <td class="px-2 py-2 text-slate-600">{{ $cek->ann_ph ?? '—' }}
+                                                        <td
+                                                            class="px-2 py-2 text-slate-600 {{ $checkService->checkIsOos($cek->ann_ph, $stdAnn->ann_ph ?? '') ? 'bg-rose-100 text-rose-700 font-extrabold border-rose-300' : '' }}">
+                                                            {{ $cek->ann_ph ?? '—' }}
                                                         </td>
-                                                        <td class="px-2 py-2 text-slate-600">
+                                                        <td
+                                                            class="px-2 py-2 text-slate-600 {{ $checkService->checkIsOos($cek->ann_temp, $stdAnn->ann_temp ?? '') ? 'bg-rose-100 text-rose-700 font-extrabold border-rose-300' : '' }}">
                                                             {{ $cek->ann_temp ?? '—' }}</td>
 
                                                         {{-- Annealing 2 --}}
@@ -400,11 +426,13 @@
                                                             <td class="px-2 py-2 text-slate-600 bg-violet-50/20">
                                                                 {{ $cek->ann_warna_2 ?? '—' }}</td>
                                                             <td
-                                                                class="px-2 py-2 font-bold text-violet-700 bg-violet-50/50">
+                                                                class="px-2 py-2 font-bold text-violet-700 bg-violet-50/50 {{ $checkService->checkIsOos($cek->ann_konsentrasi_2, $stdAnn->ann_konsentrasi_2 ?? '') ? 'bg-rose-100 text-rose-700 font-extrabold border-rose-300' : '' }}">
                                                                 {{ $cek->ann_konsentrasi_2 ?? '—' }}</td>
-                                                            <td class="px-2 py-2 text-slate-600 bg-violet-50/20">
+                                                            <td
+                                                                class="px-2 py-2 text-slate-600 bg-violet-50/20 {{ $checkService->checkIsOos($cek->ann_ph_2, $stdAnn->ann_ph_2 ?? '') ? 'bg-rose-100 text-rose-700 font-extrabold border-rose-300' : '' }}">
                                                                 {{ $cek->ann_ph_2 ?? '—' }}</td>
-                                                            <td class="px-2 py-2 text-slate-600 bg-violet-50/20">
+                                                            <td
+                                                                class="px-2 py-2 text-slate-600 bg-violet-50/20 {{ $checkService->checkIsOos($cek->ann_temp_2, $stdAnn->ann_temp_2 ?? '') ? 'bg-rose-100 text-rose-700 font-extrabold border-rose-300' : '' }}">
                                                                 {{ $cek->ann_temp_2 ?? '—' }}</td>
                                                         @endif
 
@@ -445,7 +473,6 @@
                     </div>
                 </div>
             @else
-                {{-- Empty State --}}
                 <div class="bg-white rounded-xl border border-slate-200 p-16 text-center shadow-sm">
                     <div
                         class="empty-float w-20 h-20 bg-gradient-to-br from-blue-50 to-slate-100 rounded-2xl
@@ -475,12 +502,10 @@
     </div>
 
     <style>
-        /* ── Sembunyikan semua konten Alpine sampai siap ── */
         [x-cloak] {
             display: none !important;
         }
 
-        /* ── Empty state float ───────────────────────── */
         @keyframes gentle-float {
 
             0%,
