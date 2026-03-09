@@ -11,11 +11,19 @@ class OperatorController extends Controller
 {
     public function searchOperator(Request $request)
     {
-        // Ambil NIK dari query string
-        $nik = $request->query('nik');
+        $nikInput = trim($request->query('nik'));
 
-        // Cari di database
-        $operator = \App\Models\Operator::where('nik', $nik)->first();
+        if (empty($nikInput)) {
+            return response()->json(['success' => false]);
+        }
+
+        // Kemungkinan 1: Cari persis seperti input (0605)
+        // Kemungkinan 2: Jika di DB tersimpan tanpa nol (605)
+        // Kemungkinan 3: Jika di DB tersimpan dengan nol tapi input tanpa nol
+        $operator = \App\Models\Operator::where('nik', $nikInput)
+            ->orWhere('nik', (int)$nikInput)
+            ->orWhere('nik', str_pad($nikInput, 4, '0', STR_PAD_LEFT))
+            ->first();
 
         if ($operator) {
             return response()->json([
@@ -26,7 +34,7 @@ class OperatorController extends Controller
 
         return response()->json([
             'success' => false,
-            'message' => 'Operator tidak ditemukan'
+            'message' => 'Operator tidak ditemukan di Database'
         ]);
     }
 
