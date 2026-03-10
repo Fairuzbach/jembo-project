@@ -372,8 +372,9 @@
                                                             class="px-2 py-2 text-slate-600 {{ $checkService->checkIsOos($cek->draw_ph, $stdDraw->std_ph ?? '') ? 'bg-rose-100 text-rose-700 font-extrabold border-rose-300' : '' }}">
                                                             {{ $cek->draw_ph ?? '—' }}</td>
                                                         <td
-                                                            class="px-2 py-2 text-slate-600 {{ $checkService->checkIsOos($cek->draw_temp, $stdDraw->std_temp ?? '') ? 'bg-rose-100 text-rose-700 font-extrabold border-rose-300' : '' }}">
-                                                            {{ $cek->draw_temp ?? '—' }}</td>
+                                                            class="px-2 py-2 text-slate-600 {{ isset($cek->draw_temp) && (float) str_replace(['°C', 'C', ','], ['', '', '.'], $cek->draw_temp) > 40 ? 'bg-rose-100 text-rose-700 font-extrabold border-rose-300' : '' }}">
+                                                            {{ $cek->draw_temp ?? '—' }}
+                                                        </td>
 
                                                         {{-- Annealing 1 --}}
                                                         <td class="px-2 py-2 text-slate-600">
@@ -390,8 +391,9 @@
                                                             class="px-2 py-2 text-slate-600 {{ $checkService->checkIsOos($cek->ann_ph, $stdAnn->std_ph ?? '') ? 'bg-rose-100 text-rose-700 font-extrabold border-rose-300' : '' }}">
                                                             {{ $cek->ann_ph ?? '—' }}</td>
                                                         <td
-                                                            class="px-2 py-2 text-slate-600 {{ $checkService->checkIsOos($cek->ann_temp, $stdAnn->std_temp ?? '') ? 'bg-rose-100 text-rose-700 font-extrabold border-rose-300' : '' }}">
-                                                            {{ $cek->ann_temp ?? '—' }}</td>
+                                                            class="px-2 py-2 text-slate-600 {{ isset($cek->ann_temp) && (float) str_replace(['°C', 'C', ','], ['', '', '.'], $cek->ann_temp) > 40 ? 'bg-rose-100 text-rose-700 font-extrabold border-rose-300' : '' }}">
+                                                            {{ $cek->ann_temp ?? '—' }}
+                                                        </td>
 
                                                         {{-- Annealing 2 (BAK 6 only) --}}
                                                         @if ($bak['is_bak_6'])
@@ -409,8 +411,9 @@
                                                                 class="px-2 py-2 text-slate-600 bg-violet-50/20 {{ $checkService->checkIsOos($cek->ann_ph_2, $stdAnn->std_ph ?? '') ? 'bg-rose-100 text-rose-700 font-extrabold border-rose-300' : '' }}">
                                                                 {{ $cek->ann_ph_2 ?? '—' }}</td>
                                                             <td
-                                                                class="px-2 py-2 text-slate-600 bg-violet-50/20 {{ $checkService->checkIsOos($cek->ann_temp_2, $stdAnn->std_temp ?? '') ? 'bg-rose-100 text-rose-700 font-extrabold border-rose-300' : '' }}">
-                                                                {{ $cek->ann_temp_2 ?? '—' }}</td>
+                                                                class="px-2 py-2 text-slate-600 {{ isset($cek->ann_temp_2) && (float) str_replace(['°C', 'C', ','], ['', '', '.'], $cek->ann_temp_2) > 40 ? 'bg-rose-100 text-rose-700 font-extrabold border-rose-300' : '' }}">
+                                                                {{ $cek->ann_temp_2 ?? '—' }}
+                                                            </td>
                                                         @endif
 
                                                         <td class="px-2 py-2 text-slate-600">
