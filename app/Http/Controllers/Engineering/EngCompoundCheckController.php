@@ -228,6 +228,7 @@ class EngCompoundCheckController extends Controller
                 ];
                 $plantName = 'Autowire (Multi 3 HONTA)';
             }
+
             $dataChecks = EngCompoundCheck::with(['pemeriksa'])
                 ->where('plant_id', $plantId)
                 ->whereMonth('tanggal_cek', $bulan)
@@ -236,13 +237,25 @@ class EngCompoundCheckController extends Controller
                 ->get()
                 ->groupBy('machine_id');
 
-            // 3. Ambil Data Standar
-            $machineIds = collect($baksMap)->pluck('id_mesin');
-            $standards = DB::table('eng_compound_standards')
-                ->whereIn('machine_id', $machineIds)
-                ->get()
-                ->groupBy('machine_id');
+            // =========================================================
+            // 3. Ambil Data Standar (SUDAH DIPERBAIKI)
+            // =========================================================
+            if ($plantId == 1) {
+                // Logika pencarian standar Plant A (menggunakan machine_id)
+                $machineIds = collect($baksMap)->pluck('id_mesin');
+                $standards = DB::table('eng_compound_standards')
+                    ->whereIn('machine_id', $machineIds)
+                    ->get()
+                    ->groupBy('machine_id');
+            } else {
+                // Logika pencarian standar Autowire (menggunakan nama plant)
+                $autowireStandards = DB::table('eng_compound_standards')
+                    ->where('plant', 'Autowire')
+                    ->get();
+                $standards = collect([52 => $autowireStandards]);
+            }
         }
+
         return view('Division.Engineering.compound.report', compact(
             'dataChecks',
             'baksMap',
