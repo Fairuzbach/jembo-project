@@ -680,6 +680,31 @@
                                                             </td>
                                                         @endif
                                                     </tr>
+                                                    {{-- BARIS HOURMETER --}}
+                                                    <tr>
+                                                        <td
+                                                            class="p-4 text-sm font-extrabold text-slate-800 sticky left-0 bg-white z-10 align-top pt-5">
+                                                            Hourmeter Mesin</td>
+
+                                                        {{-- Colspan menyesuaikan Bak 6 (yang punya 3 kolom) atau Bak lainnya (2 kolom) --}}
+                                                        <td class="p-3 align-top bg-slate-50/50"
+                                                            colspan="{{ $key == 6 ? 3 : 2 }}">
+                                                            <div class="flex items-center w-full md:w-1/3">
+                                                                {{-- value otomatis kosong jika Create, dan terisi jika Edit --}}
+                                                                <input type="number" step="any"
+                                                                    name="plant_a[bak_{{ $key }}][hourmeter]"
+                                                                    value="{{ $dataExisting->hourmeter ?? '' }}"
+                                                                    class="w-full border-slate-300 rounded-l text-sm p-2 text-right font-bold focus:ring-2 focus:ring-indigo-500"
+                                                                    placeholder="0">
+                                                                <span
+                                                                    class="bg-slate-200 border border-l-0 border-slate-300 px-3 py-2 text-xs font-bold text-slate-600 rounded-r">Jam</span>
+                                                            </div>
+                                                            <span
+                                                                class="block text-[10px] text-slate-400 mt-1 italic">*Wajib
+                                                                diisi dengan angka hourmeter aktual mesin, gunakan titik
+                                                                (.) untuk 2 angka dibelakang koma.</span>
+                                                        </td>
+                                                    </tr>
                                                 </tbody>
                                             </table>
                                         </div>
@@ -1028,6 +1053,26 @@
                                                         class="block text-[10px] text-slate-400 mt-1 leading-none">Std:
                                                         <span
                                                             class="font-bold text-slate-600">{{ $stdAnnAuto->std_temp ?? '-' }}</span></span>
+                                                </td>
+                                            </tr>
+                                            {{-- BARIS HOURMETER AUTOWIRE --}}
+                                            <tr>
+                                                <td
+                                                    class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 align-top pt-4">
+                                                    Hourmeter Mesin</td>
+                                                <td class="p-2 align-top bg-slate-50/50" colspan="2">
+                                                    <div class="flex items-center w-full md:w-1/3">
+                                                        <input type="number" step="any"
+                                                            name="autowire[hourmeter]"
+                                                            value="{{ $dataAuto->hourmeter ?? '' }}"
+                                                            class="w-full border-slate-200 rounded-l text-xs p-1.5 text-right font-bold focus:ring-indigo-500"
+                                                            placeholder="0">
+                                                        <span
+                                                            class="bg-slate-100 border border-l-0 border-slate-200 px-2 py-1.5 text-[10px] font-bold text-slate-500 rounded-r">Jam</span>
+                                                    </div>
+                                                    <span class="block text-[9px] text-slate-400 mt-1 italic">*Wajib
+                                                        diisi dengan angka hourmeter aktual mesin, gunakan titik (.)
+                                                        untuk 2 angka dibelakang koma</span>
                                                 </td>
                                             </tr>
                                         </tbody>

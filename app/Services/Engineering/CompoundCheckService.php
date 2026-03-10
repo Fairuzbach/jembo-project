@@ -48,6 +48,7 @@ class CompoundCheckService
             'draw_konsentrasi',
             'draw_ph',
             'draw_temp',
+            'hourmeter',
             'ann_type',
             'ann_supplier',
             'ann_warna',
@@ -73,6 +74,9 @@ class CompoundCheckService
             'draw_konsentrasi' => $this->formatValue($data['draw_konsentrasi'] ?? null, '%'),
             'draw_ph'          => $data['draw_ph'] ?? null,
             'draw_temp'        => $this->formatValue($data['draw_temp'] ?? null, 'C'),
+            'hourmeter' => (isset($data['hourmeter']) && $data['hourmeter'] !== '')
+                ? round((float) str_replace(',', '.', $data['hourmeter']), 2)
+                : null,
 
             'ann_type'         => $data['ann_type'] ?? null,
             'ann_supplier'     => $data['ann_supplier'] ?? null,

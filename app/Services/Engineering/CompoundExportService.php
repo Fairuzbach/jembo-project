@@ -144,11 +144,13 @@ class CompoundExportService
                 $sheet->setCellValue('R' . $rowData, $check->ann_konsentrasi_2 ?? '-');
                 $sheet->setCellValue('S' . $rowData, $check->ann_ph_2 ?? '-');
                 $sheet->setCellValue('T' . $rowData, $check->ann_temp_2 ?? '-');
-                $sheet->setCellValue('U' . $rowData, $check->diperiksa_oleh);
-                $sheet->setCellValue('V' . $rowData, $check->keterangan);
+                $sheet->setCellValue('U' . $rowData, $check->hourmeter ? number_format($check->hourmeter, 2, ',', '.') : '-');
+                $sheet->setCellValue('V' . $rowData, $check->diperiksa_oleh);
+                $sheet->setCellValue('W' . $rowData, $check->keterangan);
             } else {
-                $sheet->setCellValue('O' . $rowData, $check->diperiksa_oleh);
-                $sheet->setCellValue('P' . $rowData, $check->keterangan);
+                $sheet->setCellValue('O' . $rowData, $check->hourmeter ? number_format($check->hourmeter, 2, ',', '.') : '-');
+                $sheet->setCellValue('P' . $rowData, $check->diperiksa_oleh);
+                $sheet->setCellValue('Q' . $rowData, $check->keterangan);
             }
             $rowData++;
         }

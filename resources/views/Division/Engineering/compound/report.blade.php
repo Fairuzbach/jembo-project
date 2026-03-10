@@ -250,6 +250,9 @@
                                                     @endif
                                                     <th rowspan="2"
                                                         class="px-3 py-2 bg-slate-700 border-x border-slate-600">
+                                                        Hourmeter</th>
+                                                    <th rowspan="2"
+                                                        class="px-3 py-2 bg-slate-700 border-x border-slate-600">
                                                         Diperiksa</th>
                                                     <th rowspan="2" class="px-3 py-2 bg-slate-700 min-w-[180px]">
                                                         Keterangan</th>
@@ -435,7 +438,8 @@
                                                                 class="px-2 py-2 text-slate-600 bg-violet-50/20 {{ $checkService->checkIsOos($cek->ann_temp_2, $stdAnn->ann_temp_2 ?? '') ? 'bg-rose-100 text-rose-700 font-extrabold border-rose-300' : '' }}">
                                                                 {{ $cek->ann_temp_2 ?? '—' }}</td>
                                                         @endif
-
+                                                        <td>{{ $cek->hourmeter ? number_format($cek->hourmeter, 2, ',', '.') : '-' }}
+                                                        </td>
                                                         <td class="px-2 py-2 font-medium text-slate-700">
                                                             {{ $cek->pemeriksa->name ?? ($cek->diperiksa_oleh ?? '—') }}
                                                         </td>
