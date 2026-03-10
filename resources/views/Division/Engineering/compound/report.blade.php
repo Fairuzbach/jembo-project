@@ -410,14 +410,14 @@
                                                         <td class="px-2 py-2 text-slate-600">
                                                             {{ $cek->ann_warna ?? '—' }}</td>
                                                         <td
-                                                            class="px-2 py-2 font-bold text-teal-700 bg-teal-50/50 {{ $checkService->checkIsOos($cek->ann_konsentrasi, $stdAnn->ann_konsentrasi ?? '') ? 'bg-rose-100 text-rose-700 font-extrabold border-rose-300' : '' }}">
+                                                            class="px-2 py-2 font-bold text-teal-700 bg-teal-50/50 {{ $checkService->checkIsOos($cek->ann_konsentrasi, $stdAnn->std_konsentrasi ?? '') ? 'bg-rose-100 text-rose-700 font-extrabold border-rose-300' : '' }}">
                                                             {{ $cek->ann_konsentrasi ?? '—' }}</td>
                                                         <td
-                                                            class="px-2 py-2 text-slate-600 {{ $checkService->checkIsOos($cek->ann_ph, $stdAnn->ann_ph ?? '') ? 'bg-rose-100 text-rose-700 font-extrabold border-rose-300' : '' }}">
+                                                            class="px-2 py-2 text-slate-600 {{ $checkService->checkIsOos($cek->ann_ph, $stdAnn->std_ph ?? '') ? 'bg-rose-100 text-rose-700 font-extrabold border-rose-300' : '' }}">
                                                             {{ $cek->ann_ph ?? '—' }}
                                                         </td>
                                                         <td
-                                                            class="px-2 py-2 text-slate-600 {{ $checkService->checkIsOos($cek->ann_temp, $stdAnn->ann_temp ?? '') ? 'bg-rose-100 text-rose-700 font-extrabold border-rose-300' : '' }}">
+                                                            class="px-2 py-2 text-slate-600 {{ $checkService->checkIsOos($cek->ann_temp, $stdAnn->std_temp ?? '') ? 'bg-rose-100 text-rose-700 font-extrabold border-rose-300' : '' }}">
                                                             {{ $cek->ann_temp ?? '—' }}</td>
 
                                                         {{-- Annealing 2 --}}
@@ -429,13 +429,13 @@
                                                             <td class="px-2 py-2 text-slate-600 bg-violet-50/20">
                                                                 {{ $cek->ann_warna_2 ?? '—' }}</td>
                                                             <td
-                                                                class="px-2 py-2 font-bold text-violet-700 bg-violet-50/50 {{ $checkService->checkIsOos($cek->ann_konsentrasi_2, $stdAnn->ann_konsentrasi_2 ?? '') ? 'bg-rose-100 text-rose-700 font-extrabold border-rose-300' : '' }}">
+                                                                class="px-2 py-2 font-bold text-violet-700 bg-violet-50/50 {{ $checkService->checkIsOos($cek->ann_konsentrasi_2, $stdAnn->std_konsentrasi ?? '') ? 'bg-rose-100 text-rose-700 font-extrabold border-rose-300' : '' }}">
                                                                 {{ $cek->ann_konsentrasi_2 ?? '—' }}</td>
                                                             <td
-                                                                class="px-2 py-2 text-slate-600 bg-violet-50/20 {{ $checkService->checkIsOos($cek->ann_ph_2, $stdAnn->ann_ph_2 ?? '') ? 'bg-rose-100 text-rose-700 font-extrabold border-rose-300' : '' }}">
+                                                                class="px-2 py-2 text-slate-600 bg-violet-50/20 {{ $checkService->checkIsOos($cek->ann_ph_2, $stdAnn->std_ph ?? '') ? 'bg-rose-100 text-rose-700 font-extrabold border-rose-300' : '' }}">
                                                                 {{ $cek->ann_ph_2 ?? '—' }}</td>
                                                             <td
-                                                                class="px-2 py-2 text-slate-600 bg-violet-50/20 {{ $checkService->checkIsOos($cek->ann_temp_2, $stdAnn->ann_temp_2 ?? '') ? 'bg-rose-100 text-rose-700 font-extrabold border-rose-300' : '' }}">
+                                                                class="px-2 py-2 text-slate-600 bg-violet-50/20 {{ $checkService->checkIsOos($cek->ann_temp_2, $stdAnn->std_temp ?? '') ? 'bg-rose-100 text-rose-700 font-extrabold border-rose-300' : '' }}">
                                                                 {{ $cek->ann_temp_2 ?? '—' }}</td>
                                                         @endif
                                                         <td>{{ $cek->hourmeter ? number_format($cek->hourmeter, 2, ',', '.') : '-' }}
