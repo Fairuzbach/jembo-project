@@ -693,7 +693,8 @@
                                                             <span
                                                                 class="block text-[10px] text-slate-400 mt-1 italic">*Wajib
                                                                 diisi dengan angka hourmeter aktual mesin, gunakan titik
-                                                                (.) untuk 2 angka dibelakang koma.</span>
+                                                                (.)
+                                                                untuk 2 angka dibelakang koma.</span>
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -728,9 +729,343 @@
                                         class="rounded border-slate-300 text-sm py-1.5 focus:ring-blue-500 shadow-sm bg-slate-50"
                                         readonly>
                                 </div>
-                                <div class="overflow-x-auto">
-                                    {{-- Tabel Autowire sama persis dengan versi asli --}}
-                                    {{-- [konten tabel autowire tidak diubah strukturnya] --}}
+                                <div class="overflow-x-auto -webkit-overflow-scrolling-touch">
+                                    <table class="w-full text-sm text-left border-collapse">
+                                        <thead>
+                                            <tr class="bg-slate-50/50">
+                                                <th
+                                                    class="p-3 text-[10px] font-extrabold text-slate-500 uppercase border-b sticky left-0 bg-slate-50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] min-w-[100px]">
+                                                    Parameter</th>
+                                                <th
+                                                    class="p-3 text-[10px] font-extrabold text-blue-600 uppercase border-b text-center min-w-[140px]">
+                                                    Drawing</th>
+                                                <th
+                                                    class="p-3 text-[10px] font-extrabold text-emerald-600 uppercase border-b text-center min-w-[140px]">
+                                                    Annealing</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100">
+
+                                            {{-- Type Item --}}
+                                            <tr>
+                                                <td
+                                                    class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] align-top pt-4">
+                                                    Type Item</td>
+                                                <td class="p-2 align-top text-center">
+                                                    <select name="autowire[draw_type]"
+                                                        class="w-full border-slate-200 rounded text-xs p-1.5 text-center bg-slate-50/50 cursor-pointer focus:ring-blue-500">
+                                                        <option value="">-- Pilih --</option>
+                                                        @if (!empty($stdDrawAuto->std_tipe))
+                                                            <option value="{{ $stdDrawAuto->std_tipe }}"
+                                                                {{ ($dataAuto->draw_type ?? '') == $stdDrawAuto->std_tipe ? 'selected' : '' }}>
+                                                                {{ $stdDrawAuto->std_tipe }}</option>
+                                                        @endif
+                                                        @if (!empty($dataAuto->draw_type) && $dataAuto->draw_type != ($stdDrawAuto->std_tipe ?? ''))
+                                                            <option value="{{ $dataAuto->draw_type }}" selected>
+                                                                {{ $dataAuto->draw_type }}</option>
+                                                        @endif
+                                                    </select>
+                                                    <span
+                                                        class="block text-[10px] text-slate-400 mt-1 leading-none">Std:
+                                                        <span
+                                                            class="font-bold text-slate-600">{{ $stdDrawAuto->std_tipe ?? '-' }}</span></span>
+                                                </td>
+                                                <td class="p-2 align-top text-center">
+                                                    <select name="autowire[ann_type]"
+                                                        class="w-full border-slate-200 rounded text-xs p-1.5 text-center bg-slate-50/50 cursor-pointer focus:ring-emerald-500">
+                                                        <option value="">-- Pilih --</option>
+                                                        @if (!empty($stdAnnAuto->std_tipe))
+                                                            <option value="{{ $stdAnnAuto->std_tipe }}"
+                                                                {{ ($dataAuto->ann_type ?? '') == $stdAnnAuto->std_tipe ? 'selected' : '' }}>
+                                                                {{ $stdAnnAuto->std_tipe }}</option>
+                                                        @endif
+                                                        @if (!empty($dataAuto->ann_type) && $dataAuto->ann_type != ($stdAnnAuto->std_tipe ?? ''))
+                                                            <option value="{{ $dataAuto->ann_type }}" selected>
+                                                                {{ $dataAuto->ann_type }}</option>
+                                                        @endif
+                                                    </select>
+                                                    <span
+                                                        class="block text-[10px] text-slate-400 mt-1 leading-none">Std:
+                                                        <span
+                                                            class="font-bold text-slate-600">{{ $stdAnnAuto->std_tipe ?? '-' }}</span></span>
+                                                </td>
+                                            </tr>
+
+                                            {{-- Supplier --}}
+                                            <tr>
+                                                <td
+                                                    class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 align-top pt-4">
+                                                    Supplier</td>
+                                                <td class="p-2 align-top text-center">
+                                                    <select name="autowire[draw_supplier]"
+                                                        class="w-full border-slate-200 rounded text-xs p-1.5 text-center cursor-pointer focus:ring-blue-500">
+                                                        <option value="">-- Pilih --</option>
+                                                        @if (!empty($stdDrawAuto->std_supplier))
+                                                            <option value="{{ $stdDrawAuto->std_supplier }}"
+                                                                {{ ($dataAuto->draw_supplier ?? '') == $stdDrawAuto->std_supplier ? 'selected' : '' }}>
+                                                                {{ $stdDrawAuto->std_supplier }}</option>
+                                                        @endif
+                                                        @if (!empty($dataAuto->draw_supplier) && $dataAuto->draw_supplier != ($stdDrawAuto->std_supplier ?? ''))
+                                                            <option value="{{ $dataAuto->draw_supplier }}" selected>
+                                                                {{ $dataAuto->draw_supplier }}</option>
+                                                        @endif
+                                                    </select>
+                                                    <span
+                                                        class="block text-[10px] text-slate-400 mt-1 leading-none">Std:
+                                                        <span
+                                                            class="font-bold text-slate-600">{{ $stdDrawAuto->std_supplier ?? '-' }}</span></span>
+                                                </td>
+                                                <td class="p-2 align-top text-center">
+                                                    <select name="autowire[ann_supplier]"
+                                                        class="w-full border-slate-200 rounded text-xs p-1.5 text-center cursor-pointer focus:ring-emerald-500">
+                                                        <option value="">-- Pilih --</option>
+                                                        @if (!empty($stdAnnAuto->std_supplier))
+                                                            <option value="{{ $stdAnnAuto->std_supplier }}"
+                                                                {{ ($dataAuto->ann_supplier ?? '') == $stdAnnAuto->std_supplier ? 'selected' : '' }}>
+                                                                {{ $stdAnnAuto->std_supplier }}</option>
+                                                        @endif
+                                                        @if (!empty($dataAuto->ann_supplier) && $dataAuto->ann_supplier != ($stdAnnAuto->std_supplier ?? ''))
+                                                            <option value="{{ $dataAuto->ann_supplier }}" selected>
+                                                                {{ $dataAuto->ann_supplier }}</option>
+                                                        @endif
+                                                    </select>
+                                                    <span
+                                                        class="block text-[10px] text-slate-400 mt-1 leading-none">Std:
+                                                        <span
+                                                            class="font-bold text-slate-600">{{ $stdAnnAuto->std_supplier ?? '-' }}</span></span>
+                                                </td>
+                                            </tr>
+
+                                            {{-- Warna --}}
+                                            <tr>
+                                                <td
+                                                    class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 align-top pt-4">
+                                                    Warna</td>
+                                                <td class="p-2 align-top">
+                                                    @php $val = $dataAuto->draw_warna ?? ''; @endphp
+                                                    <select name="autowire[draw_warna]"
+                                                        class="check-oos w-full border-slate-200 rounded text-xs p-1.5 text-center cursor-pointer focus:ring-blue-500"
+                                                        data-std="{{ $stdDrawAuto->std_warna ?? '' }}">
+                                                        <option value="">- Pilih Warna -</option>
+                                                        <option value="Hijau Putih"
+                                                            {{ $val == 'Hijau Putih' ? 'selected' : '' }}>Hijau Putih
+                                                        </option>
+                                                        <option value="Putih"
+                                                            {{ $val == 'Putih' ? 'selected' : '' }}>Putih</option>
+                                                        <option value="Cokelat Kekuningan"
+                                                            {{ $val == 'Cokelat Kekuningan' ? 'selected' : '' }}>
+                                                            Cokelat Kekuningan</option>
+                                                        @if (!empty($val) && !in_array($val, ['Hijau Putih', 'Putih', 'Cokelat Kekuningan']))
+                                                            <option value="{{ $val }}" selected>
+                                                                {{ $val }}</option>
+                                                        @endif
+                                                    </select>
+                                                    <span
+                                                        class="block text-[10px] text-slate-400 mt-1 leading-none text-center">Std:
+                                                        <span
+                                                            class="font-bold text-slate-600 text-center">{{ $stdDrawAuto->std_warna ?? '-' }}</span></span>
+                                                </td>
+                                                <td class="p-2 align-top">
+                                                    @php $val = $dataAuto->ann_warna ?? ''; @endphp
+                                                    <select name="autowire[ann_warna]"
+                                                        class="check-oos w-full border-slate-200 rounded text-xs p-1.5 text-center cursor-pointer focus:ring-emerald-500"
+                                                        data-std="{{ $stdAnnAuto->std_warna ?? '' }}">
+                                                        <option value="">- Pilih Warna -</option>
+                                                        <option value="Hijau Putih"
+                                                            {{ $val == 'Hijau Putih' ? 'selected' : '' }}>Hijau Putih
+                                                        </option>
+                                                        <option value="Putih"
+                                                            {{ $val == 'Putih' ? 'selected' : '' }}>Putih</option>
+                                                        <option value="Cokelat Kekuningan"
+                                                            {{ $val == 'Cokelat Kekuningan' ? 'selected' : '' }}>
+                                                            Cokelat Kekuningan</option>
+                                                        @if (!empty($val) && !in_array($val, ['Hijau Putih', 'Putih', 'Cokelat Kekuningan']))
+                                                            <option value="{{ $val }}" selected>
+                                                                {{ $val }}</option>
+                                                        @endif
+                                                    </select>
+                                                    <span
+                                                        class="block text-[10px] text-slate-400 mt-1 leading-none text-center">Std:
+                                                        <span
+                                                            class="font-bold text-slate-600 text-center">{{ $stdAnnAuto->std_warna ?? '-' }}</span></span>
+                                                </td>
+                                            </tr>
+
+                                            {{-- Konsentrasi --}}
+                                            <tr>
+                                                <td
+                                                    class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 align-top pt-4">
+                                                    Konsentrasi</td>
+                                                <td class="p-2 align-top">
+                                                    @php
+                                                        $val = isset($dataAuto->draw_konsentrasi)
+                                                            ? str_replace('%', '', $dataAuto->draw_konsentrasi)
+                                                            : '';
+                                                        $opts = generateDropdownOptions(
+                                                            $stdDrawAuto->std_konsentrasi,
+                                                            'draw_kons',
+                                                        );
+                                                    @endphp
+                                                    <select name="autowire[draw_konsentrasi]"
+                                                        class="check-oos w-full border-slate-200 rounded text-xs p-1.5 text-center font-bold text-blue-600 cursor-pointer focus:ring-blue-500"
+                                                        data-std="{{ $stdDrawAuto->std_konsentrasi ?? '' }}">
+                                                        <option value="">- Pilih -</option>
+                                                        @foreach ($opts as $opt)
+                                                            <option value="{{ $opt }}"
+                                                                {{ (string) $val === (string) $opt ? 'selected' : '' }}>
+                                                                {{ $opt }} %</option>
+                                                        @endforeach
+                                                        @if ($val !== '' && !in_array((float) $val, $opts))
+                                                            <option value="{{ $val }}" selected>
+                                                                {{ $val }} %</option>
+                                                        @endif
+                                                    </select>
+                                                    <span
+                                                        class="block text-[10px] text-slate-400 mt-1 leading-none text-center">Std:
+                                                        <span
+                                                            class="font-bold text-slate-600 text-center">{{ $stdDrawAuto->std_konsentrasi ?? '-' }}</span></span>
+                                                </td>
+                                                <td class="p-2 align-top">
+                                                    @php
+                                                        $val = isset($dataAuto->ann_konsentrasi)
+                                                            ? str_replace('%', '', $dataAuto->ann_konsentrasi)
+                                                            : '';
+                                                        $opts = generateDropdownOptions(
+                                                            $stdAnnAuto->std_konsentrasi,
+                                                            'ann_kons',
+                                                        );
+                                                    @endphp
+                                                    <select name="autowire[ann_konsentrasi]"
+                                                        class="check-oos w-full border-slate-200 rounded text-xs p-1.5 text-center font-bold text-emerald-600 cursor-pointer focus:ring-emerald-500"
+                                                        data-std="{{ $stdAnnAuto->std_konsentrasi ?? '' }}">
+                                                        <option value="">- Pilih -</option>
+                                                        @foreach ($opts as $opt)
+                                                            <option value="{{ $opt }}"
+                                                                {{ (string) $val === (string) $opt ? 'selected' : '' }}>
+                                                                {{ $opt }} %</option>
+                                                        @endforeach
+                                                        @if ($val !== '' && !in_array((float) $val, $opts))
+                                                            <option value="{{ $val }}" selected>
+                                                                {{ $val }} %</option>
+                                                        @endif
+                                                    </select>
+                                                    <span
+                                                        class="block text-[10px] text-slate-400 mt-1 leading-none text-center">Std:
+                                                        <span
+                                                            class="font-bold text-slate-600 text-center">{{ $stdAnnAuto->std_konsentrasi ?? '-' }}</span></span>
+                                                </td>
+                                            </tr>
+
+                                            {{-- pH Level --}}
+                                            <tr>
+                                                <td
+                                                    class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 align-top pt-4">
+                                                    pH Level</td>
+                                                <td class="p-2 align-top text-center">
+                                                    @php
+                                                        $val = $dataAuto->draw_ph ?? '';
+                                                        $opts = generateDropdownOptions($stdDrawAuto->std_ph, 'ph');
+                                                    @endphp
+                                                    <select name="autowire[draw_ph]"
+                                                        class="check-oos w-full border-slate-200 rounded text-xs p-1.5 text-center font-bold text-blue-700 cursor-pointer focus:ring-blue-500"
+                                                        data-std="{{ $stdDrawAuto->std_ph ?? '' }}">
+                                                        <option value="">- Pilih -</option>
+                                                        @foreach ($opts as $opt)
+                                                            <option value="{{ $opt }}"
+                                                                {{ (string) $val === (string) $opt ? 'selected' : '' }}>
+                                                                {{ $opt }}</option>
+                                                        @endforeach
+                                                        @if ($val !== '' && !in_array((float) $val, $opts))
+                                                            <option value="{{ $val }}" selected>
+                                                                {{ $val }}</option>
+                                                        @endif
+                                                    </select>
+                                                    <span
+                                                        class="block text-[10px] text-slate-400 mt-1 leading-none">Std:
+                                                        <span
+                                                            class="font-bold text-slate-600">{{ $stdDrawAuto->std_ph ?? '-' }}</span></span>
+                                                </td>
+                                                <td class="p-2 align-top text-center">
+                                                    @php
+                                                        $val = $dataAuto->ann_ph ?? '';
+                                                        $opts = generateDropdownOptions($stdAnnAuto->std_ph, 'ph');
+                                                    @endphp
+                                                    <select name="autowire[ann_ph]"
+                                                        class="check-oos w-full border-slate-200 rounded text-xs p-1.5 text-center font-bold text-emerald-700 cursor-pointer focus:ring-emerald-500"
+                                                        data-std="{{ $stdAnnAuto->std_ph ?? '' }}">
+                                                        <option value="">- Pilih -</option>
+                                                        @foreach ($opts as $opt)
+                                                            <option value="{{ $opt }}"
+                                                                {{ (string) $val === (string) $opt ? 'selected' : '' }}>
+                                                                {{ $opt }}</option>
+                                                        @endforeach
+                                                        @if ($val !== '' && !in_array((float) $val, $opts))
+                                                            <option value="{{ $val }}" selected>
+                                                                {{ $val }}</option>
+                                                        @endif
+                                                    </select>
+                                                    <span
+                                                        class="block text-[10px] text-slate-400 mt-1 leading-none">Std:
+                                                        <span
+                                                            class="font-bold text-slate-600">{{ $stdAnnAuto->std_ph ?? '-' }}</span></span>
+                                                </td>
+                                            </tr>
+
+                                            {{-- Temperatur --}}
+                                            <tr>
+                                                <td
+                                                    class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 align-top pt-4">
+                                                    Temperatur</td>
+                                                <td class="p-2 align-top text-center">
+                                                    <div class="flex items-center">
+                                                        <input type="number" name="autowire[draw_temp]"
+                                                            value="{{ isset($dataAuto->draw_temp) ? str_replace(['°C', 'C'], '', $dataAuto->draw_temp) : '' }}"
+                                                            class="w-full border-slate-200 rounded-l text-xs p-1.5 text-center">
+                                                        <span
+                                                            class="bg-slate-100 border border-l-0 border-slate-200 px-1 py-1.5 text-[10px] font-bold text-slate-500 rounded-r">°C</span>
+                                                    </div>
+                                                    <span
+                                                        class="block text-[10px] text-slate-400 mt-1 leading-none">Std:
+                                                        <span
+                                                            class="font-bold text-slate-600">{{ $stdDrawAuto->std_temp ?? '-' }}</span></span>
+                                                </td>
+                                                <td class="p-2 align-top text-center">
+                                                    <div class="flex items-center">
+                                                        <input type="number" name="autowire[ann_temp]"
+                                                            value="{{ isset($dataAuto->ann_temp) ? str_replace(['°C', 'C'], '', $dataAuto->ann_temp) : '' }}"
+                                                            class="w-full border-slate-200 rounded-l text-xs p-1.5 text-center">
+                                                        <span
+                                                            class="bg-slate-100 border border-l-0 border-slate-200 px-1 py-1.5 text-[10px] font-bold text-slate-500 rounded-r">°C</span>
+                                                    </div>
+                                                    <span
+                                                        class="block text-[10px] text-slate-400 mt-1 leading-none">Std:
+                                                        <span
+                                                            class="font-bold text-slate-600">{{ $stdAnnAuto->std_temp ?? '-' }}</span></span>
+                                                </td>
+                                            </tr>
+
+                                            {{-- Hourmeter --}}
+                                            <tr>
+                                                <td
+                                                    class="p-3 text-xs font-bold text-slate-700 sticky left-0 bg-white z-10 align-top pt-4">
+                                                    Hourmeter Mesin</td>
+                                                <td class="p-2 align-top bg-slate-50/50" colspan="2">
+                                                    <div class="flex items-center w-full sm:w-1/3">
+                                                        <input type="number" step="any"
+                                                            name="autowire[hourmeter]"
+                                                            value="{{ $dataAuto->hourmeter ?? '' }}"
+                                                            class="w-full border-slate-200 rounded-l text-xs p-1.5 text-right font-bold focus:ring-indigo-500"
+                                                            placeholder="0">
+                                                        <span
+                                                            class="bg-slate-100 border border-l-0 border-slate-200 px-2 py-1.5 text-[10px] font-bold text-slate-500 rounded-r">Jam</span>
+                                                    </div>
+                                                    <span class="block text-[9px] text-slate-400 mt-1 italic">*Wajib
+                                                        diisi dengan angka hourmeter aktual mesin, gunakan titik (.)
+                                                        untuk 2 angka dibelakang koma</span>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         @endif
