@@ -684,7 +684,7 @@
                                                             <div class="flex items-center w-full sm:w-1/3">
                                                                 <input type="number" step="any"
                                                                     name="plant_a[bak_{{ $key }}][hourmeter]"
-                                                                    value="{{ $dataExisting->hourmeter ?? '' }}"
+                                                                    value="{{ isset($dataExisting->hourmeter) ? (float) str_replace(',', '.', $dataExisting->hourmeter) : '' }}"
                                                                     class="w-full border-slate-300 rounded-l text-sm p-2 text-right font-bold focus:ring-2 focus:ring-indigo-500"
                                                                     placeholder="0">
                                                                 <span
@@ -1053,7 +1053,7 @@
                                                     <div class="flex items-center w-full sm:w-1/3">
                                                         <input type="number" step="any"
                                                             name="autowire[hourmeter]"
-                                                            value="{{ $dataAuto->hourmeter ?? '' }}"
+                                                            value="{{ isset($dataAuto->hourmeter) ? (float) str_replace(',', '.', $dataAuto->hourmeter) : '' }}"
                                                             class="w-full border-slate-200 rounded-l text-xs p-1.5 text-right font-bold focus:ring-indigo-500"
                                                             placeholder="0">
                                                         <span

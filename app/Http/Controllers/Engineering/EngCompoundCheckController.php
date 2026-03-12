@@ -94,33 +94,28 @@ class EngCompoundCheckController extends Controller
     {
         $plant = Plant::findOrFail($plant_id);
         $plantName = ($plant->name === 'Plant A - Autowire' || str_contains(strtolower($plant->name), 'autowire')) ? 'Autowire' : 'Plant A';
-
+        $checksData = EngCompoundCheck::where('plant_id', $plant_id)
+            ->whereDate('tanggal_cek', $tanggal)
+            ->get();
         if ($plantName === 'Autowire') {
-            $bulan = \Carbon\Carbon::parse($tanggal)->month;
-            $tahun = \Carbon\Carbon::parse($tanggal)->year;
-
-            $checksData = EngCompoundCheck::where('plant_id', $plant_id)->whereMonth('tanggal_cek', $bulan)->whereYear('tanggal_cek', $tahun)->orderBy('tanggal_cek', 'asc')->get();
-
             $checks = $checksData->values();
         } else {
-            $checksData = EngCompoundCheck::where('plant_id', $plant_id)->whereDate('tanggal_cek', $tanggal)->get();
             $checks = $checksData->keyBy('machine_id');
         }
 
         $firstCheck   = $checksData->first();
         $operatorName = $firstCheck ? $firstCheck->diperiksa_oleh : '';
         $foremanName  = $firstCheck ? $firstCheck->diketahui_oleh : '';
-        $keterangan   = $firstCheck ? $firstCheck->keterangan : ''; // Tambahan: Ambil keterangan existing
+        $keterangan   = $firstCheck ? $firstCheck->keterangan : '';
         $status       = $firstCheck ? $firstCheck->status : 'waiting_approval';
 
-        // 3. Mapping ID Mesin untuk Plant A (Sangat penting agar Blade tahu ID masing-masing Bak)
         $machineMap = [
             'bak_1' => 1,
             'bak_2' => 3,
             'bak_3' => 226,
             'bak_4' => 228,
             'bak_5' => 227,
-            'bak_6' => 2, // Bak 6 / Twin RBD
+            'bak_6' => 2,
         ];
 
         $allStandards = EngCompoundStandard::all();
