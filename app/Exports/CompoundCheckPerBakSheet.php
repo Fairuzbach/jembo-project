@@ -74,7 +74,7 @@ class CompoundCheckPerBakSheet implements FromCollection, WithHeadings, WithMapp
 
     public function headings(): array
     {
-        // HEADER BERTINGKAT 3 BARIS (Agar Rapi dan Padat)
+        // HEADER BERTINGKAT 3 BARIS (Diperbarui dengan Hourmeter)
         return [
             [
                 'Tanggal Cek',
@@ -89,7 +89,7 @@ class CompoundCheckPerBakSheet implements FromCollection, WithHeadings, WithMapp
                 '',
                 '',
                 '',
-                '', // 12 kolom untuk Drawing
+                '',
                 'ANNEALING COMPOUND',
                 '',
                 '',
@@ -101,7 +101,8 @@ class CompoundCheckPerBakSheet implements FromCollection, WithHeadings, WithMapp
                 '',
                 '',
                 '',
-                '', // 12 kolom untuk Annealing
+                '',
+                'Hourmeter',
                 'Diperiksa Oleh',
                 'Keterangan'
             ],
@@ -131,6 +132,7 @@ class CompoundCheckPerBakSheet implements FromCollection, WithHeadings, WithMapp
                 '',
                 'Temp (°C)',
                 '',
+                '', // Bawahnya Hourmeter
                 '', // Bawahnya Diperiksa
                 ''  // Bawahnya Keterangan
             ],
@@ -147,8 +149,6 @@ class CompoundCheckPerBakSheet implements FromCollection, WithHeadings, WithMapp
                 'Actual',
                 'Standards',
                 'Actual',
-                'Standards', // Sub-Drawing
-                'Actual',
                 'Standards',
                 'Actual',
                 'Standards',
@@ -159,7 +159,10 @@ class CompoundCheckPerBakSheet implements FromCollection, WithHeadings, WithMapp
                 'Actual',
                 'Standards',
                 'Actual',
-                'Standards', // Sub-Annealing
+                'Standards',
+                'Actual',
+                'Standards',
+                '', // Bawahnya Hourmeter
                 '', // Bawahnya Diperiksa
                 ''  // Bawahnya Keterangan
             ]
@@ -199,6 +202,9 @@ class CompoundCheckPerBakSheet implements FromCollection, WithHeadings, WithMapp
             $row->ann_temp,
             $this->stdAnn->std_temp ?? '-',
 
+            // --- Kolom Tambahan (Hourmeter) ---
+            $row->hourmeter ? number_format($row->hourmeter, 2, ',', '.') . ' Jam' : '-',
+
             $row->diperiksa_oleh,
             $row->keterangan,
         ];
@@ -207,14 +213,15 @@ class CompoundCheckPerBakSheet implements FromCollection, WithHeadings, WithMapp
     public function styles(Worksheet $sheet)
     {
         $lastRow = $sheet->getHighestRow();
-        $lastCol = 'AA';
+        $lastCol = 'AB'; // Bergeser dari AA menjadi AB karena tambahan Hourmeter
 
         // 1. MERGE CELLS
         $sheet->mergeCells('A1:A3');
         $sheet->mergeCells('B1:M1');
         $sheet->mergeCells('N1:Y1');
-        $sheet->mergeCells('Z1:Z3');
-        $sheet->mergeCells('AA1:AA3');
+        $sheet->mergeCells('Z1:Z3');   // Hourmeter
+        $sheet->mergeCells('AA1:AA3'); // Diperiksa Oleh
+        $sheet->mergeCells('AB1:AB3'); // Keterangan
 
         $merges = [
             'B2:C2',
@@ -239,8 +246,9 @@ class CompoundCheckPerBakSheet implements FromCollection, WithHeadings, WithMapp
         foreach (range('B', 'Y') as $columnID) {
             $sheet->getColumnDimension($columnID)->setWidth(5.5);
         }
-        $sheet->getColumnDimension('Z')->setWidth(12);
-        $sheet->getColumnDimension('AA')->setWidth(15);
+        $sheet->getColumnDimension('Z')->setWidth(12);   // Lebar Hourmeter
+        $sheet->getColumnDimension('AA')->setWidth(15);  // Lebar Diperiksa Oleh
+        $sheet->getColumnDimension('AB')->setWidth(25);  // Lebar Keterangan
 
         // 3. STYLE GENERAL
         $sheet->getStyle("A1:{$lastCol}{$lastRow}")->applyFromArray([
@@ -311,7 +319,7 @@ class CompoundCheckPerBakSheet implements FromCollection, WithHeadings, WithMapp
                 ->getStartColor()->setARGB('FFFFFDE7'); // kuning gading sangat tipis
         }
 
-        // 9. KOLOM ACT (B, D, F, ...) — putih bersih (sudah dari step 4, eksplisit)
+        // 9. KOLOM ACT (B, D, F, ...) — putih bersih
         $actCols = ['B', 'D', 'F', 'H', 'J', 'L', 'N', 'P', 'R', 'T', 'V', 'X'];
         foreach ($actCols as $col) {
             $sheet->getStyle("{$col}4:{$col}{$lastRow}")
@@ -320,8 +328,8 @@ class CompoundCheckPerBakSheet implements FromCollection, WithHeadings, WithMapp
                 ->getStartColor()->setARGB('FFFFFFFF');
         }
 
-        // 10. KOLOM TANGGAL (A), PEMERIKSA (Z), KETERANGAN (AA) — abu-abu sangat terang
-        foreach (['A', 'Z', 'AA'] as $col) {
+        // 10. KOLOM TANGGAL (A), HOURMETER (Z), PEMERIKSA (AA), KETERANGAN (AB) — abu-abu sangat terang
+        foreach (['A', 'Z', 'AA', 'AB'] as $col) {
             $sheet->getStyle("{$col}4:{$col}{$lastRow}")
                 ->getFill()
                 ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
