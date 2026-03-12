@@ -360,7 +360,7 @@
                             <th class="p-4">Tanggal & Plant</th>
                             <th class="p-4">Mesin</th>
                             <th class="p-4">Operator</th>
-                            <th class="p-4 text-center">Foreman</th>
+                            <th class="p-4 text-center">Pengawas</th>
                             <th class="p-4 text-right">Aksi</th>
                         </tr>
                     </thead>
