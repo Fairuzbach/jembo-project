@@ -345,16 +345,26 @@ class EngCompoundCheckController extends Controller
         $annTempData  = $stats->pluck('avg_ann_temp')->map(fn($val) => round($val, 2));
         $annTempData2 = $stats->pluck('avg_ann_temp_2')->map(fn($val) => round($val, 2)); // DATA BARU
 
-        $stdDraw = null;
-        $stdAnn = null;
+        $machineToKodeMap = [
+            1   => 'bak_1',
+            3   => 'bak_2',
+            226 => 'bak_3',
+            228 => 'bak_4',
+            227 => 'bak_5',
+            2   => 'bak_6',
+        ];
 
-        if ($plant === 'Autowire') {
-            $stdDraw = \App\Models\Engineering\EngCompoundStandard::where('plant', 'Autowire')->where('proses', 'drawing')->first();
-            $stdAnn = \App\Models\Engineering\EngCompoundStandard::where('plant', 'Autowire')->where('proses', 'annealing')->first();
-        } elseif ($plant === 'Plant A' && $machineId !== 'all') {
-            $stdDraw = \App\Models\Engineering\EngCompoundStandard::where('plant', 'Plant A')->where('kode_mesin', 'bak_' . $machineId)->where('proses', 'drawing')->first();
-            $stdAnn = \App\Models\Engineering\EngCompoundStandard::where('plant', 'Plant A')->where('kode_mesin', 'bak_' . $machineId)->where('proses', 'annealing')->first();
-        }
+        $standardsQuery = \App\Models\Engineering\EngCompoundStandard::where('plant', $plant)
+            ->when($plant === 'Plant A' && $machineId !== 'all', function ($q) use ($machineId, $machineToKodeMap) {
+                $kodeMesin = $machineToKodeMap[(int) $machineId] ?? null;
+                if ($kodeMesin) {
+                    $q->where('kode_mesin', $kodeMesin);
+                }
+            })
+            ->get();
+
+        $stdDraw = $standardsQuery->firstWhere('proses', 'drawing');
+        $stdAnn  = $standardsQuery->firstWhere('proses', 'annealing');
 
         $parseStdRange = function ($val) {
             if (!$val) return ['min' => null, 'max' => null];
