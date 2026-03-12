@@ -1,275 +1,415 @@
 <x-app-layout>
-    {{-- CSS tambahan untuk menyembunyikan scrollbar tapi tetap bisa di-swipe --}}
-    <style>
-        .hide-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
 
-        .hide-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-    </style>
+    @push('styles')
+        <style>
+            .hide-scrollbar::-webkit-scrollbar {
+                display: none;
+            }
+
+            .hide-scrollbar {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+        </style>
+    @endpush
 
     <div class="py-4 sm:py-8">
-        <div class="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
 
-            {{-- HEADER MOBILE-FRIENDLY --}}
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3">
-                <div class="w-full">
-                    <h2 class="text-xl sm:text-2xl font-black text-slate-800 tracking-tight leading-tight">Statistik
-                        Compound</h2>
-                    <p class="text-[11px] sm:text-sm text-slate-500 mt-1">Pantau tren pH, Konsentrasi, & Suhu.</p>
+            {{-- ══ HEADER ══ --}}
+            <div class="flex items-center justify-between mb-5">
+                <div>
+                    <h2 class="text-xl sm:text-2xl font-black text-slate-800 tracking-tight leading-tight">
+                        Statistik Compound
+                    </h2>
+                    <p class="text-[11px] text-slate-400 mt-0.5">
+                        Tren pH · Konsentrasi · Suhu
+                        @if ($plant)
+                            <span class="text-slate-300 mx-1">•</span>
+                            <span class="font-semibold text-indigo-500">{{ $plant }}</span>
+                        @endif
+                        @if (count($labels) > 0)
+                            <span class="text-slate-300 mx-1">•</span>
+                            <span class="text-slate-400">{{ count($labels) }} titik data</span>
+                        @endif
+                    </p>
                 </div>
-
                 <a href="{{ route('eng.index') }}"
-                    class="w-full sm:w-auto text-center px-4 py-2 sm:py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs sm:text-sm font-bold shadow-sm transition-colors">
-                    &larr; Kembali <span class="hidden sm:inline">ke Dashboard</span>
+                    class="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 rounded-lg text-xs font-bold transition-colors shadow-sm">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                    </svg>
+                    <span class="hidden sm:inline">Dashboard</span>
                 </a>
             </div>
 
-            {{-- PANEL KONTROL (SUPER RESPONSIVE) --}}
+            {{-- ══ FILTER PANEL ══ --}}
             <div
-                class="bg-white p-3 sm:p-5 rounded-xl border border-slate-200 shadow-sm mb-4 sm:mb-6 flex flex-col gap-4">
+                class="bg-white rounded-xl border border-slate-200 shadow-sm mb-5 divide-y divide-slate-100 overflow-hidden">
 
-                {{-- BARIS 1: Pilih Area / Plant (Grid 2 Kolom di HP) --}}
-                <div class="border-b border-slate-100 pb-3">
-                    <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Area
-                        Mesin:</span>
-                    <div class="grid grid-cols-2 bg-slate-100 rounded-lg p-1 border border-slate-200">
+                {{-- Baris 1: Plant + Mode --}}
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5">
+                    <span
+                        class="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0 w-14">Area</span>
+                    <div class="flex bg-slate-100 rounded-lg p-0.5 gap-0.5">
                         <a href="{{ route('eng.compound.stats', ['plant' => 'Plant A', 'machine' => 'all', 'filter' => $filter, 'mode' => $mode]) }}"
-                            class="text-center px-2 py-2 rounded-md text-xs sm:text-sm font-black transition-all {{ $plant == 'Plant A' ? 'bg-blue-600 shadow-sm text-white' : 'text-slate-500 hover:text-slate-800' }}">
-                            PLANT A
+                            class="px-3.5 py-1.5 rounded-md text-[11px] font-black transition-all
+                               {{ $plant == 'Plant A' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800' }}">
+                            Plant A
                         </a>
                         <a href="{{ route('eng.compound.stats', ['plant' => 'Autowire', 'machine' => 'all', 'filter' => $filter, 'mode' => $mode]) }}"
-                            class="text-center px-2 py-2 rounded-md text-xs sm:text-sm font-black transition-all {{ $plant == 'Autowire' ? 'bg-blue-600 shadow-sm text-white' : 'text-slate-500 hover:text-slate-800' }}">
-                            AUTOWIRE
+                            class="px-3.5 py-1.5 rounded-md text-[11px] font-black transition-all
+                               {{ $plant == 'Autowire' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800' }}">
+                            Autowire
+                        </a>
+                    </div>
+
+                    <div class="ml-auto flex bg-slate-100 rounded-lg p-0.5 gap-0.5">
+                        <a href="{{ route('eng.compound.stats', ['plant' => $plant, 'filter' => $filter, 'mode' => 'avg', 'machine' => $machineId]) }}"
+                            class="px-3 py-1.5 rounded-md text-[11px] font-bold transition-all
+                               {{ $mode == 'avg' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-800' }}">
+                            AVG
+                        </a>
+                        <a href="{{ route('eng.compound.stats', ['plant' => $plant, 'filter' => $filter, 'mode' => 'raw', 'machine' => $machineId]) }}"
+                            class="px-3 py-1.5 rounded-md text-[11px] font-bold transition-all
+                               {{ $mode == 'raw' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-800' }}">
+                            RAW
                         </a>
                     </div>
                 </div>
+
+                {{-- Baris 2: Machine (Plant A only) --}}
                 @if ($plant === 'Plant A')
-                    <div class="border-b border-slate-100 pb-3">
-                        <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Pilih
-                            Detail Mesin (Plant A):</span>
-                        <div class="flex overflow-x-auto hide-scrollbar gap-2 pb-1 snap-x">
+                    <div class="flex items-center gap-3 px-4 py-2.5">
+                        <span
+                            class="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0 w-14">Mesin</span>
+                        <div class="flex overflow-x-auto hide-scrollbar gap-1.5 snap-x py-0.5">
                             @foreach ($plantAMachines as $id => $name)
                                 <a href="{{ route('eng.compound.stats', ['plant' => $plant, 'machine' => $id, 'filter' => $filter, 'mode' => $mode]) }}"
-                                    class="snap-start whitespace-nowrap px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold border transition-all 
-                               {{ $machineId == $id ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100' }}">
+                                    class="snap-start shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all whitespace-nowrap
+                                       {{ $machineId == $id
+                                           ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                                           : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:text-slate-700' }}">
                                     {{ $name }}
                                 </a>
                             @endforeach
                         </div>
                     </div>
                 @endif
-                {{-- BARIS 2: Mode & Filter Waktu --}}
-                <div class="flex flex-col md:flex-row gap-4 sm:gap-6">
 
-                    {{-- Toggle Mode (Grid 2 Kolom di HP) --}}
-                    <div class="w-full md:w-auto">
-                        <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Mode
-                            Tampilan:</span>
-                        <div class="grid grid-cols-2 md:flex bg-slate-100 rounded-lg p-1 border border-slate-200">
-                            <a href="{{ route('eng.compound.stats', ['plant' => $plant, 'filter' => $filter, 'mode' => 'avg']) }}"
-                                class="text-center px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-bold transition-all {{ $mode == 'avg' ? 'bg-white shadow-sm text-blue-700' : 'text-slate-500 hover:text-slate-800' }}">
-                                Rata-rata (AVG)
-                            </a>
-                            <a href="{{ route('eng.compound.stats', ['plant' => $plant, 'filter' => $filter, 'mode' => 'raw']) }}"
-                                class="text-center px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-bold transition-all {{ $mode == 'raw' ? 'bg-white shadow-sm text-blue-700' : 'text-slate-500 hover:text-slate-800' }}">
-                                Per Report (RAW)
-                            </a>
-                        </div>
-                    </div>
+                {{-- Baris 3: Periode --}}
+                <div class="flex items-center gap-3 px-4 py-2.5">
+                    <span
+                        class="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0 w-14">Periode</span>
 
-                    {{-- Filter Waktu (Swipe Horizontal di HP) --}}
                     @if ($mode === 'avg')
-                        <div
-                            class="w-full border-t md:border-t-0 md:border-l-2 border-slate-100 pt-3 md:pt-0 md:pl-6 overflow-hidden">
-                            <span
-                                class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Filter
-                                Rentang Waktu:</span>
-                            {{-- Container yang bisa di-swipe --}}
-                            <div class="flex overflow-x-auto hide-scrollbar gap-2 pb-1 snap-x">
-                                @php
-                                    $filters = [
-                                        'weekly' => 'Mingguan',
-                                        'monthly' => 'Bulanan',
-                                        'quarterly' => 'Kuartalan',
-                                        'semester' => 'Semesteran',
-                                        'yearly' => 'Tahunan',
-                                    ];
-                                @endphp
-
-                                @foreach ($filters as $key => $label)
-                                    <a href="{{ route('eng.compound.stats', ['plant' => $plant, 'filter' => $key, 'mode' => $mode]) }}"
-                                        class="snap-start whitespace-nowrap px-4 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold border transition-all 
-                                   {{ $filter == $key ? 'bg-slate-800 text-white border-slate-800 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100' }}">
-                                        {{ $label }}
-                                    </a>
-                                @endforeach
-                            </div>
+                        <div class="flex overflow-x-auto hide-scrollbar gap-1.5 snap-x py-0.5">
+                            @foreach (['weekly' => 'Mingguan', 'monthly' => 'Bulanan', 'quarterly' => 'Kuartalan', 'semester' => 'Semesteran', 'yearly' => 'Tahunan'] as $key => $label)
+                                <a href="{{ route('eng.compound.stats', ['plant' => $plant, 'filter' => $key, 'mode' => $mode, 'machine' => $machineId]) }}"
+                                    class="snap-start shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all whitespace-nowrap
+                                       {{ $filter == $key
+                                           ? 'bg-slate-800 text-white border-slate-800 shadow-sm'
+                                           : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:text-slate-700' }}">
+                                    {{ $label }}
+                                </a>
+                            @endforeach
                         </div>
                     @else
-                        <div class="w-full md:border-l-2 border-slate-100 md:pl-6 flex items-center mt-1 md:mt-0">
+                        <span
+                            class="text-[11px] text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200 font-medium">
+                            Mode RAW — semua titik data harian ditampilkan tanpa dirata-rata.
+                        </span>
+                    @endif
+                </div>
+
+            </div>
+
+            {{-- ══ CHART SECTION ══ --}}
+            <div x-data="{ activeChart: 'ph' }">
+
+                {{-- Tab switcher --}}
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="flex bg-white border border-slate-200 rounded-xl p-1 gap-1 shadow-sm">
+                        <button @click="activeChart = 'ph'"
+                            :class="activeChart === 'ph'
+                                ?
+                                'bg-blue-600 text-white shadow-sm' :
+                                'text-slate-500 hover:text-slate-700 hover:bg-slate-50'"
+                            class="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[11px] font-bold transition-all">
+                            <span class="w-2 h-2 rounded-full"
+                                :class="activeChart === 'ph' ? 'bg-white' : 'bg-blue-400'"></span>
+                            pH Level
+                        </button>
+                        <button @click="activeChart = 'kons'"
+                            :class="activeChart === 'kons'
+                                ?
+                                'bg-violet-600 text-white shadow-sm' :
+                                'text-slate-500 hover:text-slate-700 hover:bg-slate-50'"
+                            class="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[11px] font-bold transition-all">
+                            <span class="w-2 h-2 rounded-full"
+                                :class="activeChart === 'kons' ? 'bg-white' : 'bg-violet-400'"></span>
+                            Konsentrasi
+                        </button>
+                        <button @click="activeChart = 'temp'"
+                            :class="activeChart === 'temp'
+                                ?
+                                'bg-rose-600 text-white shadow-sm' :
+                                'text-slate-500 hover:text-slate-700 hover:bg-slate-50'"
+                            class="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[11px] font-bold transition-all">
+                            <span class="w-2 h-2 rounded-full"
+                                :class="activeChart === 'temp' ? 'bg-white' : 'bg-rose-400'"></span>
+                            Temperatur
+                        </button>
+
+                    </div>
+
+                    @if (count($labels) === 0)
+                        <span
+                            class="text-[10px] bg-amber-100 text-amber-700 px-2.5 py-1.5 rounded-lg font-bold border border-amber-200">
+                            Belum ada data
+                        </span>
+                    @endif
+                </div>
+
+                {{-- ── pH Chart ── --}}
+                <div x-show="activeChart === 'ph'" x-transition:enter="transition ease-out duration-150"
+                    x-transition:enter-start="opacity-0 translate-y-1"
+                    x-transition:enter-end="opacity-100 translate-y-0">
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div
+                            class="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50/60">
+                            <div class="flex items-center gap-2">
+                                <div class="w-6 h-6 rounded-md bg-blue-100 flex items-center justify-center">
+                                    <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                                </div>
+                                <div>
+                                    <h3 class="text-xs font-extrabold text-slate-800">Tren pH Level</h3>
+                                    <p class="text-[10px] text-slate-400">Rentang normal: 6 – 10</p>
+                                </div>
+                            </div>
                             <span
-                                class="w-full text-[11px] text-amber-700 bg-amber-50 px-3 py-2 rounded-lg border border-amber-200 leading-tight">
-                                <i class="fas fa-info-circle mr-1"></i> Mode <b>RAW</b> menampilkan semua data titik
-                                harian murni (tanpa dirata-rata).
+                                class="text-[10px] text-slate-400 bg-white px-2 py-1 rounded-lg border border-slate-200 font-mono hidden sm:block">
+                                {{ count($labels) }} data point
                             </span>
                         </div>
-                    @endif
-
+                        <div class="p-3 sm:p-5">
+                            @if (count($labels) > 0)
+                                <div class="relative w-full h-[260px] sm:h-[380px]">
+                                    <canvas id="phChart"></canvas>
+                                </div>
+                            @else
+                                @include('Division.Engineering.partials._empty-chart')
+                            @endif
+                        </div>
+                    </div>
                 </div>
+
+                {{-- ── Konsentrasi Chart ── --}}
+                <div x-show="activeChart === 'kons'" style="display:none"
+                    x-transition:enter="transition ease-out duration-150"
+                    x-transition:enter-start="opacity-0 translate-y-1"
+                    x-transition:enter-end="opacity-100 translate-y-0">
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div
+                            class="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50/60">
+                            <div class="flex items-center gap-2">
+                                <div class="w-6 h-6 rounded-md bg-violet-100 flex items-center justify-center">
+                                    <span class="w-2 h-2 rounded-full bg-violet-500"></span>
+                                </div>
+                                <div>
+                                    <h3 class="text-xs font-extrabold text-slate-800">Tren Konsentrasi (%)</h3>
+                                    <p class="text-[10px] text-slate-400">Rentang normal: 0 – 15%</p>
+                                </div>
+                            </div>
+                            <span
+                                class="text-[10px] text-slate-400 bg-white px-2 py-1 rounded-lg border border-slate-200 font-mono hidden sm:block">
+                                {{ count($labels) }} data point
+                            </span>
+                        </div>
+                        <div class="p-3 sm:p-5">
+                            @if (count($labels) > 0)
+                                <div class="relative w-full h-[260px] sm:h-[380px]">
+                                    <canvas id="konsChart"></canvas>
+                                </div>
+                            @else
+                                @include('Division.Engineering.partials._empty-chart')
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                {{-- ── Temperatur Chart ── --}}
+                <div x-show="activeChart === 'temp'" style="display:none"
+                    x-transition:enter="transition ease-out duration-150"
+                    x-transition:enter-start="opacity-0 translate-y-1"
+                    x-transition:enter-end="opacity-100 translate-y-0">
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div
+                            class="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50/60">
+                            <div class="flex items-center gap-2">
+                                <div class="w-6 h-6 rounded-md bg-rose-100 flex items-center justify-center">
+                                    <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                                </div>
+                                <div>
+                                    <h3 class="text-xs font-extrabold text-slate-800">Tren Temperatur (°C)</h3>
+                                    <p class="text-[10px] text-slate-400">Rentang normal: 30 – 60°C</p>
+                                </div>
+                            </div>
+                            <span
+                                class="text-[10px] text-slate-400 bg-white px-2 py-1 rounded-lg border border-slate-200 font-mono hidden sm:block">
+                                {{ count($labels) }} data point
+                            </span>
+                        </div>
+                        <div class="p-3 sm:p-5">
+                            @if (count($labels) > 0)
+                                <div class="relative w-full h-[260px] sm:h-[380px]">
+                                    <canvas id="tempChart"></canvas>
+                                </div>
+                            @else
+                                @include('Division.Engineering.partials._empty-chart')
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
             </div>
-
-            {{-- GRID CHART KONTEN --}}
-            <div class="grid grid-cols-1 gap-4 sm:gap-6">
-
-                {{-- Chart 1: pH Level --}}
-                <div class="bg-white p-3 sm:p-5 rounded-xl border border-slate-200 shadow-sm">
-                    <h3 class="text-sm sm:text-base font-bold text-slate-800 mb-1">Tren pH Level</h3>
-                    {{-- Tinggi canvas dikurangi di HP agar pas di layar --}}
-                    <div class="relative w-full h-[250px] sm:h-[350px]">
-                        <canvas id="phChart"></canvas>
-                    </div>
-                </div>
-
-                {{-- Chart 2: Konsentrasi (%) --}}
-                <div class="bg-white p-3 sm:p-5 rounded-xl border border-slate-200 shadow-sm">
-                    <h3 class="text-sm sm:text-base font-bold text-slate-800 mb-1">Tren Konsentrasi (%)</h3>
-                    <div class="relative w-full h-[250px] sm:h-[350px]">
-                        <canvas id="konsChart"></canvas>
-                    </div>
-                </div>
-
-                {{-- Chart 3: Temperatur (°C) --}}
-                <div class="bg-white p-3 sm:p-5 rounded-xl border border-slate-200 shadow-sm">
-                    <h3 class="text-sm sm:text-base font-bold text-slate-800 mb-1">Tren Temperatur (°C)</h3>
-                    <div class="relative w-full h-[250px] sm:h-[350px]">
-                        <canvas id="tempChart"></canvas>
-                    </div>
-                </div>
-
-            </div>
-
         </div>
     </div>
 
-    {{-- Script Chart JS (Tanpa Perubahan) --}}
+    {{-- Empty state partial: resources/views/Division/Engineering/partials/_empty-chart.blade.php --}}
+    {{-- Isi file tersebut:
+<div class="flex flex-col items-center justify-center h-48 text-slate-300">
+    <svg class="w-12 h-12 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+    </svg>
+    <p class="text-xs font-semibold text-slate-400">Belum ada data untuk filter ini</p>
+    <p class="text-[10px] text-slate-300 mt-1">Coba ubah periode atau pilih mesin lain</p>
+</div>
+--}}
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const labels = @json($labels);
             const stdValues = @json($stdValues);
-            const machineId = @json($machineId); // Ambil ID mesin yang sedang dipilih
+            const machineId = @json($machineId);
+            const isBakB = machineId == 2;
 
-            // Data Aktual
+            if (!labels.length) return;
+
             const drawPhData = @json($drawPhData);
             const annPhData = @json($annPhData);
-            const annPhData2 = @json($annPhData2); // Data Bak B
-
+            const annPhData2 = @json($annPhData2);
             const drawKonsData = @json($drawKonsData);
             const annKonsData = @json($annKonsData);
-            const annKonsData2 = @json($annKonsData2); // Data Bak B
-
+            const annKonsData2 = @json($annKonsData2);
             const drawTempData = @json($drawTempData);
             const annTempData = @json($annTempData);
-            const annTempData2 = @json($annTempData2); // Data Bak B
+            const annTempData2 = @json($annTempData2);
 
-            const lineConfig = (labelName, dataArray, borderColor, bgColor, borderDash = []) => ({
-                label: labelName,
-                data: dataArray,
-                borderColor: borderColor,
-                backgroundColor: bgColor,
+            // ── Helpers ──────────────────────────────────────────
+            const line = (label, data, color, dash = []) => ({
+                label,
+                data,
+                borderColor: color,
+                backgroundColor: 'transparent',
                 borderWidth: 2,
-                borderDash: borderDash, // Tambahan untuk membedakan gaya garis (opsional)
-                tension: 0.3,
+                borderDash: dash,
+                tension: 0.35,
                 fill: false,
-                pointBackgroundColor: '#ffffff',
-                pointBorderColor: borderColor,
-                pointRadius: 4,
-                pointHoverRadius: 6
+                pointBackgroundColor: '#fff',
+                pointBorderColor: color,
+                pointRadius: data.length > 30 ? 2 : 4,
+                pointHoverRadius: 6,
             });
 
-            const stdLineConfigs = (labelName, stdObj, color) => {
-                if (!stdObj || stdObj.min === null) return []; // Kosongkan jika tidak ada standar
-                let configs = [];
-
-                // 1. Buat Garis Standar Bawah (Min)
-                configs.push({
-                    label: 'Min Std ' + labelName + ' (' + stdObj.min + ')',
-                    data: labels.map(() => stdObj.min),
+            const stdLines = (label, stdObj, color) => {
+                if (!stdObj || stdObj.min === null) return [];
+                const base = {
                     borderColor: color,
-                    borderWidth: 2,
-                    borderDash: [5, 5],
+                    borderWidth: 1.5,
+                    borderDash: [6, 4],
                     fill: false,
                     pointRadius: 0,
                     pointHitRadius: 0,
-                    tension: 0
-                });
-
-                // 2. Buat Garis Standar Atas (Max) Jika ada 2 angka di database
+                    tension: 0,
+                };
+                const result = [{
+                    ...base,
+                    label: `Min Std ${label} (${stdObj.min})`,
+                    data: labels.map(() => stdObj.min),
+                }];
                 if (stdObj.max !== null && stdObj.max !== stdObj.min) {
-                    configs.push({
-                        label: 'Max Std ' + labelName + ' (' + stdObj.max + ')',
+                    result.push({
+                        ...base,
+                        label: `Max Std ${label} (${stdObj.max})`,
                         data: labels.map(() => stdObj.max),
-                        borderColor: color,
-                        borderWidth: 2,
-                        borderDash: [5, 5],
-                        fill: false,
-                        pointRadius: 0,
-                        pointHitRadius: 0,
-                        tension: 0
                     });
                 }
-                return configs;
+                return result;
             };
 
-            const commonOptions = (yAxisLabel, suggestMin, suggestMax) => ({
+            const opts = (yLabel, yMin, yMax) => ({
                 responsive: true,
                 maintainAspectRatio: false,
+                animation: {
+                    duration: 350
+                },
                 plugins: {
                     legend: {
-                        position: 'top',
+                        position: 'bottom',
                         labels: {
-                            boxWidth: 10,
+                            boxWidth: 8,
+                            boxHeight: 8,
                             font: {
-                                size: 11,
+                                size: 10,
                                 weight: 'bold'
                             },
                             usePointStyle: true,
-                            padding: 15
-                        }
+                            padding: 14,
+                            color: '#64748b',
+                        },
                     },
                     tooltip: {
                         mode: 'index',
                         intersect: false,
-                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        backgroundColor: 'rgba(15,23,42,0.92)',
+                        titleFont: {
+                            size: 11,
+                            weight: 'bold'
+                        },
+                        bodyFont: {
+                            size: 11
+                        },
                         padding: 10,
-                        cornerRadius: 8
-                    }
+                        cornerRadius: 8,
+                        caretSize: 4,
+                    },
                 },
                 scales: {
                     y: {
-                        suggestedMin: suggestMin,
-                        suggestedMax: suggestMax,
+                        suggestedMin: yMin,
+                        suggestedMax: yMax,
                         grid: {
-                            borderDash: [4, 4],
-                            color: '#f1f5f9'
+                            color: '#f1f5f9',
+                            borderDash: [4, 4]
                         },
                         title: {
                             display: true,
-                            text: yAxisLabel,
+                            text: yLabel,
                             font: {
                                 size: 10,
                                 weight: 'bold'
-                            }
+                            },
+                            color: '#94a3b8',
                         },
                         ticks: {
                             font: {
                                 size: 10
-                            }
-                        }
+                            },
+                            color: '#94a3b8'
+                        },
                     },
                     x: {
                         grid: {
@@ -279,83 +419,68 @@
                             font: {
                                 size: 10
                             },
-                            maxRotation: 45,
-                            minRotation: 45
-                        }
-                    }
+                            color: '#94a3b8',
+                            maxRotation: 40,
+                            minRotation: 40,
+                            maxTicksLimit: 20,
+                        },
+                    },
                 },
                 interaction: {
                     mode: 'nearest',
                     axis: 'x',
                     intersect: false
-                }
+                },
             });
 
-            // 1. GRAFIK pH
-            let phDatasets = [
-                lineConfig('Actual Draw', drawPhData, '#2563eb', 'transparent'),
-                lineConfig('Actual Ann (Bak A)', annPhData, '#059669', 'transparent'),
-                ...stdLineConfigs('Draw', stdValues.draw_ph, '#93c5fd'),
-                ...stdLineConfigs('Ann', stdValues.ann_ph, '#6ee7b7')
-            ];
-            // Tambahkan Garis Bak B hanya jika mesin = all atau mesin = 2 (Twin RBD)
-            if (machineId === 'all' || machineId == 2) {
-                phDatasets.splice(2, 0, lineConfig('Actual Ann (Bak B)', annPhData2, '#4f46e5', 'transparent', [3,
-                    3]));
-                // Warnanya indigo dan garisnya sedikit putus-putus [3,3] agar mudah dibedakan dengan Bak A
-            }
-            new Chart(document.getElementById('phChart').getContext('2d'), {
+            // ── pH ───────────────────────────────────────────────
+            new Chart(document.getElementById('phChart'), {
                 type: 'line',
                 data: {
-                    labels: labels,
-                    datasets: phDatasets
+                    labels,
+                    datasets: [
+                        line('Draw', drawPhData, '#2563eb'),
+                        line('Ann — Bak A', annPhData, '#059669'),
+                        ...(isBakB ? [line('Ann — Bak B', annPhData2, '#4f46e5', [4, 3])] : []),
+                        ...stdLines('Draw', stdValues.draw_ph, '#93c5fd'),
+                        ...stdLines('Ann', stdValues.ann_ph, '#6ee7b7'),
+                    ],
                 },
-                options: commonOptions('Nilai pH', 6, 10)
+                options: opts('Nilai pH', 6, 10),
             });
 
-            // 2. GRAFIK KONSENTRASI
-            let konsDatasets = [
-                lineConfig('Actual Draw', drawKonsData, '#8b5cf6', 'transparent'),
-                lineConfig('Actual Ann (Bak A)', annKonsData, '#d97706', 'transparent'),
-                ...stdLineConfigs('Draw', stdValues.draw_kons, '#c4b5fd'),
-                ...stdLineConfigs('Ann', stdValues.ann_kons, '#fcd34d')
-            ];
-            if (machineId === 'all' || machineId == 2) {
-                konsDatasets.splice(2, 0, lineConfig('Actual Ann (Bak B)', annKonsData2, '#be185d', 'transparent', [
-                    3, 3
-                ]));
-                // Warna pink gelap
-            }
-            new Chart(document.getElementById('konsChart').getContext('2d'), {
+            // ── Konsentrasi ──────────────────────────────────────
+            new Chart(document.getElementById('konsChart'), {
                 type: 'line',
                 data: {
-                    labels: labels,
-                    datasets: konsDatasets
+                    labels,
+                    datasets: [
+                        line('Draw', drawKonsData, '#7c3aed'),
+                        line('Ann — Bak A', annKonsData, '#d97706'),
+                        ...(isBakB ? [line('Ann — Bak B', annKonsData2, '#be185d', [4, 3])] : []),
+                        ...stdLines('Draw', stdValues.draw_kons, '#c4b5fd'),
+                        ...stdLines('Ann', stdValues.ann_kons, '#fcd34d'),
+                    ],
                 },
-                options: commonOptions('Konsentrasi (%)', 0, 15)
+                options: opts('Konsentrasi (%)', 0, 15),
             });
 
-            // 3. GRAFIK TEMPERATUR
-            let tempDatasets = [
-                lineConfig('Actual Draw', drawTempData, '#dc2626', 'transparent'),
-                lineConfig('Actual Ann (Bak A)', annTempData, '#ea580c', 'transparent'),
-                ...stdLineConfigs('Draw', stdValues.draw_temp, '#fca5a5'),
-                ...stdLineConfigs('Ann', stdValues.ann_temp, '#fdba74')
-            ];
-            if (machineId === 'all' || machineId == 2) {
-                tempDatasets.splice(2, 0, lineConfig('Actual Ann (Bak B)', annTempData2, '#0369a1', 'transparent', [
-                    3, 3
-                ]));
-                // Warna biru gelap
-            }
-            new Chart(document.getElementById('tempChart').getContext('2d'), {
+            // ── Temperatur ───────────────────────────────────────
+            new Chart(document.getElementById('tempChart'), {
                 type: 'line',
                 data: {
-                    labels: labels,
-                    datasets: tempDatasets
+                    labels,
+                    datasets: [
+                        line('Draw', drawTempData, '#dc2626'),
+                        line('Ann — Bak A', annTempData, '#ea580c'),
+                        ...(isBakB ? [line('Ann — Bak B', annTempData2, '#0369a1', [4, 3])] : []),
+                        ...stdLines('Draw', stdValues.draw_temp, '#fca5a5'),
+                        ...stdLines('Ann', stdValues.ann_temp, '#fdba74'),
+                    ],
                 },
-                options: commonOptions('Temperatur (°C)', 30, 60)
+                options: opts('Temperatur (°C)', 30, 60),
             });
         });
     </script>
+
 </x-app-layout>
