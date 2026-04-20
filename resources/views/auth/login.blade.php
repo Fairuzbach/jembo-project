@@ -1,11 +1,22 @@
 <x-guest-layout>
 
     {{-- Header Departemen --}}
-    <div
-        class="text-center mb-5 -mx-6 -mt-4 px-6 pt-6 pb-5
-        {{ $dept == 'wo-eng' ? 'bg-blue-700' : ($dept == 'wo-ga' ? 'bg-emerald-700' : 'bg-indigo-700') }}
-        border-b-4
-        {{ $dept == 'wo-eng' ? 'border-blue-400' : ($dept == 'wo-ga' ? 'border-emerald-400' : 'border-indigo-400') }}">
+    @php
+        $isEng = in_array($dept, ['eng', 'wo-eng']);
+        $isGa = in_array($dept, ['ga', 'wo-ga']);
+        $isFh = $dept === 'wo-fh';
+        $isDefault = !$isEng && !$isGa && !$isFh;
+
+        $headerBg = $isEng
+            ? 'bg-blue-700 border-blue-400'
+            : ($isGa
+                ? 'bg-emerald-700 border-emerald-400'
+                : ($isFh
+                    ? 'bg-violet-700 border-violet-400'
+                    : 'bg-slate-700 border-slate-500'));
+    @endphp
+
+    <div class="text-center mb-5 -mx-6 -mt-4 px-6 pt-6 pb-5 border-b-4 {{ $headerBg }}">
 
         <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-white/20 text-white mb-3">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -14,15 +25,18 @@
             </svg>
         </div>
 
-        @if ($dept == 'eng' || $dept == 'wo-eng')
+        @if ($isEng)
             <h2 class="text-lg font-black text-white">Engineering Login</h2>
             <p class="text-blue-200 text-xs mt-0.5">Engineering Improvement Order</p>
-        @elseif ($dept == 'ga' || $dept == 'wo-ga')
+        @elseif ($isGa)
             <h2 class="text-lg font-black text-white">General Affair Login</h2>
             <p class="text-emerald-200 text-xs mt-0.5">Work Order GA System</p>
-        @else
+        @elseif ($isFh)
             <h2 class="text-lg font-black text-white">Facility WO Login</h2>
-            <p class="text-indigo-200 text-xs mt-0.5">Work Order Facility System</p>
+            <p class="text-violet-200 text-xs mt-0.5">Work Order Facility System</p>
+        @else
+            <h2 class="text-lg font-black text-white">JEMBO WO Login</h2>
+            <p class="text-slate-300 text-xs mt-0.5">Silakan pilih departemen Anda</p>
         @endif
     </div>
 
@@ -33,6 +47,60 @@
         </h3>
         <p class="text-gray-400 text-xs mt-1">Silakan masuk untuk melanjutkan akses ke sistem</p>
     </div>
+
+    {{-- Pilih Departemen (hanya tampil jika tidak ada dept) --}}
+    @if ($isDefault)
+        <div class="mb-5">
+            <p class="text-center text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">
+                Pilih Departemen
+            </p>
+            <div class="grid grid-cols-3 gap-2">
+                <a href="{{ url('/login/wo-eng') }}"
+                    class="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl border-2 border-blue-100 bg-blue-50 hover:bg-blue-100 hover:border-blue-300 transition-all duration-200 group">
+                    <div
+                        class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </div>
+                    <span class="text-xs font-bold text-blue-700 text-center leading-tight">Engineering</span>
+                </a>
+
+                <a href="{{ url('/login/wo-ga') }}"
+                    class="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl border-2 border-emerald-100 bg-emerald-50 hover:bg-emerald-100 hover:border-emerald-300 transition-all duration-200 group">
+                    <div
+                        class="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                    </div>
+                    <span class="text-xs font-bold text-emerald-700 text-center leading-tight">General Affair</span>
+                </a>
+
+                <a href="{{ url('/login/wo-fh') }}"
+                    class="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl border-2 border-violet-100 bg-violet-50 hover:bg-violet-100 hover:border-violet-300 transition-all duration-200 group">
+                    <div
+                        class="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                        </svg>
+                    </div>
+                    <span class="text-xs font-bold text-violet-700 text-center leading-tight">Facility</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2 mb-5">
+            <div class="h-px flex-1 bg-gray-100"></div>
+            <span class="text-xs text-gray-400">atau masuk langsung</span>
+            <div class="h-px flex-1 bg-gray-100"></div>
+        </div>
+    @endif
 
     {{-- Pesan Status & Error --}}
     <x-auth-session-status class="mb-4" :status="session('status')" />
@@ -95,7 +163,8 @@
                         hover:border-gray-300
                         focus:border-red-500 focus:bg-white focus:ring-4 focus:ring-red-500/10
                         transition-all duration-200"
-                    ::type="show ? 'text' : 'password'" name="password" required autocomplete="current-password" placeholder="••••••••" />
+                    ::type="show ? 'text' : 'password'" name="password" required autocomplete="current-password"
+                    placeholder="••••••••" />
                 <button type="button" @click="show = !show"
                     class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-red-500 transition-colors duration-200 cursor-pointer focus:outline-none">
                     <svg x-show="!show" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"
