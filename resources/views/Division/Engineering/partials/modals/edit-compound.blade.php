@@ -697,6 +697,19 @@
                                                                 untuk 2 angka dibelakang koma.</span>
                                                         </td>
                                                     </tr>
+                                                    {{-- BARIS KETERANGAN PER BAK --}}
+                                                    <tr>
+                                                        <td
+                                                            class="p-3 text-xs font-extrabold text-slate-800 sticky left-0 bg-white z-10 align-top pt-4">
+                                                            Keterangan / Notes
+                                                        </td>
+                                                        <td class="p-3 align-top bg-white"
+                                                            colspan="{{ $key == 6 ? 3 : 2 }}">
+                                                            <textarea name="plant_a[bak_{{ $key }}][keterangan]" rows="2"
+                                                                placeholder="Kosongkan jika tidak ada masalah..."
+                                                                class="w-full rounded border-slate-300 shadow-sm focus:border-blue-500 text-sm py-2">{{ $dataExisting->keterangan ?? '' }}</textarea>
+                                                        </td>
+                                                    </tr>
                                                 </tbody>
                                             </table>
                                         </div>
@@ -1064,6 +1077,17 @@
                                                         untuk 2 angka dibelakang koma</span>
                                                 </td>
                                             </tr>
+                                            {{-- BARIS KETERANGAN AUTOWIRE --}}
+                                            <tr>
+                                                <td
+                                                    class="p-3 text-xs font-extrabold text-slate-800 sticky left-0 bg-white z-10 align-top pt-4">
+                                                    Keterangan / Notes
+                                                </td>
+                                                <td class="p-3 align-top bg-white" colspan="2">
+                                                    <textarea name="autowire[keterangan]" rows="2" placeholder="Kosongkan jika tidak ada masalah..."
+                                                        class="w-full rounded border-slate-200 shadow-sm focus:border-indigo-500 text-xs py-2">{{ $dataAuto->keterangan ?? '' }}</textarea>
+                                                </td>
+                                            </tr>
                                         </tbody>
                                     </table>
                                 </div>
@@ -1073,13 +1097,6 @@
                         {{-- FOOTER INFO (Catatan & Tanda Tangan) --}}
                         <div
                             class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 items-end border-t border-slate-200 pt-5">
-                            <div>
-                                <label class="block text-sm font-bold text-slate-700 mb-2">Keterangan / Tindakan
-                                    Perbaikan</label>
-                                <textarea name="keterangan" rows="4" placeholder="Kosongkan jika tidak ada catatan..."
-                                    class="w-full rounded-lg border-slate-300 shadow-sm focus:ring-indigo-500 text-sm">{{ $checks->first()->keterangan ?? '' }}</textarea>
-                            </div>
-
                             <div class="flex flex-col items-stretch sm:items-end w-full">
                                 <div class="w-full sm:max-w-sm border-2 border-slate-800 bg-white shadow-sm">
                                     {{-- Bagian Operator --}}

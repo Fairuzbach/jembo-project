@@ -60,7 +60,8 @@ class CompoundCheckService
             'ann_warna_2',
             'ann_konsentrasi_2',
             'ann_ph_2',
-            'ann_temp_2'
+            'ann_temp_2',
+            'keterangan'
         ])->filter(fn($val) => $val !== null && $val !== '')->isNotEmpty();
     }
 
@@ -91,6 +92,7 @@ class CompoundCheckService
             'ann_konsentrasi_2' => $this->formatValue($data['ann_konsentrasi_2'] ?? null, '%'),
             'ann_ph_2'         => $data['ann_ph_2'] ?? null,
             'ann_temp_2'       => $this->formatValue($data['ann_temp_2'] ?? null, 'C'),
+            'keterangan' => $data['keterangan'] ?? null,
         ];
     }
 

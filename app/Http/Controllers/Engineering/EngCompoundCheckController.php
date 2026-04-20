@@ -42,7 +42,6 @@ class EngCompoundCheckController extends Controller
         // Base atribut yang sama untuk semua data
         $baseAttributes = [
             'plant_id'       => $plantId,
-            'keterangan'     => $request->keterangan,
             'diperiksa_oleh' => $diperiksaOleh,
             'diketahui_oleh' => $diketahuiOleh,
             'status'         => 'waiting_approval',
@@ -162,7 +161,6 @@ class EngCompoundCheckController extends Controller
                             array_merge($formattedData, [
                                 'diperiksa_oleh' => $diperiksaOleh,
                                 'diketahui_oleh' => $diketahuiOleh,
-                                'keterangan'     => $request->keterangan,
                             ])
                         );
                     } else {
@@ -179,7 +177,6 @@ class EngCompoundCheckController extends Controller
                         array_merge($formattedData, [
                             'diperiksa_oleh' => $diperiksaOleh,
                             'diketahui_oleh' => $diketahuiOleh,
-                            'keterangan'     => $request->keterangan,
                         ])
                     );
                 }

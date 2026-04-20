@@ -575,6 +575,20 @@
                                                                         koma.</span>
                                                                 </td>
                                                             </tr>
+
+                                                            {{-- BARIS KETERANGAN PER BAK --}}
+                                                            <tr>
+                                                                <td
+                                                                    class="p-3 text-xs font-extrabold text-slate-800 sticky left-0 bg-white z-10 align-top pt-4">
+                                                                    Keterangan / Notes
+                                                                </td>
+                                                                <td class="p-3 align-top bg-white"
+                                                                    colspan="{{ $key == 6 ? 3 : 2 }}">
+                                                                    <textarea name="plant_a[bak_{{ $key }}][keterangan]" rows="2"
+                                                                        placeholder="Kosongkan jika tidak ada masalah..."
+                                                                        class="w-full rounded border-slate-300 shadow-sm focus:border-blue-500 text-sm py-2">{{ $dataExisting->keterangan ?? '' }}</textarea>
+                                                                </td>
+                                                            </tr>
                                                         </tbody>
                                                     </table>
                                                 </div>
@@ -886,6 +900,17 @@
                                                                 (.) untuk 2 angka di belakang koma.</span>
                                                         </td>
                                                     </tr>
+                                                    {{-- BARIS KETERANGAN AUTOWIRE --}}
+                                                    <tr>
+                                                        <td
+                                                            class="p-3 text-xs font-extrabold text-slate-800 sticky left-0 bg-white z-10 align-top pt-4">
+                                                            Keterangan / Notes
+                                                        </td>
+                                                        <td class="p-3 align-top bg-white" colspan="2">
+                                                            <textarea name="autowire[keterangan]" rows="2" placeholder="Kosongkan jika tidak ada masalah..."
+                                                                class="w-full rounded border-slate-200 shadow-sm focus:border-indigo-500 text-xs py-2">{{ $dataAuto->keterangan ?? '' }}</textarea>
+                                                        </td>
+                                                    </tr>
                                                 </tbody>
                                             </table>
                                         </div>
@@ -896,13 +921,6 @@
                             {{-- KETERANGAN, CATATAN & TANDA TANGAN --}}
                             <div x-show="compoundForm.plant" style="display: none;"
                                 class="mt-4 space-y-4 md:space-y-0 md:grid md:grid-cols-3 md:gap-4 text-left items-start">
-
-                                <div>
-                                    <label class="block text-sm font-bold text-slate-700 mb-1">Keterangan /
-                                        Notes</label>
-                                    <textarea name="keterangan" rows="4"
-                                        class="w-full rounded border-slate-300 shadow-sm focus:border-blue-500 text-sm py-2"></textarea>
-                                </div>
 
                                 <div
                                     class="text-[11px] text-slate-600 bg-slate-100 p-3 rounded border border-slate-200">
@@ -1035,45 +1053,71 @@
             checkRealtimeOos(event.target);
         }
     });
-
-    function submitCompoundForm(event, formId) {
+    async function submitCompoundForm(event, formId) {
         event.preventDefault();
         let form = document.getElementById(formId);
         let inputs = form.querySelectorAll('.check-oos');
-        let hasOos = false;
+        let oosBaks = new Set();
 
         inputs.forEach(el => {
-            if (checkRealtimeOos(el)) hasOos = true;
+            if (checkRealtimeOos(el)) {
+                let nameAttr = el.getAttribute('name');
+                let match = nameAttr.match(/\[bak_(\d+)\]/);
+                if (match) {
+                    oosBaks.add(match[0]);
+                } else if (nameAttr.includes('autowire')) {
+                    oosBaks.add('autowire');
+                }
+            }
         });
 
-        if (hasOos) {
-            Swal.fire({
-                title: 'Konfirmasi Data Aktual',
-                html: `<b>Ada beberapa data yang tidak sesuai standard, apakah ini data aktual?</b><br><br>Jika ya, sistem mewajibkan Anda untuk memberikan keterangan/alasan:`,
-                icon: 'warning',
-                input: 'textarea',
-                inputPlaceholder: 'Contoh: Mesin trouble / Sedang proses kuras / Menunggu material...',
-                showCancelButton: true,
-                confirmButtonColor: '#dc2626',
-                cancelButtonColor: '#64748b',
-                confirmButtonText: 'Ya, Ini Aktual (Simpan)',
-                cancelButtonText: 'Batal (Periksa Ulang)',
-                allowOutsideClick: false,
-                inputValidator: (value) => {
-                    if (!value || value.trim() === '') {
-                        return 'Keterangan WAJIB diisi jika ada data aktual yang keluar standar!';
+        let oosArray = Array.from(oosBaks);
+
+        if (oosArray.length > 0) {
+            for (let i = 0; i < oosArray.length; i++) {
+                let bakKey = oosArray[i];
+                let bakLabel = bakKey === 'autowire' ?
+                    'AUTOWIRE' :
+                    bakKey.replace('[', '').replace(']', '').replace('_', ' ').toUpperCase();
+                const {
+                    value: reason,
+                    isConfirmed
+                } = await Swal.fire({
+                    title: `Konfirmasi OOS - ${bakLabel}`,
+                    html: `<b>Ada data yang keluar dari standard pada mesin ${bakLabel}.</b><br><br>Mohon berikan keterangan khusus untuk mesin ini:`,
+                    icon: 'warning',
+                    input: 'textarea',
+                    inputPlaceholder: `Contoh: Mesin ${bakLabel} trouble / Sedang proses kuras...`,
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Simpan Keterangan',
+                    cancelButtonText: 'Batal (Periksa Ulang)',
+                    allowOutsideClick: false,
+                    inputValidator: (value) => {
+                        if (!value || value.trim() === '') {
+                            return `Keterangan WAJIB diisi untuk ${bakLabel}!`;
+                        }
                     }
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    let ketInput = form.querySelector('input[name="keterangan"], textarea[name="keterangan"]');
-                    if (ketInput) {
-                        ketInput.value = ketInput.value +
-                        ` \n[Catatan Aktualisasi OOS: ${result.value.trim()}]`;
+                });
+
+                if (isConfirmed) {
+                    let selector = bakKey === 'autowire' ?
+                        'textarea[name="autowire[keterangan]"]' :
+                        `textarea[name*="${bakKey}"][name*="[keterangan]"]`;
+
+                    let targetInput = form.querySelector(selector);
+                    if (targetInput) {
+                        let existingText = targetInput.value.trim();
+                        let newText = `[Catatan OOS otomatis: ${reason.trim()}]`;
+                        targetInput.value = existingText ? `${existingText}\n${newText}` : newText;
                     }
-                    form.submit();
+                } else {
+                    return;
                 }
-            });
+            }
+            form.submit();
+
         } else {
             form.submit();
         }
