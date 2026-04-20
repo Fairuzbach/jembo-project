@@ -226,7 +226,6 @@
             <div class="p-6">
                 {{-- 1. Definisikan variable dengan nama $divisions --}}
                 @php
-                    // GANTI NAMA DARI $menuItems KE $divisions
                     $divisions = [
                         [
                             'id' => 'generalAffair',
@@ -242,8 +241,8 @@
                             'shadow' => 'shadow-purple-500/20',
                             'bg_hover' => 'group-hover:text-purple-600',
 
-                            // Route Updated:
-                            'btn_link' => route('ga.index'),
+                            // UBAH DI SINI: Arahkan ke Entry Point GA
+                            'btn_link' => url('/wo-ga'),
                         ],
                         [
                             'id' => 'engineering',
@@ -259,8 +258,8 @@
                             'shadow' => 'shadow-orange-500/20',
                             'bg_hover' => 'group-hover:text-orange-600',
 
-                            // Route Updated:
-                            'btn_link' => route('eng.index'),
+                            // UBAH DI SINI: Arahkan ke Entry Point Engineering
+                            'btn_link' => url('/wo-eng'),
                         ],
                         [
                             'id' => 'facility',
@@ -269,18 +268,15 @@
                             'desc' => 'Instalasi • Modifikasi • Fabrikasi',
                             'badge' => 'FH',
                             'badge_color' => 'bg-emerald-100 text-emerald-700',
-
-                            // Icon Fixed (Closed Tag):
                             'icon' =>
                                 '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />',
-
                             'color' => 'from-emerald-500 to-green-400',
                             'color_light' => 'from-emerald-50 to-green-50',
                             'shadow' => 'shadow-emerald-500/20',
                             'bg_hover' => 'group-hover:text-emerald-600',
 
-                            // Route Updated:
-                            'btn_link' => route('fh.index'),
+                            // UBAH DI SINI: Arahkan ke Entry Point Facility
+                            'btn_link' => url('/wo-fh'),
                         ],
                     ];
                 @endphp

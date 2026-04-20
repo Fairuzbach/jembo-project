@@ -14,9 +14,10 @@ class AuthenticatedSessionController extends Controller
     /**
      * Display the login view.
      */
-    public function create(): View
+    public function create(Request $request, $dept = 'default'): View
     {
-        return view('auth.login');
+        session(['login_dept' => $dept]);
+        return view('auth.login', ['dept' => $dept]);
     }
 
     /**
@@ -25,22 +26,20 @@ class AuthenticatedSessionController extends Controller
     public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
+        $request->session()->regenerate();
 
-        $intendedUrl = $request->session()->get('url.intended', '');
-        $isDashboard = str_contains($intendedUrl, '/dashboard');
+        $dept = session('login_dept');
 
-
-        if (!$intendedUrl || $isDashboard) {
-            auth()->guard('web')->logout();
-
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-
-            return redirect()->route('login')->with('error', 'HARAP MASUKKAN KODE DEPARTMENT DI URL (Contoh: /wo-fh, /wo-eng, atau /wo-ga).');
+        // Jika masuk lewat /wo-eng, session 'login_dept' akan mengarahkan ke sini
+        if ($dept === 'wo-eng' || $dept === 'eng') {
+            return redirect()->route('eng.index');
+        } elseif ($dept === 'wo-ga' || $dept === 'ga') {
+            return redirect()->route('ga.index');
+        } elseif ($dept === 'wo-fh' || $dept === 'fh') {
+            return redirect()->route('fh.index');
         }
 
-        $request->session()->regenerate();
-        return redirect()->intended();
+        return redirect()->intended(route('landing'));
     }
 
     /**

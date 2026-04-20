@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\MicrosoftAuthController;
 use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Facilities\FacilitiesController;
 use App\Http\Controllers\GeneralAffair\GeneralAffairController;
 use App\Http\Controllers\Engineering\WorkOrderEngineeringController;
@@ -31,16 +32,22 @@ Route::get('/', function () {
 // B. DEPARTMENT ENTRY POINTS
 // User ketik /wo-fh -> Redirect ke Dashboard FH -> Kena Middleware Auth -> Redirect ke Login
 // Setelah login sukses, Laravel akan mengembalikan user ke Dashboard FH.
+
+Route::get('/login/{dept}', [AuthenticatedSessionController::class, 'create'])->name('login.dept');
+
 Route::get('/wo-fh', function () {
-    return redirect()->route('fh.index');
+    if (auth()->check()) return redirect()->route('fh.index');
+    return redirect()->route('login.dept', ['dept' => 'wo-fh']);
 });
 
 Route::get('/wo-eng', function () {
-    return redirect()->route('eng.index');
+    if (auth()->check()) return redirect()->route('eng.index');
+    return redirect()->route('login.dept', ['dept' => 'wo-eng']);
 });
 
 Route::get('/wo-ga', function () {
-    return redirect()->route('ga.index');
+    if (auth()->check()) return redirect()->route('ga.index');
+    return redirect()->route('login.dept', ['dept' => 'wo-ga']);
 });
 
 // C. UTILITIES
