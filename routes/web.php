@@ -26,7 +26,7 @@ use App\Models\Employee;
 // Jika user mengakses tanpa slash departemen, lempar ke login dengan ERROR.
 Route::get('/', function () {
     return redirect()->route('login')
-        ->with('error', 'HARAP MASUKKAN KODE DEPARTMENT DI URL (Contoh: /wo-fh, /wo-eng, atau /wo-ga).');
+        ->with('error', 'HARAP PILIH DEPARTEMEN.');
 });
 
 // B. DEPARTMENT ENTRY POINTS
