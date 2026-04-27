@@ -1,8 +1,8 @@
 @props([
     'countTotal' => 0,
     'countPending' => 0, // Gunakan nama variabel dari Controller
-    'countInProgress' => 0,
-    'countCompleted' => 0,
+    'countProgress' => 0,
+    'countDone' => 0,
 ])
 
 {{-- Grid: HP(1) -> Tablet(2) -> Laptop(4) --}}
@@ -73,7 +73,7 @@
                     </svg>
                 </div>
             </div>
-            <h3 class="text-3xl sm:text-4xl font-extrabold text-blue-700">{{ $countInProgress }}</h3>
+            <h3 class="text-3xl sm:text-4xl font-extrabold text-blue-700">{{ $countProgress }}</h3>
             <p class="text-xs sm:text-sm text-blue-600/80 mt-1 sm:mt-2">Sedang dikerjakan</p>
         </div>
     </div>
@@ -96,19 +96,19 @@
                     </svg>
                 </div>
             </div>
-            <h3 class="text-3xl sm:text-4xl font-extrabold text-emerald-700">{{ $countCompleted }}</h3>
+            <h3 class="text-3xl sm:text-4xl font-extrabold text-emerald-700">{{ $countDone }}</h3>
 
             {{-- Completion Rate --}}
             <div class="mt-3 sm:mt-4">
                 <div class="flex justify-between items-center mb-1">
                     <span class="text-[10px] sm:text-xs text-emerald-600 font-semibold">Rate</span>
                     <span class="text-[10px] sm:text-xs font-bold text-emerald-700">
-                        {{ $countTotal > 0 ? round(($countCompleted / $countTotal) * 100) : 0 }}%
+                        {{ $countTotal > 0 ? round(($countDone / $countTotal) * 100) : 0 }}%
                     </span>
                 </div>
                 <div class="w-full bg-emerald-200/30 h-1.5 sm:h-2 rounded-full overflow-hidden">
                     <div class="bg-gradient-to-r from-emerald-400 to-teal-400 h-1.5 sm:h-2 rounded-full transition-all duration-500"
-                        style="width: {{ $countTotal > 0 ? ($countCompleted / $countTotal) * 100 : 0 }}%">
+                        style="width: {{ $countTotal > 0 ? ($countDone / $countTotal) * 100 : 0 }}%">
                     </div>
                 </div>
             </div>

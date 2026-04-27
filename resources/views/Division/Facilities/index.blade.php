@@ -79,7 +79,7 @@
             @open-create-modal = "resetForm(); showCreateModal = true">
 
             {{-- 1. STATS OVERVIEW --}}
-            <x-facilityIndex.stats-card :countTotal="$countTotal" :countWaitingApproval="$countWaitingApproval" :count-progress="$countProgress" :count-done="$countDone" />
+            <x-facilityIndex.stats-card :countTotal="$countTotal" :countPending="$countPending" :countProgress="$countProgress" :countDone="$countDone" />
 
             {{-- 2. FILTER & TOOLBAR (DIRAPIKAN) --}}
             <x-facilityIndex.toolbar :list-plants="$listPlants" :selected-tickets="$selectedTickets ?? []" />
