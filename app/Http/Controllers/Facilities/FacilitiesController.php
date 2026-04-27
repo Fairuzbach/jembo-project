@@ -20,6 +20,29 @@ class FacilitiesController extends Controller
         $this->facilityService = $facilityService;
     }
 
+    // =====================================================================
+    // HELPER: Mapping Divisi → Plant aliases
+    // =====================================================================
+    private function getPlantsByDivisi(string $divisi): array
+    {
+        $div = strtoupper(trim($divisi));
+
+        return match (true) {
+            str_contains($div, 'PRODUCTION PLANNING')    => ['PP'],
+            str_contains($div, 'SALES SUPPORT')    => ['SS'],
+            str_contains($div, 'MAINTENANCE')            => ['MT'],
+            str_contains($div, 'PROCUREMENT')            => ['Procurement'],
+            str_contains($div, 'PLANT A - AUTOWIRE')     => ['Plant A - Autowire'],
+            str_contains($div, 'PLANT D - CCV')          => ['Plant D - CCV'],
+            str_contains($div, 'PLANT A')                => ['Plant A'],
+            str_contains($div, 'PLANT B')                => ['Plant B'],
+            str_contains($div, 'PLANT C')                => ['Plant C'],
+            str_contains($div, 'PLANT D')                => ['Plant D'],
+            str_contains($div, 'PLANT E')                => ['Plant E'],
+            default                                      => [$divisi]
+        };
+    }
+
     public function index(Request $request)
     {
         $user = auth()->user();
@@ -52,7 +75,10 @@ class FacilitiesController extends Controller
             $isManager = str_contains($uLevel, 'MANAGER') || str_contains($uLevel, 'HEAD') || $isLvAdmin || $isMvAdmin;
             $isSpv     = str_contains($uLevel, 'SPV') || str_contains($uLevel, 'SUPERVISOR');
 
-            $query->where(function ($q) use ($user, $uDiv, $isManager, $isSpv, $isAutowireAdmin, $isCcvAdmin) {
+            // Ambil plant aliases berdasarkan divisi user
+            $plantAliases = $this->getPlantsByDivisi($uDiv);
+
+            $query->where(function ($q) use ($user, $uDiv, $isManager, $isSpv, $isAutowireAdmin, $isCcvAdmin, $plantAliases) {
                 // User selalu bisa lihat tiket sendiri
                 $q->where('requester_id', $user->id);
 
@@ -62,25 +88,29 @@ class FacilitiesController extends Controller
                     $q->orWhere('plant', 'PLANT D - CCV');
                 } elseif ($isManager) {
                     if (!empty($uDiv)) {
-                        $q->orWhere('plant', 'LIKE', '%' . $uDiv . '%');
+                        // ✅ FIX: Gunakan aliases agar "PRODUCTION PLANNING" bisa match "PP"
+                        $q->orWhere(function ($sub) use ($plantAliases) {
+                            foreach ($plantAliases as $alias) {
+                                $sub->orWhere('plant', 'LIKE', '%' . $alias . '%');
+                            }
+                        });
                     }
                 } elseif ($isSpv) {
                     if (!empty($uDiv)) {
-                        $q->orWhere('plant', '=', $uDiv);
+                        // ✅ FIX: Gunakan whereIn dengan aliases
+                        $q->orWhereIn('plant', $plantAliases);
                     }
                 }
             });
         }
 
         // =================================================================
-        // [PENTING] CLONE UNTUK STATISTIK DI SINI (SEBELUM FILTER APAPUN)
+        // [PENTING] CLONE UNTUK STATISTIK
         // =================================================================
-        // Kita simpan query yang sudah berisi Hak Akses, tapi BELUM ada filter status/search
-        // Agar angka di kartu atas tetap menunjukkan Total Global User tersebut.
         $statsQuery = clone $query;
 
         // =================================================================
-        // FILTER SEARCH & LAINNYA (Hanya mempengaruhi Tabel & Export)
+        // FILTER SEARCH & LAINNYA
         // =================================================================
 
         if ($request->filled('search')) {
@@ -103,24 +133,22 @@ class FacilitiesController extends Controller
             $query->where('category', $request->category);
         }
 
-        // Filter Status (Hanya untuk tabel, tidak boleh merusak statsQuery)
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
-        // EXPORT (Menggunakan query yang sudah difilter)
+        // EXPORT
         if ($request->boolean('export')) {
             if ($request->filled('selected_ids')) {
                 $ids = explode(',', $request->selected_ids);
-                $query->whereIn('id', $ids); // Override query filter jika ada selected IDs
+                $query->whereIn('id', $ids);
             }
             return Excel::download(new FacilitiesExport($query), 'work-orders-facility.xlsx');
         }
 
         // =================================================================
-        // HITUNG STATISTIK (MENGGUNAKAN $statsQuery YANG BERSIH)
+        // HITUNG STATISTIK
         // =================================================================
-
         $countTotal           = (clone $statsQuery)->count();
         $countPending         = (clone $statsQuery)->where('status', 'waiting_approval')->count();
         $countWaitingApproval = (clone $statsQuery)->where('status', 'waiting_facility_approval')->count();
@@ -128,7 +156,7 @@ class FacilitiesController extends Controller
         $countDone            = (clone $statsQuery)->where('status', 'completed')->count();
 
         // =================================================================
-        // EKSEKUSI DATA TABEL (MENGGUNAKAN $query YANG TER-FILTER)
+        // EKSEKUSI DATA TABEL
         // =================================================================
         $workOrders = $query->latest()->paginate(10)->withQueryString();
         $pageIds    = $workOrders->pluck('id')->toArray();
@@ -161,7 +189,6 @@ class FacilitiesController extends Controller
 
         $data = $this->facilityService->getDashboardStats($request);
 
-
         return view('Division.Facilities.Dashboard', $data);
     }
 
@@ -177,7 +204,6 @@ class FacilitiesController extends Controller
 
     public function updateStatus(Request $request, $id)
     {
-        // Validasi input
         $request->validate([
             'status' => 'required|string',
             'start_date' => 'nullable|date',
@@ -187,14 +213,11 @@ class FacilitiesController extends Controller
 
         try {
             $this->facilityService->updateStatus($id, $request->all());
-
             return redirect()->back()->with('success', 'Status updated successfully');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Error updating status: ' . $e->getMessage());
         }
     }
-
-    // --- APPROVAL METHODS ---
 
     public function approve(Request $request, $id)
     {
@@ -216,10 +239,8 @@ class FacilitiesController extends Controller
         return back()->with('success', $result['message']);
     }
 
-    // Export Excel (Jika dipanggil via route terpisah atau query param)
     public function export(Request $request)
     {
-        // Logika export bisa ditaruh di sini atau di index
         return redirect()->route('fh.index');
     }
 }

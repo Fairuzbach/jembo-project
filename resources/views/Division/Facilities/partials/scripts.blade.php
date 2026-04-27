@@ -23,29 +23,17 @@
     @endif
 
     // 2. Fungsi Helper Reject
-    function promptReject(url) {
+    function promptReject(formElement) {
         const reason = prompt("Masukkan alasan penolakan:");
         if (reason) {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = url;
-
-            const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-            const csrfInput = document.createElement('input');
-            csrfInput.type = 'hidden';
-            csrfInput.name = '_token';
-            csrfInput.value = csrfToken; // Fix syntax sebelumnya
-
             const reasonInput = document.createElement('input');
             reasonInput.type = 'hidden';
             reasonInput.name = 'reason';
             reasonInput.value = reason;
-
-            form.appendChild(csrfInput);
-            form.appendChild(reasonInput);
-            document.body.appendChild(form);
-            form.submit();
+            formElement.appendChild(reasonInput);
+            formElement.submit();
         }
+        return false; // Prevent default submit
     }
 
     // 3. ALPINE JS DATA OBJECT (REFACTOR x-data)

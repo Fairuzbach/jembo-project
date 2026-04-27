@@ -236,7 +236,6 @@ class FacilityService
         if (isset($data['facility_tech_ids'])) {
             $ids = $data['facility_tech_ids'];
             if (!is_array($ids)) $ids = explode(',', (string)$ids);
-            // Filter ID valid
             $ids = array_filter($ids, fn($val) => is_numeric($val) && $val > 0);
             $wo->technicians()->sync($ids);
         }
@@ -249,121 +248,108 @@ class FacilityService
         // 3. Update Completion Date
         if ($data['status'] == 'completed') {
             $wo->actual_completion_date = $wo->actual_completion_date ?? now();
-        } elseif ($data['status'] != 'completed') {
+        } else {
             $wo->actual_completion_date = null;
         }
 
-        // 4. Set Processed By (Jika belum ada)
+        // 4. Set Processed By
         if (!$wo->processed_by) {
             $wo->processed_by = Auth::id();
             $wo->processed_by_name = Auth::user()->name;
         }
 
         $wo->save();
-        if ($oldStatus === 'waiting_facility_approval' && in_array($data['status'], ['pending', 'in_progress', 'open'])) {
 
-            // Cari Manager
+        // 5. FYI ke Manager saat facility approve
+        if ($oldStatus === 'waiting_facility_approval' && in_array($data['status'], ['pending', 'in_progress'])) {
             $managers = \App\Models\User::where('is_active', 1)
                 ->where(function ($q) {
                     $q->where('job_level', 'LIKE', '%MANAGER%')
                         ->orWhere('job_level', 'LIKE', '%MGR%');
                 })->get();
 
-            // Filter Autowire (Plant A) & CCV (Plant D)
-            if (strtolower($wo->plant) === 'plant a') {
-                $managers = $managers->reject(fn($m) => \Illuminate\Support\Str::contains(strtolower($m->jabatan ?? ''), 'autowire'));
-            } elseif (strtolower($wo->plant) === 'plant d') {
-                $managers = $managers->reject(fn($m) => \Illuminate\Support\Str::contains(strtolower($m->jabatan ?? ''), 'ccv'));
+            $plantUpper = strtoupper(trim($wo->plant));
+
+            // ✅ Fix: pakai str_contains bukan ===
+            if (str_contains($plantUpper, 'PLANT A') && !str_contains($plantUpper, 'AUTOWIRE')) {
+                $managers = $managers->reject(fn($m) => str_contains(strtoupper($m->jabatan ?? ''), 'AUTOWIRE'));
+            } elseif (str_contains($plantUpper, 'PLANT D') && !str_contains($plantUpper, 'CCV')) {
+                $managers = $managers->reject(fn($m) => str_contains(strtoupper($m->jabatan ?? ''), 'CCV'));
             }
 
-            // Kirim WA Tembusan
             foreach ($managers as $manager) {
-                if ($manager->no_hp) {
-                    $fyiMsg = "═══════════════════════\n" .
-                        "ℹ️ *INFO WORK ORDER FACILITY*\n" .
-                        "═══════════════════════\n\n" .
-                        "Halo *{$manager->name}*,\n\n" .
-                        "Sebagai informasi, tiket berikut dari area Anda telah *Disetujui* oleh Tim Facility dan akan segera dikerjakan:\n\n" .
-                        "📋 *Nomor:* {$wo->ticket_num}\n" .
-                        "👤 *Pelapor:* {$wo->requester_name}\n" .
-                        "📍 *Lokasi:* {$wo->plant} - {$wo->location_details}\n" .
-                        "💬 *Kendala:* _{$wo->description}_\n\n" .
-                        "Tembusan ini dikirimkan otomatis oleh sistem.";
-
-                    try {
-                        GaWhatsappService::send($manager->no_hp, $fyiMsg);
-                        \Log::info("✅ WA FYI MANAGER SENT to: {$manager->name} | Ticket: {$wo->ticket_num}");
-                    } catch (\Exception $e) {
-                        \Log::error("❌ WA FYI MANAGER FAILED: {$manager->name} | Error: " . $e->getMessage());
-                    }
+                if (!$manager->no_hp) continue;
+                $fyiMsg = "═══════════════════════\n" .
+                    "ℹ️ *INFO WORK ORDER FACILITY*\n" .
+                    "═══════════════════════\n\n" .
+                    "Halo *{$manager->name}*,\n\n" .
+                    "Tiket berikut telah *Disetujui* Tim Facility dan akan segera dikerjakan:\n\n" .
+                    "📋 *Nomor:* {$wo->ticket_num}\n" .
+                    "👤 *Pelapor:* {$wo->requester_name}\n" .
+                    "📍 *Lokasi:* {$wo->plant} - {$wo->location_details}\n" .
+                    "💬 *Kendala:* _{$wo->description}_\n\n" .
+                    "Tembusan otomatis dari sistem.";
+                try {
+                    GaWhatsappService::send($manager->no_hp, $fyiMsg);
+                } catch (\Exception $e) {
+                    \Log::error("❌ WA FYI MANAGER FAILED: {$manager->name} | " . $e->getMessage());
                 }
             }
         }
-        // ========================================================================
 
-        // 6. Notifikasi WA ke Requester (DENGAN LOG)
+        // 6. Notifikasi WA ke Requester per status
         $requester = User::find($wo->requester_id);
-        \Log::info("🔍 DEBUG UPDATE STATUS:", [
-            'ticket_id' => $wo->id,
-            'status_received' => $data['status'],
-            'requester_id' => $wo->requester_id,
-            'requester_name' => $requester ? $requester->name : 'USER TIDAK DITEMUKAN',
-            'requester_hp' => $requester ? $requester->no_hp : 'N/A'
-        ]);
 
         if ($requester && $requester->no_hp) {
-            $msg = "";
+            $msg = match ($data['status']) {
+                'pending' =>
+                "🔧 *WORK ORDER FACILITY*\n\n" .
+                    "╔═══════════════════════╗\n" .
+                    "║   ✅ *DISETUJUI* ║\n" .
+                    "╚═══════════════════════╝\n\n" .
+                    "📋 Tiket: *{$wo->ticket_num}*\n" .
+                    "📊 Status: *APPROVED - PENDING PENGERJAAN*\n\n" .
+                    "Tiket Anda telah disetujui dan akan segera dikerjakan oleh Tim Facility.",
 
-            switch ($data['status']) {
-                case 'in_progress':
-                    $msg = "🔧 *WORK ORDER FACILITY*\n\n" .
-                        "╔═══════════════════════╗\n" .
-                        "║   🛠 *STATUS UPDATE* ║\n" .
-                        "╚═══════════════════════╝\n\n" .
-                        "📋 Tiket: *{$wo->ticket_num}*\n" .
-                        "📊 Status: *IN PROGRESS*\n\n" .
-                        "⏳ Teknisi sedang bekerja\n" .
-                        "Mohon menunggu...";
-                    break;
+                'in_progress' =>
+                "🔧 *WORK ORDER FACILITY*\n\n" .
+                    "╔═══════════════════════╗\n" .
+                    "║   🛠 *IN PROGRESS* ║\n" .
+                    "╚═══════════════════════╝\n\n" .
+                    "📋 Tiket: *{$wo->ticket_num}*\n" .
+                    "📊 Status: *SEDANG DIKERJAKAN*\n\n" .
+                    "⏳ Teknisi sedang mengerjakan permintaan Anda. Mohon menunggu.",
 
-                case 'completed':
-                    $msg = "🔧 *WORK ORDER FACILITY*\n\n" .
-                        "╔═══════════════════════╗\n" .
-                        "║   ✅ *COMPLETED* ║\n" .
-                        "╚═══════════════════════╝\n\n" .
-                        "📋 Tiket: *{$wo->ticket_num}*\n\n" .
-                        "🎉 Pekerjaan selesai!\n\n";
-                    break;
+                'completed' =>
+                "🔧 *WORK ORDER FACILITY*\n\n" .
+                    "╔═══════════════════════╗\n" .
+                    "║   ✅ *COMPLETED* ║\n" .
+                    "╚═══════════════════════╝\n\n" .
+                    "📋 Tiket: *{$wo->ticket_num}*\n\n" .
+                    "🎉 Pekerjaan telah selesai! Terima kasih.",
 
-                case 'cancelled':
-                case 'rejected':
-                    $statusLabel = strtoupper($data['status']);
-                    $msg = "🔧 *WORK ORDER FACILITY*\n\n" .
-                        "╔═══════════════════════╗\n" .
-                        "║   🚫 *{$statusLabel}* ║\n" .
-                        "╚═══════════════════════╝\n\n" .
-                        "📋 Tiket: *{$wo->ticket_num}*\n\n" .
-                        "ℹ️ Tiket dibatalkan/ditolak\n" .
-                        "💬 Hubungi admin jika perlu";
-                    break;
-                default:
-                    \Log::warning("⚠️ STATUS TIDAK DIKENALI/TIDAK PERLU WA: '{$data['status']}' - Pesan WA tidak dibuat.");
-                    break;
-            }
+                'cancelled' =>
+                "🔧 *WORK ORDER FACILITY*\n\n" .
+                    "╔═══════════════════════╗\n" .
+                    "║   🚫 *CANCELLED* ║\n" .
+                    "╚═══════════════════════╝\n\n" .
+                    "📋 Tiket: *{$wo->ticket_num}*\n\n" .
+                    "ℹ️ Tiket dibatalkan. Hubungi admin jika perlu.",
+
+                default => null
+            };
 
             if ($msg) {
                 try {
                     GaWhatsappService::send($requester->no_hp, $msg);
-                    \Log::info("✅ WA STATUS SENT to Requester: {$requester->name} | Status: {$data['status']}");
+                    \Log::info("✅ WA STATUS SENT: {$requester->name} | Status: {$data['status']}");
                 } catch (\Exception $e) {
-                    \Log::error("❌ WA STATUS FAILED to Requester: {$requester->name} | Error: " . $e->getMessage());
+                    \Log::error("❌ WA STATUS FAILED: {$requester->name} | " . $e->getMessage());
                 }
             }
-        } elseif ($requester) {
-            \Log::warning("⚠️ WA SKIP: Requester {$requester->name} tidak memiliki No HP.");
         }
 
-        // Email Notif (Bawaan lama)
+        // 7. Email notif
         $this->notifyRequester($wo, 'status_update');
 
         return $wo;
@@ -608,7 +594,7 @@ class FacilityService
     private function notifyApprovers($ticket, $plantName)
     {
         $matrix = $this->getFacilityMatrix();
-        $config = $matrix[$plantName] ?? null;
+        $config = $matrix[strtoupper(trim($plantName))] ?? null;
 
         $requester = User::find($ticket->requester_id);
         $reqLevel = strtoupper(trim($requester->job_level ?? ''));
@@ -649,7 +635,7 @@ class FacilityService
                 }
             })->where(function ($q) use ($aliases) {
                 foreach ($aliases as $alias) {
-                    $q->orWhere('divisi', 'LIKE', '%' . $alias . '%');
+                    $q->orWhere('divisi', 'LIKE', $alias . '%');
                 }
             });
         }
@@ -724,6 +710,8 @@ class FacilityService
         if (str_contains($cleanName, 'PLANT B')) return ['MV B', 'Manager MV', 'Plant B'];
         if (str_contains($cleanName, 'PLANT D')) return ['MV D', 'Manager MV', 'Plant D'];
         if (str_contains($cleanName, 'PLANT E')) return ['FO', 'Manager FO', 'Plant E', 'Fiber Optic'];
+        if (str_contains($cleanName, 'PP')) return ['Production Planning', 'PP'];
+        if (str_contains($cleanName, 'SS')) return ['Sales Support', 'SS'];
 
         return [$plantName];
     }
@@ -807,7 +795,7 @@ class FacilityService
             ],
             'PLANT D' => [
                 'spv' => ['MV D', 'MEDIUM VOLTAGE', 'PLANT D'],
-                'mgr' => ['MV D', 'MEIDUM VOLTAGE']
+                'mgr' => ['MV D', 'MEDIUM VOLTAGE']
             ],
             'PLANT A - AUTOWIRE' => [
                 'spv' => ['SUPERVISOR AUTOWIRE', 'AUTO WIRE'],
@@ -819,7 +807,15 @@ class FacilityService
             ],
             'PLANT B' => ['spv' => ['MV B', 'PLANT B'], 'mgr' => ['MV', 'MEDIUM VOLTAGE']],
             'PLANT C' => ['spv' => ['LV C', 'PLANT C'], 'mgr' => ['LV']],
-            'PLANT E' => ['spv' => ['FO', 'PLANT E'], 'mgr' => ['FO']]
+            'PLANT E' => ['spv' => ['FO', 'PLANT E'], 'mgr' => ['FO']],
+            'PP' => [
+                'spv' => ['PRODUCTION PLANNING'],
+                'mgr' => ['PRODUCTION PLANNING']
+            ],
+            'SS' => [
+                'spv' => ['SALES SUPPORT'],
+                'mgr' => ['SALES SUPPORT']
+            ]
         ];
     }
 }

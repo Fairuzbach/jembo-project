@@ -87,6 +87,15 @@
                                             x-text="ticket.description"></p>
                                     </div>
                                 </div>
+                                <template x-if="ticket && ticket.status === 'rejected' && ticket.rejection_reason">
+                                    <div>
+                                        <h4 class="text-sm font-bold text-rose-700 mb-2">Alasan Penolakan</h4>
+                                        <div class="p-4 bg-rose-50 rounded-xl border border-rose-200">
+                                            <p class="text-rose-700 text-sm leading-relaxed whitespace-pre-wrap"
+                                                x-text="ticket.rejection_reason"></p>
+                                        </div>
+                                    </div>
+                                </template>
 
                                 <div x-show="ticket.machine_id || ticket.new_machine_name">
                                     <h4 class="text-sm font-bold text-slate-900 mb-2">Machine Detail</h4>
