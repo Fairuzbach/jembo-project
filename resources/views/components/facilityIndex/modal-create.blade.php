@@ -183,7 +183,7 @@
                                 class="w-full rounded-xl border-slate-200 text-sm py-3 bg-slate-50/50"></textarea>
                         </div>
                         <div><label class="block text-sm font-bold text-slate-700 mb-2">Attachment</label><input
-                                name="photo" type="file"
+                                name="photo" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf,.xlsx,.xls"
                                 class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
                         </div>
                     </div>
