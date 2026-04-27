@@ -114,28 +114,82 @@
 
                                 <template x-if="ticket.photo_path">
                                     <div>
-                                        <h4 class="text-sm font-bold text-slate-900 mb-2">Attached Photo</h4>
-                                        <div class="rounded-xl overflow-hidden border border-slate-200 cursor-zoom-in group relative"
-                                            @click="imgPreviewUrl = '/storage/' + ticket.photo_path; showImagePreview = true">
+                                        <h4 class="text-sm font-bold text-slate-900 mb-2">Attachment</h4>
 
-                                            <img :src="ticket ? '/storage/' + ticket.photo_path : ''"
-                                                class="w-full h-auto max-h-64 object-cover group-hover:scale-105 transition-transform duration-500">
+                                        {{-- Cek ekstensi file --}}
+                                        <template
+                                            x-if="['jpg','jpeg','png','webp'].some(ext => ticket.photo_path.toLowerCase().endsWith(ext))">
+                                            {{-- IMAGE: Tampilkan preview dengan zoom --}}
+                                            <div class="rounded-xl overflow-hidden border border-slate-200 cursor-zoom-in group relative"
+                                                @click="imgPreviewUrl = '/storage/' + ticket.photo_path; showImagePreview = true">
 
-                                            <div
-                                                class="absolute inset-0 bg-slate-900/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300">
-                                                <span
-                                                    class="text-white text-xs font-bold bg-slate-900/60 px-4 py-2 rounded-full backdrop-blur-md shadow-lg flex items-center gap-2">
-                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                                        viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            stroke-width="2"
-                                                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7">
-                                                        </path>
-                                                    </svg>
-                                                    Click to Zoom
-                                                </span>
+                                                <img :src="'/storage/' + ticket.photo_path"
+                                                    class="w-full h-auto max-h-64 object-cover group-hover:scale-105 transition-transform duration-500">
+
+                                                <div
+                                                    class="absolute inset-0 bg-slate-900/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300">
+                                                    <span
+                                                        class="text-white text-xs font-bold bg-slate-900/60 px-4 py-2 rounded-full backdrop-blur-md shadow-lg flex items-center gap-2">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                            viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                                                        </svg>
+                                                        Click to Zoom
+                                                    </span>
+                                                </div>
                                             </div>
-                                        </div>
+                                        </template>
+
+                                        {{-- PDF: Tampilkan tombol download --}}
+                                        <template x-if="ticket.photo_path.toLowerCase().endsWith('pdf')">
+                                            <a :href="'/storage/' + ticket.photo_path" target="_blank"
+                                                class="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition">
+                                                <svg class="w-8 h-8 text-red-500 shrink-0" fill="none"
+                                                    viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                </svg>
+                                                <div>
+                                                    <p class="text-sm font-bold text-red-700">PDF Document</p>
+                                                    <p class="text-xs text-red-500"
+                                                        x-text="ticket.photo_path.split('/').pop()"></p>
+                                                </div>
+                                                <svg class="w-4 h-4 text-red-400 ml-auto" fill="none"
+                                                    viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                </svg>
+                                            </a>
+                                        </template>
+
+                                        {{-- EXCEL: Tampilkan tombol download --}}
+                                        <template
+                                            x-if="['xlsx','xls'].some(ext => ticket.photo_path.toLowerCase().endsWith(ext))">
+                                            <a :href="'/storage/' + ticket.photo_path" target="_blank"
+                                                class="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-xl hover:bg-green-100 transition">
+                                                <svg class="w-8 h-8 text-green-500 shrink-0" fill="none"
+                                                    viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                </svg>
+                                                <div>
+                                                    <p class="text-sm font-bold text-green-700">Excel Document</p>
+                                                    <p class="text-xs text-green-500"
+                                                        x-text="ticket.photo_path.split('/').pop()"></p>
+                                                </div>
+                                                <svg class="w-4 h-4 text-green-400 ml-auto" fill="none"
+                                                    viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                </svg>
+                                            </a>
+                                        </template>
                                     </div>
                                 </template>
                             </div>
