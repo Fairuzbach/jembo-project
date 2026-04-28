@@ -87,6 +87,20 @@
                                             x-text="ticket.description"></p>
                                     </div>
                                 </div>
+                                <template x-if="ticket && ticket.technicians && ticket.technicians.length > 0">
+                                    <div>
+                                        <h4 class="text-sm font-bold text-slate-900 mb-2">Dikerjakan Oleh</h4>
+                                        <div class="p-4 bg-blue-50 rounded-xl border border-blue-100">
+                                            <template x-for="tech in ticket.technicians" :key="tech.id">
+                                                <div class="flex items-center gap-2 py-1">
+                                                    <div class="w-2 h-2 rounded-full bg-blue-400 shrink-0"></div>
+                                                    <span class="text-sm font-medium text-blue-800"
+                                                        x-text="tech.name"></span>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
                                 <template x-if="ticket && ticket.status === 'rejected' && ticket.rejection_reason">
                                     <div>
                                         <h4 class="text-sm font-bold text-rose-700 mb-2">Alasan Penolakan</h4>
