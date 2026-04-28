@@ -71,6 +71,37 @@
                                 <div x-show="techniciansData.length === 0"
                                     class="px-4 py-3 text-sm text-slate-400 text-center">No technicians available.</div>
                             </div>
+                            <div x-show="['fh.admin', 'super.admin', 'super.fh.admin'].includes(currentUserRole)"
+                                x-transition class="p-4 bg-orange-50 border border-orange-200 rounded-xl mb-6">
+                                <label class="block text-sm font-bold text-orange-800 mb-2">
+                                    Revisi Kategori Permintaan
+                                    <span class="text-xs font-normal text-orange-600 block leading-tight mt-0.5">
+                                        *Khusus Admin: Ubah jika user salah memilih kategori.
+                                    </span>
+                                </label>
+                                <div class="relative">
+                                    <select name="category" x-model="editForm.category"
+                                        class="w-full appearance-none rounded-lg border-orange-300 text-sm py-2.5 px-4 bg-white focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition cursor-pointer text-slate-700 font-medium shadow-sm">
+                                        <option value="">-- Pilih Kategori --</option>
+                                        {{-- Sesuaikan value ini dengan option di Form Create Anda --}}
+                                        <option value="Modifikasi Mesin">Modifikasi Mesin</option>
+                                        <option value="Pemasangan Mesin">Pemasangan Mesin</option>
+                                        <option value="Pembongkaran Mesin">Pembongkaran Mesin</option>
+                                        <option value="Relokasi Mesin">Relokasi Mesin</option>
+                                        <option value="Perbaikan">Perbaikan</option>
+                                        <option value="Pembuatan Alat Baru">Pembuatan Alat Baru</option>
+                                        <option value="Rakit Steel Drum">Rakit Steel Drum</option>
+                                        <option value="Lain - Lain">Lain - Lain</option>
+                                    </select>
+                                    <div
+                                        class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-orange-400">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 9l-7 7-7-7"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         {{-- Tags Selected --}}

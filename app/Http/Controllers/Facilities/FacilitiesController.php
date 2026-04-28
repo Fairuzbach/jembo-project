@@ -206,6 +206,7 @@ class FacilitiesController extends Controller
     {
         $request->validate([
             'status' => 'required|string',
+            'category' => 'nullable|string',
             'start_date' => 'nullable|date',
             'facility_tech_ids' => 'nullable|array',
             'facility_tech_ids.*' => 'exists:facility_teches,id',

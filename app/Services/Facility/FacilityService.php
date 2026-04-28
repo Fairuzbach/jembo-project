@@ -283,6 +283,15 @@ class FacilityService
         $oldStatus = $wo->status;
         $wo->status = $data['status'];
 
+        //update category
+        if (isset($data['category']) && !empty($data['category'])) {
+            $wo->category = $data['category'];
+        }
+
+        if (isset($data['completion_note'])) {
+            $wo->completion_note = $data['completion_note'];
+        }
+
         // Sync teknisi
         if (isset($data['facility_tech_ids'])) {
             $ids = $data['facility_tech_ids'];

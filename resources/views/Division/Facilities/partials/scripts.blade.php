@@ -75,6 +75,7 @@
             editForm: {
                 id: '',
                 status: '',
+                category: '',
                 start_date: '',
                 actual_completion_date: '',
                 completion_note: '',
@@ -187,7 +188,7 @@
                 this.editForm.status = wo.status;
                 this.editForm.selectedTechs = wo.technicians ?
                     wo.technicians.map(t => t.id) : [];
-
+                this.editForm.category = wo.category || '';
                 // Load start_date — format DB "2023-01-01 10:00:00" → HTML "2023-01-01T10:00"
                 this.editForm.start_date = wo.start_date ?
                     wo.start_date.replace(' ', 'T').substring(0, 16) :
