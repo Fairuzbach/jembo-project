@@ -21,6 +21,7 @@
             'sales support',
             'procurement',
             'production planning',
+            'maintenance',
         ];
         foreach ($plants as $plant) {
             if (str_contains($userDivisi, $plant)) {
