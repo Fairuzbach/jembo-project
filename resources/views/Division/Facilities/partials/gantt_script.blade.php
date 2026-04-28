@@ -96,7 +96,8 @@
 
         // Safety Check Data
         if (!window.facilitiesData) {
-            console.error("CRITICAL: window.facilitiesData missing.");
+            document.getElementById('gantt_chart_robust').innerHTML =
+                "<p class='text-red-500 p-4'>Gagal memuat data. Silakan refresh halaman.</p>";
             return;
         }
 
@@ -228,7 +229,7 @@
                     open: true,
                     // Data tambahan untuk tooltip
                     category: task.category || '-',
-                    technology: task.technology || '-',
+                    technician: task.technician || '-',
                     description: task.description || ''
                 };
             });
@@ -267,10 +268,6 @@
         gantt.config.fit_tasks = false;
         gantt.config.bar_height = 28;
         gantt.config.row_height = 42;
-
-        gantt.plugins({
-            tooltip: true
-        });
 
 
         gantt.config.tooltip_timeout = 30;
@@ -470,7 +467,7 @@
                         </tr>
                         ` : ''}
                         
-                        ${task.technology && task.technology !== '-' ? `
+                        ${task.technician && task.technician !== '-' ? `
                         <tr style="background: #f8fafc;">
                             <td style="
                                 color: #64748b; 
@@ -483,7 +480,7 @@
                                 font-weight: 700; 
                                 text-align: right; 
                                 padding: 8px 0;">
-                                ${task.technology}
+                                ${task.technician}
                             </td>
                         </tr>
                         ` : ''}
@@ -559,6 +556,26 @@
             return tPlant.includes(fFilter);
         });
 
+
+        // =====================================================================
+        // TODAY MARKER
+        // Menampilkan garis vertikal merah di posisi tanggal hari ini
+        // =====================================================================
+        gantt.plugins({
+            tooltip: true,
+            marker: true // ← tambahkan marker plugin
+        });
+
+        gantt.addMarker({
+            start_date: new Date(),
+            css: "today-marker",
+            text: "Today",
+            title: "Today: " + new Date().toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric'
+            })
+        });
         // ========================================
         // INITIALIZE & RENDER
         // ========================================
