@@ -782,7 +782,7 @@ class WorkOrderService
             'fh.admin'        => ['Facility', 'FH', 'FACILITY'],
             'mt.admin'        => ['Maintenance', 'maintenance', 'MT', 'MAINTENANCE', 'mt'],
             'lv.admin'        => ['Low Voltage', 'LOW VOLTAGE', 'low voltage', 'LV', 'lv'],
-            'mv.admin'        => ['Medium Voltage', 'medium voltage', 'MV', 'mv'],
+            'mv.admin'        => ['Medium Voltage', 'medium voltage', 'MV', 'mv', 'MEDIUM VOLTAGE'],
             'qr.admin'        => ['QR', 'qr'],
             'qa.admin'        => ['QUALITY ASSURANCE', 'qr'],
             'sc.admin'        => ['SC', 'sc', 'SUPPLY CHAIN'],
