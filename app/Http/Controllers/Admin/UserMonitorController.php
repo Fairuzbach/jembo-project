@@ -35,7 +35,7 @@ class UserMonitorController extends Controller
 
         $activeUsers = $this->getActiveUsers();
 
-        return view('Admin.monitor', compact('activeUsers'));
+        return view('admin.monitor', compact('activeUsers'));
     }
 
     /**
