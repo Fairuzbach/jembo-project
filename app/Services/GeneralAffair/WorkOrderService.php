@@ -486,6 +486,21 @@ class WorkOrderService
         $this->applyAccessControl($query, $user);
         $this->applyFilters($query, $request);
 
+        if ($request->view === 'internal' && in_array($user->role, ['ga.admin', 'super.ga.admin', 'admin_ga'])) {
+            // Tampilan Logbook: HANYA tampilkan catatan buatan internal GA
+            $query->where(function ($sub) {
+                $sub->where('department', 'LIKE', '%GENERAL AFFAIR%')
+                    ->orWhere('requester_department', 'LIKE', '%GENERAL AFFAIR%');
+            });
+        } else {
+            // Tampilan Default: SEMBUNYIKAN semua catatan buatan internal GA
+            // Agar tabel "Request Divisi Lain" tidak tercampur catatan orang GA
+            $query->where(function ($sub) {
+                $sub->where('department', 'NOT LIKE', '%GENERAL AFFAIR%')
+                    ->where('requester_department', 'NOT LIKE', '%GENERAL AFFAIR%');
+            });
+        }
+
         $data = $query->with(['user', 'histories.user', 'plantInfo', 'approverGa'])
             ->orderBy('created_at', 'desc')
             ->paginate(10)
@@ -771,7 +786,7 @@ class WorkOrderService
             'qr.admin'        => ['QR', 'qr'],
             'qa.admin'        => ['QUALITY ASSURANCE', 'qr'],
             'sc.admin'        => ['SC', 'sc', 'SUPPLY CHAIN'],
-            'fo.admin'        => ['FO', 'fo', 'FIBER OPTIK'],
+            'fo.admin'        => ['FO', 'fo', 'FIBER OPTIC'],
             'ss.admin'        => ['SS', 'ss', 'SALES SUPPORT'],
             'fa.admin'        => ['FA', 'fa', 'FINANCE'],
             'accounting.admin'        => ['ACCOUNTING'],
