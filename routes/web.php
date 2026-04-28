@@ -100,7 +100,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/dashboard', [FacilitiesController::class, 'dashboard'])->name('dashboard');
         Route::post('/store', [FacilitiesController::class, 'store'])->name('store');
         Route::get('/export', [FacilitiesController::class, 'export'])->name('export');
-
+        Route::get('/{id}/pdf', [FacilitiesController::class, 'exportPdf'])->name('pdf');
         // Status Actions
         Route::put('/{id}/update-status', [FacilitiesController::class, 'updateStatus'])->name('updateStatus');
         Route::post('/{id}/approve', [FacilitiesController::class, 'approve'])->name('approve');
