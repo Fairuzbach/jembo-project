@@ -223,7 +223,19 @@
                             </div>
                         </template>
 
-                        <div class="mt-8 pt-4 border-t border-slate-100 flex justify-end">
+                        <div class="mt-8 pt-4 border-t border-slate-100 flex justify-end items-center gap-3">
+                            {{-- TOMBOL EXPORT PDF --}}
+                            <a :href="'/fh/' + ticket.id + '/pdf'" target="_blank"
+                                class="px-5 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-bold transition-colors flex items-center gap-2 border border-red-200">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z">
+                                    </path>
+                                </svg>
+                                Export PDF
+                            </a>
+
+                            {{-- TOMBOL TUTUP --}}
                             <button @click="showDetailModal = false"
                                 class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-colors">
                                 Tutup
