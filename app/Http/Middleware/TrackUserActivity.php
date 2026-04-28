@@ -31,41 +31,37 @@ class TrackUserActivity
     public function handle(Request $request, Closure $next)
     {
         if (Auth::check()) {
-            $user     = Auth::user();
-            $cacheKey = 'user_activity_' . $user->id;
+            $user = Auth::user();
 
             /**
-             * Simpan info user ke Cache dengan TTL 5 menit.
-             * Jika user tidak ada request selama 5 menit → dianggap offline.
+             * Exclude SuperrrAdmin dari tracking — tidak perlu muncul di monitor.
+             * Exclude juga halaman monitor itu sendiri agar tidak tercatat.
              */
-            Cache::put($cacheKey, [
-                'id'            => $user->id,
-                'name'          => $user->name,
-                'divisi'        => $user->divisi ?? '-',
-                'role'          => $user->role ?? '-',
-                'last_activity' => now()->toDateTimeString(),
-                'current_url'   => $request->path(),
-            ], now()->addMinutes(5));
+            $isSuper          = $user->role === 'SuperrrAdmin';
+            $isMonitorPage    = str_starts_with($request->path(), 'superadmin/monitor');
 
-            /**
-             * Update DB hanya setiap 60 detik untuk menghindari
-             * query write yang terlalu sering ke database.
-             *
-             * Dibungkus try-catch agar jika DB error, request user
-             * tetap berjalan normal dan error hanya dicatat ke log.
-             */
-            $dbUpdateKey = 'user_db_updated_' . $user->id;
-            if (!Cache::has($dbUpdateKey)) {
-                try {
-                    $user->timestamps    = false; // Jangan update updated_at
-                    $user->last_activity = now();
-                    $user->save();
+            if (!$isSuper && !$isMonitorPage) {
+                $cacheKey = 'user_activity_' . $user->id;
 
-                    // Tandai bahwa DB sudah diupdate, tunggu 60 detik lagi
-                    Cache::put($dbUpdateKey, true, now()->addSeconds(60));
-                } catch (\Exception $e) {
-                    // Error dicatat ke log, request tetap jalan normal
-                    Log::error('TrackUserActivity DB Error: ' . $e->getMessage());
+                Cache::put($cacheKey, [
+                    'id'            => $user->id,
+                    'name'          => $user->name,
+                    'divisi'        => $user->divisi ?? '-',
+                    'role'          => $user->role ?? '-',
+                    'last_activity' => now()->toDateTimeString(),
+                    'current_url'   => $request->path(),
+                ], now()->addMinutes(5));
+
+                $dbUpdateKey = 'user_db_updated_' . $user->id;
+                if (!Cache::has($dbUpdateKey)) {
+                    try {
+                        $user->timestamps    = false;
+                        $user->last_activity = now();
+                        $user->save();
+                        Cache::put($dbUpdateKey, true, now()->addSeconds(60));
+                    } catch (\Exception $e) {
+                        Log::error('TrackUserActivity DB Error: ' . $e->getMessage());
+                    }
                 }
             }
         }
