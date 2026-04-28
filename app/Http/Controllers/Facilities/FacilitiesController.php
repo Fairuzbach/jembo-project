@@ -10,6 +10,7 @@ use App\Services\Facility\FacilityService;
 use App\Http\Requests\Facility\StoreFacilityRequest;
 use App\Exports\FacilitiesExport;
 use Maatwebsite\Excel\Facades\Excel;
+use Barryvdh\DomPDF\Facade\PDF;
 
 class FacilitiesController extends Controller
 {
@@ -243,5 +244,13 @@ class FacilitiesController extends Controller
     public function export(Request $request)
     {
         return redirect()->route('fh.index');
+    }
+
+    public function exportPdf($id)
+    {
+        $ticket = WorkOrderFacilities::with(['user', 'machine', 'technicians'])->findOrFail($id);
+        $pdf = PDF::loadView('Division.Facilities.pdf', compact('ticket'));
+        $pdf->setPaper('a4', 'potrait');
+        return $pdf->download('WorkOrder-Facility-' . $ticket->ticket_num . '.pdf');
     }
 }
