@@ -131,6 +131,22 @@
         button {
             @apply transition-all duration-200;
         }
+
+        /* Today Marker */
+        .today-marker {
+            background-color: #ef4444;
+            width: 2px;
+        }
+
+        .today-marker .gantt_marker_content {
+            background: #ef4444;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
     </style>
 
     <div class="py-12 bg-[#F8FAFC]">
@@ -161,11 +177,11 @@
                             @endforeach
                         </div>
                         <div class="flex gap-2 bg-slate-50 rounded-lg p-1 border border-slate-200">
-                            <button onclick="robust_changeZoom('day')"
+                            <button id="zoom-day" onclick="robust_changeZoom('day')"
                                 class="zoom-btn-fh px-3 py-1.5 text-xs bg-white border rounded">Hari</button>
-                            <button onclick="robust_changeZoom('week')"
+                            <button id="zoom-week" onclick="robust_changeZoom('week')"
                                 class="zoom-btn-fh px-3 py-1.5 text-xs bg-white border rounded">Minggu</button>
-                            <button onclick="robust_changeZoom('month')"
+                            <button id="zoom-month" onclick="robust_changeZoom('month')"
                                 class="zoom-btn-fh px-3 py-1.5 text-xs bg-blue-500 text-white rounded">Bulan</button>
                         </div>
                     </div>
