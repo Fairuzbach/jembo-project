@@ -170,93 +170,110 @@
                 'parameter' => ['KEBERSIHAN', 'PEMELIHARAAN', 'PERBAIKAN', 'PEMBUATAN BARU', 'PERIZINAN', 'RESERVASI'],
             ]" />
             @if (in_array(auth()->user()->role, ['ga.admin', 'super.ga.admin', 'admin_ga']))
-                <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-5">
+                <div x-data="{
+                    active: '{{ request('view') === 'internal' ? 'logbook' : 'request' }}',
+                    init() {
+                        this.$nextTick(() => this.moveSlider());
+                    },
+                    moveSlider() {
+                        const target = this.$refs[this.active];
+                        const slider = this.$refs.slider;
+                        if (!target || !slider) return;
+                        slider.style.width = target.offsetWidth + 'px';
+                        slider.style.transform = 'translateX(' + target.offsetLeft + 'px)';
+                    },
+                    go(tab, url) {
+                        this.active = tab;
+                        this.moveSlider();
+                        setTimeout(() => window.location.href = url, 250);
+                    }
+                }"
+                    class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
 
-                    {{-- Bagian Kiri: Area Kerja & Segmented Control --}}
-                    <div class="space-y-3">
-                        <div class="flex items-center gap-2.5 px-1">
-                            <h3 class="text-sm font-extrabold text-slate-800 tracking-tight">Area Kerja</h3>
-                            <span
-                                class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider {{ request('view') === 'internal' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700' }}">
-                                {{ request('view') === 'internal' ? 'Mode Internal' : 'Mode Publik' }}
-                            </span>
+                    {{-- Tab Switcher --}}
+                    <div class="relative flex bg-slate-100 border border-slate-200 rounded-xl p-0.5 gap-0">
+
+                        {{-- Sliding pill --}}
+                        <div x-ref="slider"
+                            class="absolute top-0.5 bottom-0.5 left-0.5 rounded-[10px] bg-white border border-slate-200 shadow-sm"
+                            style="transition: transform 0.25s cubic-bezier(0.4,0,0.2,1), width 0.25s cubic-bezier(0.4,0,0.2,1);">
                         </div>
 
-                        <div
-                            class="inline-flex p-1 bg-slate-100/80 rounded-[14px] border border-slate-200/60 shadow-inner">
+                        {{-- Tab: Request Divisi Lain --}}
+                        <button x-ref="request" @click="go('request', '{{ route('ga.index') }}')"
+                            class="relative z-10 flex items-center gap-2 px-5 py-2.5 rounded-[10px] text-sm font-medium border border-transparent transition-colors duration-200 cursor-pointer">
 
-                            {{-- Tab Request Eksternal --}}
-                            <a href="{{ route('ga.index') }}"
-                                class="relative px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex items-center gap-2.5 
-                    {{ request('view') !== 'internal' ? 'bg-white text-slate-800 shadow-sm ring-1 ring-slate-900/5' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50' }}">
+                            <svg class="w-3.5 h-3.5 shrink-0 transition-colors duration-200"
+                                :class="active === 'request' ? 'text-blue-600' : 'text-slate-400'" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
 
-                                <svg class="w-4 h-4 {{ request('view') !== 'internal' ? 'text-blue-600' : 'text-slate-400' }} transition-colors"
-                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
-                                    </path>
-                                </svg>
+                            <span class="transition-colors duration-200"
+                                :class="active === 'request' ? 'text-blue-700' : 'text-slate-500'">
                                 Request Divisi Lain
+                            </span>
+                        </button>
 
-                                {{-- Titik indikator kecil di bawah teks (Micro-interaction) --}}
-                                @if (request('view') !== 'internal')
-                                    <span
-                                        class="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
-                                @endif
-                            </a>
+                        {{-- Tab: Logbook Internal GA --}}
+                        <button x-ref="logbook"
+                            @click="go('logbook', '{{ route('ga.index', ['view' => 'internal']) }}')"
+                            class="relative z-10 flex items-center gap-2 px-5 py-2.5 rounded-[10px] text-sm font-medium border border-transparent transition-colors duration-200 cursor-pointer">
 
-                            {{-- Tab Logbook Internal --}}
-                            <a href="{{ route('ga.index', ['view' => 'internal']) }}"
-                                class="relative px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex items-center gap-2.5 
-                    {{ request('view') === 'internal' ? 'bg-white text-slate-800 shadow-sm ring-1 ring-slate-900/5' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50' }}">
+                            <svg class="w-3.5 h-3.5 shrink-0 transition-colors duration-200"
+                                :class="active === 'logbook' ? 'text-emerald-600' : 'text-slate-400'" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
 
-                                <svg class="w-4 h-4 {{ request('view') === 'internal' ? 'text-emerald-600' : 'text-slate-400' }} transition-colors"
-                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
-                                    </path>
-                                </svg>
+                            <span class="transition-colors duration-200"
+                                :class="active === 'logbook' ? 'text-emerald-700' : 'text-slate-500'">
                                 Logbook Internal GA
+                            </span>
+                        </button>
 
-                                @if (request('view') === 'internal')
-                                    <span
-                                        class="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-emerald-600 rounded-full"></span>
-                                @endif
-                            </a>
-                        </div>
                     </div>
 
-                    {{-- Bagian Kanan: Panel Info Tampilan (Widget Style) --}}
-                    <div
-                        class="w-full md:w-auto flex items-center gap-3 bg-white px-4 py-3 rounded-[14px] border border-slate-200/80 shadow-sm">
-                        @if (request('view') === 'internal')
-                            <div class="p-2 bg-emerald-50 rounded-lg">
-                                <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
+                    {{-- Info Panel --}}
+                    <div class="flex items-center gap-3 px-4 py-2.5 bg-white border border-slate-200 rounded-xl">
+
+                        {{-- Request mode --}}
+                        <template x-if="active === 'request'">
+                            <div class="flex items-center gap-3">
+                                <div class="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+                                    <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                            d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-semibold text-slate-800 leading-tight">Data Request</p>
+                                    <p class="text-[11px] text-slate-400 leading-tight">Permintaan dari divisi lain</p>
+                                </div>
                             </div>
-                            <div class="flex flex-col">
-                                <span class="text-xs font-extrabold text-slate-800 leading-tight">Data Logbook</span>
-                                <span class="text-[11px] font-medium text-slate-500">Hanya menampilkan pekerjaan tim
-                                    GA</span>
+                        </template>
+
+                        {{-- Logbook mode --}}
+                        <template x-if="active === 'logbook'">
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+                                    <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-semibold text-slate-800 leading-tight">Data Logbook</p>
+                                    <p class="text-[11px] text-slate-400 leading-tight">Pekerjaan tim GA</p>
+                                </div>
                             </div>
-                        @else
-                            <div class="p-2 bg-blue-50 rounded-lg">
-                                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                        d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
-                                    </path>
-                                </svg>
-                            </div>
-                            <div class="flex flex-col">
-                                <span class="text-xs font-extrabold text-slate-800 leading-tight">Data Request</span>
-                                <span class="text-[11px] font-medium text-slate-500">Menampilkan permintaan divisi
-                                    lain</span>
-                            </div>
-                        @endif
+                        </template>
+
                     </div>
 
                 </div>
