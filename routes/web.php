@@ -165,4 +165,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/categories', [UserManagementController::class, 'storeCategory'])->name('categories.store');
         Route::delete('/categories/{id}', [UserManagementController::class, 'destroyCategory'])->name('categories.destroy');
     });
+
+    Route::prefix('superadmin')->name('superadmin.')->middleware('auth')->group(function () {
+        Route::get('/monitor', [\App\Http\Controllers\Admin\UserMonitorController::class, 'index'])->name('monitor');
+        Route::get('/monitor/data', [\App\Http\Controllers\Admin\UserMonitorController::class, 'data'])->name('monitor.data');
+    });
 });
