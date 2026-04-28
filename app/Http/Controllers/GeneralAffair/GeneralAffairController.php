@@ -342,10 +342,17 @@ class GeneralAffairController extends Controller
         if ($user) {
             // 1. LEVEL SUPER ADMIN / GA ADMIN
             if (
-                $user->role === User::ROLE_GA_ADMIN ||
-                $user->role === 'super.ga.admin' ||
-                $user->role === 'admin_ga'
+                in_array($user->role, ['ga.admin', 'super.ga.admin', 'admin_ga']) ||
+                $user->role === (User::ROLE_GA_ADMIN ?? '')
             ) {
+                // Pisahkan logika berdasarkan tab yang sedang dibuka
+                if ($request->view === 'internal') {
+                    // Export Tab Internal: Hanya ambil data GA
+                    $query->where('department', 'LIKE', '%GENERAL AFFAIR%');
+                } else {
+                    // Export Tab Eksternal (Default): Sembunyikan data GA
+                    $query->where('department', 'NOT LIKE', '%GENERAL AFFAIR%');
+                }
             }
             // 2. LEVEL ADMIN DEPARTEMEN
             elseif (array_key_exists($user->role, $roleMap)) {

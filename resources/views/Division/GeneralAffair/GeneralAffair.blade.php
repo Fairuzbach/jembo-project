@@ -78,60 +78,83 @@
                 :countWaitingApproval="$countWaitingApproval" :countWaitingApprovalSpv="$countWaitingApprovalSpv ?? 0" :countWaitingApprovalGA="$countWaitingApprovalGA ?? 0" :countRejected="$countRejected ?? 0" />
             {{-- 2. PENGUMUMAN UPDATE KATEGORI (Warna Emerald/Hijau) --}}
             {{-- PENGUMUMAN UPDATE KATEGORI & FILTER (Warna Emerald/Hijau) --}}
-            <div x-data="{ showUpdateNotif: !localStorage.getItem('update_v2_seen') }" x-show="showUpdateNotif" x-transition.opacity.duration.500ms
-                class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
-                style="display: none;">
+            @if (in_array(auth()->user()->role, ['ga.admin', 'super.ga.admin']))
+                <div x-data="{ showUpdateNotif: !localStorage.getItem('ga_logbook_v1_seen') }" x-show="showUpdateNotif" x-transition.opacity.duration.500ms
+                    class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+                    style="display: none;">
 
-                <div @click.away="localStorage.setItem('update_v2_seen', 'true'); showUpdateNotif = false"
-                    class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all">
+                    <div @click.away="localStorage.setItem('ga_logbook_v1_seen', 'true'); showUpdateNotif = false"
+                        class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all border-t-8 border-emerald-600">
 
-                    {{-- Header Gambar / Banner Gradient --}}
-                    <div class="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-center">
-                        <div
-                            class="inline-flex items-center justify-center w-12 h-12 bg-white/20 rounded-full mb-3 shadow-inner">
-                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                            </svg>
+                        {{-- Header Banner --}}
+                        <div class="bg-gradient-to-r from-emerald-600 to-teal-600 p-6 text-center text-white">
+                            <div
+                                class="inline-flex items-center justify-center w-12 h-12 bg-white/20 rounded-full mb-3 shadow-inner">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
+                                    </path>
+                                </svg>
+                            </div>
+                            <h3 class="text-xl font-black tracking-tight">Fitur Logbook Internal GA!</h3>
+                            <p class="text-emerald-100 text-xs mt-1 font-medium">Update Sistem | Logbook & Pemisahan
+                                Data</p>
                         </div>
-                        <h3 class="text-xl font-black text-white tracking-tight">System Update Baru!</h3>
-                        <p class="text-blue-100 text-xs mt-1 font-medium">Versi 2.0 | Update Hari Ini</p>
-                    </div>
 
-                    {{-- Konten List Fitur --}}
-                    <div class="p-6">
-                        <p class="text-sm text-slate-600 mb-4 font-medium">
-                            Kami baru saja menambahkan beberapa fitur baru untuk mempermudah pekerjaan Anda:
-                        </p>
+                        {{-- Konten --}}
+                        <div class="p-6">
+                            <p class="text-sm text-slate-600 mb-4 font-medium leading-relaxed">
+                                Kami telah memisahkan catatan pekerjaan internal tim GA agar tidak bercampur dengan
+                                permintaan dari divisi lain:
+                            </p>
 
-                        <ul class="space-y-3 mb-6">
-                            <li class="flex items-start">
-                                <div
-                                    class="flex-shrink-0 w-5 h-5 rounded-full bg-red-100 flex items-center justify-center mt-0.5">
-                                    <svg class="w-3 h-3 text-red-600" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M6 18L18 6M6 6l12 12"></path>
-                                    </svg>
-                                </div>
-                                <div class="ml-3">
-                                    <span class="block text-sm font-bold text-slate-800">Batal Request Mandiri
-                                        (GA)</span>
-                                    <span class="block text-xs text-slate-500">Kini Anda bisa membatalkan laporan
-                                        General Affair Anda sendiri jika statusnya masih Pending.</span>
-                                </div>
-                            </li>
-                        </ul>
+                            <ul class="space-y-4 mb-6">
+                                <li class="flex items-start">
+                                    <div
+                                        class="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center mt-0.5">
+                                        <svg class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="ml-3">
+                                        <span class="block text-sm font-bold text-slate-800">Tab Pemisah Baru</span>
+                                        <span class="block text-xs text-slate-500">Klik tab <b>"Internal GA"</b> untuk
+                                            melihat catatan pekerjaan mandiri tim GA.</span>
+                                    </div>
+                                </li>
+                                <li class="flex items-start">
+                                    <div
+                                        class="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center mt-0.5">
+                                        <svg class="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="ml-3">
+                                        <span class="block text-sm font-bold text-slate-800">Pemisahan Laporan
+                                            (Excel)</span>
+                                        <span class="block text-xs text-slate-500">Export Excel kini secara otomatis
+                                            menyesuaikan dengan tab yang sedang Anda buka.</span>
+                                    </div>
+                                </li>
+                            </ul>
 
-                        {{-- Tombol Tutup --}}
-                        <button @click="localStorage.setItem('update_v2_seen', 'true'); showUpdateNotif = false"
-                            type="button"
-                            class="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 transition-colors">
-                            Mengerti, Lanjutkan
-                        </button>
+                            {{-- Tombol Tutup --}}
+                            <button @click="localStorage.setItem('ga_logbook_v1_seen', 'true'); showUpdateNotif = false"
+                                type="button"
+                                class="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-sm font-bold text-white bg-slate-900 hover:bg-slate-800 transition-all active:scale-95">
+                                Siap, Saya Mengerti
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
+            @endif
+
+
             {{-- 2. CONTROL PANEL --}}
             <x-gaIndex.control-panel :filterOptions="[
                 'status' => [
@@ -146,7 +169,98 @@
                 'category' => ['BERAT', 'SEDANG', 'RINGAN'],
                 'parameter' => ['KEBERSIHAN', 'PEMELIHARAAN', 'PERBAIKAN', 'PEMBUATAN BARU', 'PERIZINAN', 'RESERVASI'],
             ]" />
+            @if (in_array(auth()->user()->role, ['ga.admin', 'super.ga.admin', 'admin_ga']))
+                <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-5">
 
+                    {{-- Bagian Kiri: Area Kerja & Segmented Control --}}
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-2.5 px-1">
+                            <h3 class="text-sm font-extrabold text-slate-800 tracking-tight">Area Kerja</h3>
+                            <span
+                                class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider {{ request('view') === 'internal' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700' }}">
+                                {{ request('view') === 'internal' ? 'Mode Internal' : 'Mode Publik' }}
+                            </span>
+                        </div>
+
+                        <div
+                            class="inline-flex p-1 bg-slate-100/80 rounded-[14px] border border-slate-200/60 shadow-inner">
+
+                            {{-- Tab Request Eksternal --}}
+                            <a href="{{ route('ga.index') }}"
+                                class="relative px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex items-center gap-2.5 
+                    {{ request('view') !== 'internal' ? 'bg-white text-slate-800 shadow-sm ring-1 ring-slate-900/5' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50' }}">
+
+                                <svg class="w-4 h-4 {{ request('view') !== 'internal' ? 'text-blue-600' : 'text-slate-400' }} transition-colors"
+                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                                    </path>
+                                </svg>
+                                Request Divisi Lain
+
+                                {{-- Titik indikator kecil di bawah teks (Micro-interaction) --}}
+                                @if (request('view') !== 'internal')
+                                    <span
+                                        class="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
+                                @endif
+                            </a>
+
+                            {{-- Tab Logbook Internal --}}
+                            <a href="{{ route('ga.index', ['view' => 'internal']) }}"
+                                class="relative px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex items-center gap-2.5 
+                    {{ request('view') === 'internal' ? 'bg-white text-slate-800 shadow-sm ring-1 ring-slate-900/5' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50' }}">
+
+                                <svg class="w-4 h-4 {{ request('view') === 'internal' ? 'text-emerald-600' : 'text-slate-400' }} transition-colors"
+                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
+                                    </path>
+                                </svg>
+                                Logbook Internal GA
+
+                                @if (request('view') === 'internal')
+                                    <span
+                                        class="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-emerald-600 rounded-full"></span>
+                                @endif
+                            </a>
+                        </div>
+                    </div>
+
+                    {{-- Bagian Kanan: Panel Info Tampilan (Widget Style) --}}
+                    <div
+                        class="w-full md:w-auto flex items-center gap-3 bg-white px-4 py-3 rounded-[14px] border border-slate-200/80 shadow-sm">
+                        @if (request('view') === 'internal')
+                            <div class="p-2 bg-emerald-50 rounded-lg">
+                                <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-xs font-extrabold text-slate-800 leading-tight">Data Logbook</span>
+                                <span class="text-[11px] font-medium text-slate-500">Hanya menampilkan pekerjaan tim
+                                    GA</span>
+                            </div>
+                        @else
+                            <div class="p-2 bg-blue-50 rounded-lg">
+                                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                        d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
+                                    </path>
+                                </svg>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-xs font-extrabold text-slate-800 leading-tight">Data Request</span>
+                                <span class="text-[11px] font-medium text-slate-500">Menampilkan permintaan divisi
+                                    lain</span>
+                            </div>
+                        @endif
+                    </div>
+
+                </div>
+            @endif
             {{-- 3. DATA TABLE (Pusat Tombol Mata) --}}
             <x-gaIndex.table-data :workOrders="$workOrders" />
 
