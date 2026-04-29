@@ -249,7 +249,7 @@ class FacilitiesController extends Controller
     public function exportPdf($id)
     {
         $ticket = WorkOrderFacilities::with(['user', 'machine', 'technicians'])->findOrFail($id);
-        $pdf = PDF::loadView('Division.Facilities.pdf', compact('ticket'));
+        $pdf = PDF::loadView('division.facilities.pdf', compact('ticket'));
         $pdf->setPaper('a4', 'potrait');
         return $pdf->stream('WorkOrder-Facility-' . $ticket->ticket_num . '.pdf');
     }
