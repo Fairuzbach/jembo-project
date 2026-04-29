@@ -34,8 +34,10 @@ class UserMonitorController extends Controller
         }
 
         $activeUsers = $this->getActiveUsers();
+        $visitStats = $this->getVisitStats();
+        $sessionHistory = $this->getSessionHistory();
 
-        return view('admin.monitor', compact('activeUsers'));
+        return view('admin.monitor', compact('activeUsers', 'visitStats', 'sessionHistory'));
     }
 
     /**
@@ -56,9 +58,42 @@ class UserMonitorController extends Controller
             'active_users' => $this->getActiveUsers(),
             'total'        => count($this->getActiveUsers()),
             'timestamp'    => now()->format('H:i:s'),
+            'visit_stats'     => $this->getVisitStats(),
+            'session_history' => $this->getSessionHistory(),
         ]);
     }
+    /**
+     * Ambil history login/logout hari ini dari Cache.
+     * Diisi oleh AuthenticatedSessionController::recordSessionEvent()
+     */
+    private function getSessionHistory(): array
+    {
+        $today = now()->format('Y-m-d');
+        return Cache::get("session_history_{$today}", []);
+    }
 
+    /**
+     * Ambil statistik kunjungan per modul hari ini.
+     * Membaca dari Cache yang di-increment oleh middleware.
+     */
+    private function getVisitStats(): array
+    {
+        $today = now()->format('Y-m-d');
+
+        $fh  = (int) Cache::get("visit_count_fh_{$today}", 0);
+        $ga  = (int) Cache::get("visit_count_ga_{$today}", 0);
+        $eng = (int) Cache::get("visit_count_eng_{$today}", 0);
+
+        $total = $fh + $ga + $eng;
+
+        return [
+            'fh'  => ['count' => $fh,  'percent' => $total > 0 ? round(($fh  / $total) * 100) : 0, 'label' => 'WO Facility'],
+            'ga'  => ['count' => $ga,  'percent' => $total > 0 ? round(($ga  / $total) * 100) : 0, 'label' => 'General Affair'],
+            'eng' => ['count' => $eng, 'percent' => $total > 0 ? round(($eng / $total) * 100) : 0, 'label' => 'Engineering'],
+            'total' => $total,
+            'date'  => now()->format('d M Y'),
+        ];
+    }
     /**
      * Ambil semua user yang aktif dalam 5 menit terakhir dari Cache.
      * Jika Cache miss (server restart dll), fallback ke DB via last_activity.

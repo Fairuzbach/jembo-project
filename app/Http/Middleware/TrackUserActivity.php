@@ -52,6 +52,38 @@ class TrackUserActivity
                     'current_url'   => $request->path(),
                 ], now()->addMinutes(5));
 
+                /**
+                 * VISIT COUNTER PER MODUL
+                 * -------------------------------------------------------
+                 * Hitung berapa kali /fh, /ga, /eng dikunjungi hari ini.
+                 * Key menggunakan tanggal agar otomatis reset tiap hari.
+                 * TTL 25 jam sebagai safety net.
+                 */
+                $today   = now()->format('Y-m-d');
+                $modules = [
+                    'fh'  => 'fh',
+                    'ga'  => 'ga',
+                    'eng' => 'eng',
+                ];
+
+                foreach ($modules as $prefix => $key) {
+                    if (str_starts_with($request->path(), $prefix)) {
+                        $visitKey = "visit_count_{$key}_{$today}";
+                        Cache::increment($visitKey);
+
+                        // Pastikan TTL di-set saat pertama kali increment
+                        // Cache::increment tidak set TTL, jadi kita set jika belum ada
+                        if (!Cache::has("visit_ttl_{$key}_{$today}")) {
+                            Cache::put("visit_ttl_{$key}_{$today}", true, now()->addHours(25));
+                            // Re-set visit key dengan TTL jika belum pernah di-set
+                            if (Cache::get($visitKey) == 1) {
+                                Cache::put($visitKey, 1, now()->addHours(25));
+                            }
+                        }
+                        break;
+                    }
+                }
+
                 $dbUpdateKey = 'user_db_updated_' . $user->id;
                 if (!Cache::has($dbUpdateKey)) {
                     try {
