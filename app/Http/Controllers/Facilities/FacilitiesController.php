@@ -10,7 +10,7 @@ use App\Services\Facility\FacilityService;
 use App\Http\Requests\Facility\StoreFacilityRequest;
 use App\Exports\FacilitiesExport;
 use Maatwebsite\Excel\Facades\Excel;
-use Barryvdh\DomPDF\Facade\PDF;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 
 class FacilitiesController extends Controller
 {
