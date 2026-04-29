@@ -251,6 +251,6 @@ class FacilitiesController extends Controller
         $ticket = WorkOrderFacilities::with(['user', 'machine', 'technicians'])->findOrFail($id);
         $pdf = PDF::loadView('Division.Facilities.pdf', compact('ticket'));
         $pdf->setPaper('a4', 'potrait');
-        return $pdf->download('WorkOrder-Facility-' . $ticket->ticket_num . '.pdf');
+        return $pdf->stream('WorkOrder-Facility-' . $ticket->ticket_num . '.pdf');
     }
 }
