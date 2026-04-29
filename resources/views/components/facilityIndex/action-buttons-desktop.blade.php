@@ -45,7 +45,7 @@
         </button>
 
         {{-- TOMBOL UPDATE --}}
-        @if (($status === 'pending' || $status === 'in_progress') && $isFacilityAdmin)
+        @if (($status === 'pending' || $status === 'in_progress' || $status === 'cancelled') && $isFacilityAdmin)
             <button @click='openEditModal(@json($wo))'
                 class="flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-200 transition">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
