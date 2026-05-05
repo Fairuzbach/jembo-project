@@ -672,7 +672,12 @@
         // UPDATE fetchActiveUsers — tambah session_history
         // =====================================================================
         function fetchActiveUsers() {
-            fetch('{{ route('superadmin.monitor.data') }}')
+            fetch('{{ route('superadmin.monitor.data') }}', {
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                    }
+                })
                 .then(res => res.json())
                 .then(data => {
                     updateTable(data.active_users);
