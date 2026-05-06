@@ -97,9 +97,9 @@ return [
             'retry_after' => 60,
         ],
 
-        // 'microsoft' => [
-        //     'transport' => 'microsoft',
-        // ],
+        'microsoft' => [
+            'transport' => 'microsoft',
+        ],
 
     ],
 
