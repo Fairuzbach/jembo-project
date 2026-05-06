@@ -1,7 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Http\Request;
 // Import Controller
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\MicrosoftAuthController;
@@ -15,6 +16,84 @@ use App\Http\Controllers\Engineering\EngCompoundStandardController;
 use App\Http\Controllers\Engineering\OperatorController;
 use App\Http\Controllers\ChangePasswordController;
 use App\Models\Employee;
+
+Route::get('/test-email-prod', function () {
+    // ⚠️ Opsional: Buka komentar di bawah ini agar hanya user login/admin yang bisa akses
+    // if (!auth()->check()) abort(403, 'Akses Ditolak');
+
+    return '
+    <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 50px auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px;">
+        <h2 style="color: #333;">📭 Test Email Production</h2>
+        <form method="POST" action="/test-email-prod">
+            ' . csrf_field() . '
+            <div style="margin-bottom: 15px;">
+                <label style="display:block; font-weight:bold; margin-bottom:5px;">Email Tujuan:</label>
+                <input type="email" name="email" required placeholder="nama@jembo.com" style="width: 100%; padding: 8px; box-sizing: border-box;">
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display:block; font-weight:bold; margin-bottom:5px;">Metode Pengiriman:</label>
+                <select name="method" style="width: 100%; padding: 8px; box-sizing: border-box;">
+                    <option value="direct">1. Direct (Langsung - Bypass Antrean)</option>
+                    <option value="queue_default">2. Lewat Antrean "Default" (Mode Facility)</option>
+                    <option value="queue_emails">3. Lewat Antrean "Emails" (Mode GA)</option>
+                </select>
+            </div>
+
+            <button type="submit" style="background: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; width: 100%;">
+                Kirim Test Email 🚀
+            </button>
+        </form>
+    </div>
+    ';
+});
+
+// 2. Proses Pengiriman Test Email
+Route::post('/test-email-prod', function (Request $request) {
+    $request->validate(['email' => 'required|email']);
+    $to = $request->email;
+    $method = $request->method;
+
+    try {
+        $subject = "Test Laravel Production - " . strtoupper($method) . " [" . now()->format('H:i:s') . "]";
+        $body = "Ini adalah email pengetesan otomatis dari server Production.\n\nMetode yang digunakan: {$method}\nWaktu: " . now();
+
+        if ($method === 'direct') {
+            // Bypass queue, kirim langsung (Jika ini gagal, berarti Port/Password salah)
+            Mail::raw($body, function ($msg) use ($to, $subject) {
+                $msg->to($to)->subject($subject);
+            });
+            $status = "✅ Sukses dikirim <b>LANGSUNG</b> ke {$to} tanpa antrean. Cek inbox Anda!";
+        } else {
+            // Menggunakan Queue
+            $queueName = ($method === 'queue_emails') ? 'emails' : 'default';
+
+            // Masukkan tugas ke tabel jobs (Jika ini berhasil tapi email tidak masuk, berarti Worker macet)
+            dispatch(function () use ($to, $subject, $body) {
+                Mail::raw($body, function ($msg) use ($to, $subject) {
+                    $msg->to($to)->subject($subject);
+                });
+            })->onQueue($queueName);
+
+            $status = "⏳ Sukses dimasukkan ke tabel antrean <b>'{$queueName}'</b> untuk {$to}.<br><br><i>Syarat email masuk: Pastikan di terminal berjalan perintah: <br><code>php artisan queue:work --queue={$queueName}</code></i>";
+        }
+
+        return "<div style='font-family: Arial; padding: 20px; border: 1px solid green; background: #e8f5e9; max-width: 500px; margin: 50px auto;'>
+                    <h3>Hasil Pengetesan:</h3>
+                    <p>{$status}</p>
+                    <a href='/test-email-prod' style='color: #007bff;'>⬅ Kembali ke Form</a>
+                </div>";
+    } catch (\Exception $e) {
+        return "<div style='font-family: Arial; padding: 20px; border: 1px solid red; background: #ffebee; max-width: 500px; margin: 50px auto;'>
+                    <h3 style='color:red;'>🚨 GAGAL MENGIRIM!</h3>
+                    <p><b>Pesan Error dari Server:</b></p>
+                    <pre style='background: white; padding: 10px; overflow-x: auto;'>{$e->getMessage()}</pre>
+                    <a href='/test-email-prod' style='color: #007bff;'>⬅ Kembali ke Form</a>
+                </div>";
+    }
+});
+
+
 
 /*
 |--------------------------------------------------------------------------
