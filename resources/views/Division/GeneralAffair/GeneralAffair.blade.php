@@ -29,14 +29,158 @@
                     <div class="absolute -right-1 top-0 w-2 h-10 bg-gradient-to-b from-white to-gray-100 opacity-30">
                     </div>
                 </div>
-                <span class="flex gap-2 items-center">
-                    <span class="text-red-600 drop-shadow-sm">GENERAL</span>
-                    <span class="text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]"
-                        style="text-shadow: 2px 2px 0 #dc2626, -1px -1px 0 #dc2626, 1px -1px 0 #dc2626, -1px 1px 0 #dc2626;">AFFAIR</span>
-                    <span class="text-red-300 font-light">|</span>
-                    <span class="text-slate-700 text-lg self-center tracking-normal normal-case font-bold">Request
-                        Order</span>
+                <span class="ga-glass-badge">
+                    <span class="ga-red-pill">
+                        <span class="ga-dot"></span>
+                        <span class="ga-text-general">GENERAL</span>
+                        <span class="ga-text-affair">AFFAIR</span>
+                    </span>
+                    <span class="ga-divider"></span>
+                    <span class="ga-label">Request Order</span>
                 </span>
+
+                <style>
+                    @keyframes ga-shimmer {
+                        0% {
+                            transform: translateX(-120%) skewX(-15deg);
+                        }
+
+                        100% {
+                            transform: translateX(400%) skewX(-15deg);
+                        }
+                    }
+
+                    @keyframes ga-float {
+
+                        0%,
+                        100% {
+                            transform: translateY(0);
+                            opacity: .5;
+                        }
+
+                        50% {
+                            transform: translateY(-3px);
+                            opacity: 1;
+                        }
+                    }
+
+                    @keyframes ga-pulse-ring {
+                        0% {
+                            box-shadow: 0 0 0 0 rgba(220, 38, 38, .3);
+                        }
+
+                        70% {
+                            box-shadow: 0 0 0 8px rgba(220, 38, 38, 0);
+                        }
+
+                        100% {
+                            box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+                        }
+                    }
+
+                    @keyframes ga-border-breathe {
+
+                        0%,
+                        100% {
+                            border-color: rgba(203, 213, 225, .7);
+                        }
+
+                        50% {
+                            border-color: rgba(220, 38, 38, .25);
+                        }
+                    }
+
+                    .ga-glass-badge {
+                        display: inline-flex;
+                        align-items: center;
+                        background: rgba(255, 255, 255, .65);
+                        border: 1px solid rgba(203, 213, 225, .7);
+                        border-radius: 50px;
+                        padding: 7px 22px 7px 7px;
+                        /* ← lebih besar */
+                        position: relative;
+                        overflow: hidden;
+                        backdrop-filter: blur(10px);
+                        -webkit-backdrop-filter: blur(10px);
+                        box-shadow: 0 2px 12px rgba(0, 0, 0, .06), inset 0 1px 0 rgba(255, 255, 255, .9);
+                        animation: ga-border-breathe 4s ease-in-out 1s infinite;
+                    }
+
+                    .ga-glass-badge::after {
+                        content: '';
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        width: 35%;
+                        height: 100%;
+                        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .55), transparent);
+                        animation: ga-shimmer 4s ease-in-out 1.5s infinite;
+                        pointer-events: none;
+                    }
+
+                    .ga-red-pill {
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 9px;
+                        /* ← lebih renggang */
+                        background: rgba(220, 38, 38, .08);
+                        border: 1px solid rgba(220, 38, 38, .22);
+                        border-radius: 40px;
+                        padding: 6px 16px;
+                        /* ← lebih besar */
+                        margin-right: 16px;
+                        /* ← lebih jauh dari divider */
+                        animation: ga-pulse-ring 2.8s ease-out 1s infinite;
+                    }
+
+                    .ga-dot {
+                        display: inline-block;
+                        width: 10px;
+                        height: 10px;
+                        /* ← lebih besar */
+                        border-radius: 50%;
+                        background: #dc2626;
+                        flex-shrink: 0;
+                        animation: ga-float 2s ease-in-out infinite;
+                    }
+
+                    .ga-text-general {
+                        font-size: 16px;
+                        /* ← naik dari 12 */
+                        font-weight: 800;
+                        letter-spacing: .1em;
+                        color: #b91c1c;
+                    }
+
+                    .ga-text-affair {
+                        font-size: 16px;
+                        /* ← naik dari 12 */
+                        font-weight: 800;
+                        letter-spacing: .1em;
+                        color: #dc2626;
+                        text-shadow: 0 0 12px rgba(220, 38, 38, .2);
+                    }
+
+                    .ga-divider {
+                        display: inline-block;
+                        width: 1px;
+                        height: 22px;
+                        /* ← lebih tinggi */
+                        background: rgba(148, 163, 184, .5);
+                        margin-right: 16px;
+                        /* ← lebih jauh */
+                        flex-shrink: 0;
+                    }
+
+                    .ga-label {
+                        font-size: 16px;
+                        /* ← naik dari 14 */
+                        font-weight: 700;
+                        color: #334155;
+                        letter-spacing: .01em;
+                        white-space: nowrap;
+                    }
+                </style>
             </h2>
         </div>
     </x-slot>
