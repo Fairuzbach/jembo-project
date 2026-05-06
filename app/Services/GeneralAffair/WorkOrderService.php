@@ -358,7 +358,7 @@ class WorkOrderService
 
         $ticket->update($finalUpdate);
         $this->logHistory($ticket->id, ucfirst($newStatus), $desc);
-
+        $this->sendStatusChangeEmail($ticket, $newStatus);
         // ==========================================================
         // 4. LOGIKA NOTIFIKASI WHATSAPP (MULTI-TARGET)
         // ==========================================================
@@ -433,40 +433,48 @@ class WorkOrderService
 
         // C. LOGIKA KIRIM KE GA ADMIN (Next Approver)
         if ($emailType === 'manager_approved') {
-            Log::info("DEBUG WA: Mencari GA Admin untuk notifikasi approval...");
+            Log::info("DEBUG WA & EMAIL: Mencari GA Admin untuk notifikasi approval...");
 
-            $gaAdmins = \App\Models\User::whereIn('role', ['ga.admin', 'super.ga.admin'])
-                ->whereNotNull('no_hp')
-                ->where('no_hp', '!=', '')
-                ->get();
+            // PERBAIKAN: Hapus filter whereNotNull('no_hp') agar Admin yang hanya 
+            // punya email (tapi tidak punya No HP) tetap bisa mendapatkan notifikasi email.
+            $gaAdmins = \App\Models\User::whereIn('role', ['ga.admin', 'super.ga.admin'])->get();
 
-            Log::info("DEBUG WA: Ditemukan " . $gaAdmins->count() . " GA Admin.");
-
-            if ($gaAdmins->isEmpty()) {
-                Log::error("DEBUG WA: GAGAL! Tidak ada GA Admin yang memiliki No HP/Role yang sesuai.");
-            }
+            Log::info("DEBUG WA & EMAIL: Ditemukan " . $gaAdmins->count() . " GA Admin.");
 
             foreach ($gaAdmins as $admin) {
-                $msgAdmin = "🎫 *WORK ORDER GENERAL AFFAIR*\n" .
-                    "━━━━━━━━━━━━━━━━━━━━━━\n\n" .
-                    "Halo Admin *{$admin->name}* 👋\n\n" .
-                    "🔔 *NEW APPROVAL REQUEST*\n\n" .
-                    "📋 *Detail Tiket:*\n" .
-                    "• Ticket: *#{$ticket->ticket_num}*\n" .
-                    "• Requester: *{$requester->name}*\n" .
-                    "• Divisi: *{$ticket->department}*\n" .
-                    "• Status: *Menunggu Approval GA*\n\n" .
-                    "📝 *Deskripsi Pekerjaan:*\n" .
-                    "_{$ticket->description}_\n\n" .
-                    "🔗 *Link Approval:*\n$ticketLink\n\n" .
-                    "━━━━━━━━━━━━━━━━━━━━━━\n" .
-                    "_Mohon segera review dan approve tiket ini_ ✅";
+                // 1. KIRIM WHATSAPP (Jika ada nomor HP)
+                if (!empty($admin->no_hp)) {
+                    $msgAdmin = "🎫 *WORK ORDER GENERAL AFFAIR*\n" .
+                        "━━━━━━━━━━━━━━━━━━━━━━\n\n" .
+                        "Halo Admin *{$admin->name}* 👋\n\n" .
+                        "🔔 *NEW APPROVAL REQUEST*\n\n" .
+                        "📋 *Detail Tiket:*\n" .
+                        "• Ticket: *#{$ticket->ticket_num}*\n" .
+                        "• Requester: *{$requester->name}*\n" .
+                        "• Divisi: *{$ticket->department}*\n" .
+                        "• Status: *Menunggu Approval GA*\n\n" .
+                        "📝 *Deskripsi Pekerjaan:*\n" .
+                        "_{$ticket->description}_\n\n" .
+                        "🔗 *Link Approval:*\n$ticketLink\n\n" .
+                        "━━━━━━━━━━━━━━━━━━━━━━\n" .
+                        "_Mohon segera review dan approve tiket ini_ ✅";
 
-                try {
-                    GaWhatsappService::send($admin->no_hp, $msgAdmin);
-                    Log::info("DEBUG WA: Sukses kirim ke GA Admin: {$admin->name}");
-                } catch (\Exception $e) {
-                    Log::error("DEBUG WA: Gagal kirim ke GA Admin {$admin->name}: " . $e->getMessage());
+                    try {
+                        GaWhatsappService::send($admin->no_hp, $msgAdmin);
+                    } catch (\Exception $e) {
+                        Log::error("Gagal kirim WA ke GA Admin {$admin->name}: " . $e->getMessage());
+                    }
+                }
+
+                // 2. KIRIM EMAIL (Jika ada alamat email)
+                if (!empty($admin->email)) {
+                    try {
+                        // Menggunakan tipe 'ga_new' yang sudah Anda siapkan di Mailable
+                        $this->safeMail($admin->email, new \App\Mail\WorkOrderNotification($ticket, 'ga_new'));
+                        Log::info("Sukses antre Email Notifikasi ke GA Admin: {$admin->email}");
+                    } catch (\Exception $e) {
+                        Log::error("Gagal antre Email ke GA Admin {$admin->name}: " . $e->getMessage());
+                    }
                 }
             }
         }
@@ -671,7 +679,7 @@ class WorkOrderService
             'completed' => 'completed',
             'cancelled', 'rejected' => 'rejected',
             'approved', 'in_progress' => 'approved',
-            default => null
+            default => 'status_update'
         };
 
         if ($type) {
@@ -757,18 +765,12 @@ class WorkOrderService
         if (empty($to)) return;
 
         try {
-            SendWorkOrderNotification::dispatch($to, $mailable)
-                ->onConnection(config('queue.default'))
-                ->onQueue('emails');
-            Log::info("Email notification queued for: $to");
+            // Karena Mailable sudah implements ShouldQueue, kita cukup pakai send()
+            // dan arahkan secara spesifik ke antrean 'emails'
+            Mail::to($to)->send($mailable->onQueue('emails'));
+            Log::info("Email notification queued to 'emails' for: $to");
         } catch (\Exception $e) {
-            Log::error('Queue Dispatch Error (WorkOrderService): ' . $e->getMessage());
-            try {
-                Mail::to($to)->send($mailable);
-                Log::info("Email sent directly (fallback): $to");
-            } catch (\Exception $fallbackError) {
-                Log::error('Mail Fallback Error: ' . $fallbackError->getMessage());
-            }
+            Log::error('Mail Error (WorkOrderService GA): ' . $e->getMessage());
         }
     }
 
