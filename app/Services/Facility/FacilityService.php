@@ -258,6 +258,7 @@ class FacilityService
                 [
                     'Nomor Tiket'  => $ticket->ticket_num,
                     'Lokasi'       => $ticket->plant,
+                    'Mesin'        => $ticket->machine_name ? $ticket->machine_name : "-",
                     'Kategori'     => $ticket->category,
                     'Ditolak oleh' => Auth::user()->name,
                     'Alasan'       => $reason,
@@ -363,6 +364,7 @@ class FacilityService
                 [
                     'Nomor Tiket' => $wo->ticket_num,
                     'Lokasi'      => $wo->plant,
+                    'Mesin'       => $wo->machine_name ? $wo->machine_name : "-",
                     'Kategori'    => $wo->category,
                     'Status'      => 'Menunggu Verifikasi Tim Facility',
                 ],
@@ -375,6 +377,7 @@ class FacilityService
                 [
                     'Nomor Tiket' => $wo->ticket_num,
                     'Lokasi'      => $wo->plant,
+                    'Mesin'       => $wo->machine_name ? $wo->machine_name : "-",
                     'Kategori'    => $wo->category,
                     'Status'      => 'Pending - Menunggu Pengerjaan',
                 ],
@@ -387,6 +390,7 @@ class FacilityService
                 [
                     'Nomor Tiket'     => $wo->ticket_num,
                     'Lokasi'          => $wo->plant,
+                    'Mesin'           => $wo->machine_name ? $wo->machine_name : "-",
                     'Kategori'        => $wo->category,
                     'Status'          => 'In Progress',
                     'Dikerjakan oleh' => $wo->technicians->pluck('name')->join(', ') ?: 'Belum ditentukan',
@@ -400,6 +404,7 @@ class FacilityService
                 [
                     'Nomor Tiket'     => $wo->ticket_num,
                     'Lokasi'          => $wo->plant,
+                    'Mesin'           => $wo->machine_name ? $wo->machine_name : "-",
                     'Kategori'        => $wo->category,
                     'Status'          => 'Completed',
                     'Tanggal Selesai' => now()->format('d/m/Y H:i'),
@@ -413,6 +418,7 @@ class FacilityService
                 [
                     'Nomor Tiket' => $wo->ticket_num,
                     'Lokasi'      => $wo->plant,
+                    'Mesin'       => $wo->machine_name ? $wo->machine_name : "-",
                     'Status'      => 'Cancelled',
                 ],
                 'Tiket Anda telah dibatalkan. Hubungi Tim Facility jika ada pertanyaan.',
@@ -460,6 +466,7 @@ class FacilityService
                     'Nomor Tiket' => $wo->ticket_num,
                     'Pelapor'     => $wo->requester_name,
                     'Lokasi'      => $wo->plant,
+                    'Mesin'       => $wo->machine_name ? $wo->machine_name : "-",
                     'Kategori'    => $wo->category,
                     'Deskripsi'     => $wo->description,
                     'Status'      => 'Disetujui - Akan Segera Dikerjakan',
@@ -506,6 +513,7 @@ class FacilityService
                     'Nomor Tiket' => $ticket->ticket_num,
                     'Dibuat oleh' => $spvUser->name . ' (' . $spvUser->jabatan . ')',
                     'Lokasi'      => $ticket->plant,
+                    'Mesin'       => $ticket->machine_name ? $ticket->machine_name : "-",
                     'Kategori'    => $ticket->category,
                     'Deskripsi'     => $ticket->description,
                     'Status'      => 'Menunggu Verifikasi Tim Facility',
@@ -555,6 +563,7 @@ class FacilityService
                     'Nomor Tiket' => $ticket->ticket_num,
                     'Pelapor'     => $ticket->requester_name,
                     'Lokasi'      => $ticket->plant,
+                    'Mesin'       => $ticket->machine_name ? $ticket->machine_name : "-",
                     'Kategori'    => $ticket->category,
                     'Deskripsi'     => $ticket->description,
                     'Status'      => $type === 'fh_new'
@@ -654,6 +663,7 @@ class FacilityService
                     'Nomor Tiket' => $ticket->ticket_num,
                     'Pelapor'     => $ticket->requester_name,
                     'Lokasi'      => $ticket->plant,
+                    'Mesin'      => $ticket->machine_name ? $ticket->machine_name : "-",
                     'Kategori'    => $ticket->category,
                     'Deskripsi'     => $ticket->description,
                 ],
