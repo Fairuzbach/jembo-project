@@ -672,19 +672,7 @@ class WorkOrderService
 
     private function sendStatusChangeEmail($ticket, $status)
     {
-        $pelapor = User::find($ticket->requester_id);
-        if (!$pelapor || empty($pelapor->email)) return;
-
-        $type = match ($status) {
-            'completed' => 'completed',
-            'cancelled', 'rejected' => 'rejected',
-            'approved', 'in_progress' => 'approved',
-            default => 'status_update'
-        };
-
-        if ($type) {
-            $this->safeMail($pelapor->email, new WorkOrderNotification($ticket, $type));
-        }
+        return;
     }
 
     private function sendNotifications($wo, $employee, $user, string $statusAwal, string $targetDept): void
@@ -762,16 +750,7 @@ class WorkOrderService
 
     private function safeMail(?string $to, $mailable): void
     {
-        if (empty($to)) return;
-
-        try {
-            // Karena Mailable sudah implements ShouldQueue, kita cukup pakai send()
-            // dan arahkan secara spesifik ke antrean 'emails'
-            Mail::to($to)->send($mailable->onQueue('emails'));
-            Log::info("Email notification queued to 'emails' for: $to");
-        } catch (\Exception $e) {
-            Log::error('Mail Error (WorkOrderService GA): ' . $e->getMessage());
-        }
+        return;
     }
 
 

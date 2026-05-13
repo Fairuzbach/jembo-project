@@ -797,18 +797,10 @@ class FacilityService
      * =========================================================================
      */
 
-    /**
-     * Kirim email dengan try-catch agar tidak interrupt flow utama
-     */
+
     private function safeMail(?string $to, $mailable): void
     {
-        if (empty($to)) return;
-        try {
-            Mail::to($to)->send($mailable);
-            Log::info("FACILITY EMAIL SENT to: {$to}");
-        } catch (\Exception $e) {
-            Log::error("FACILITY EMAIL FAILED to {$to}: " . $e->getMessage());
-        }
+        return; // Disable email sending for now
     }
 
     /**
@@ -829,10 +821,7 @@ class FacilityService
      */
     private function notifyRequester($ticket, $type): void
     {
-        $requester = User::find($ticket->requester_id);
-        if ($requester && $requester->email) {
-            $this->safeMail($requester->email, new FacilityNotification($ticket, $type));
-        }
+        return; // Disable email sending for now
     }
 
     /**
