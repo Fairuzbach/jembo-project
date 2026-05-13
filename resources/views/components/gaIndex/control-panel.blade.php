@@ -8,13 +8,15 @@
     </div>
 
     <form action="{{ route('ga.index') }}" method="GET" class="divide-y divide-slate-100">
-        <div class="p-4 md:p-6 flex flex-col lg:flex-row gap-4 items-center justify-between">
-
+        <div class="p-4 md:p-6 flex f   lex-col lg:flex-row gap-4 items-center justify-between">
+            @if (request()->has('view'))
+                <input type="hidden" name="view" value="{{ request('view') }}">
+            @endif
             {{-- 1. Search Input Group (Full Width di HP, Setengah di PC) --}}
             <div class="w-full lg:w-1/2 flex relative group">
                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <svg class="w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" fill="none"
-                        stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors"
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                     </svg>
@@ -140,7 +142,8 @@
                 <a href="{{ route('ga.index') }}"
                     class="text-xs font-bold text-red-500 hover:text-red-700 flex items-center gap-1 uppercase tracking-wide transition-colors">
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12">
                         </path>
                     </svg> Reset Filter
                 </a>
