@@ -55,17 +55,16 @@
                 total: {{ $perfTotal }},
                 completed: {{ $perfCompleted }}
             },
-            loc: {
-                labels: @json($chartLocLabels),
-                values: @json($chartLocValues)
-            },
+            // LOKASI DIHAPUS, DIGANTI OVERALL STATS
+            overall: @json($overallStats),
+
             dept: {
                 labels: @json($chartDeptLabels),
                 values: @json($chartDeptValues)
             },
             param: {
                 labels: @json($chartParamLabels),
-                values: @json($chartParamValues)
+                raw: @json($chartParamRaw) // Kita butuh raw untuk stacked chart
             },
             bobot: {
                 labels: @json($chartBobotLabels),
@@ -73,14 +72,11 @@
             },
             meta: {
                 filterMonth: "{{ $filterMonth }}",
-                // Safe navigation operator (?.) untuk menghindari error jika data kosong
                 defaultStartDateFilename: "{{ $workOrders->min('created_at')?->format('Y-m-d') ?? date('Y-m-d') }}",
                 defaultStartDateHeader: "{{ $workOrders->min('created_at')?->translatedFormat('d F Y') ?? date('d F Y') }}"
             }
         };
         window.gaGanttData = @json($tasks ?? ['data' => [], 'links' => []]);
-
-        // console.log('Gantt Data Loaded:', window.gaGanttData);
     </script>
     @vite(['resources/js/app.js'])
     {{-- KONTEN UTAMA --}}

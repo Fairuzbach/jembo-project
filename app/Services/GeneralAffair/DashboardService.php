@@ -160,67 +160,81 @@ class DashboardService
 
     private function prepareGroupedStats($tickets)
     {
-        // Helper function untuk format data chart
-        $formatForTable = function ($grouped) {
-            return $grouped->map(fn($list, $key) => (object)['label' => $key, 'total' => $list->count()])
-                ->sortByDesc('total')->values();
+        // ---------------------------------------------------------
+        // HELPER: Hitung Persentase Detail
+        // ---------------------------------------------------------
+        $calculatePerformanceDetail = function ($groupedList) {
+            $stats = [];
+            foreach ($groupedList as $key => $list) {
+                $totalValid = $list->whereNotIn('status', ['cancelled', 'rejected'])->count();
+                $completed  = $list->where('status', 'completed')->count();
+                $pending    = $list->whereIn('status', ['pending', 'approved', 'waiting_approval_ga', 'waiting_approval'])->count();
+                $inProgress = $list->where('status', 'in_progress')->count();
+
+                $percentage = $totalValid > 0 ? round(($completed / $totalValid) * 100) : 0;
+
+                $stats[] = [
+                    'label'      => $key,
+                    'total'      => $list->count(),
+                    'totalValid' => $totalValid,
+                    'completed'  => $completed,
+                    'uncompleted' => $pending + $inProgress, // Gabungan yang belum selesai
+                    'percentage' => $percentage
+                ];
+            }
+            return collect($stats)->sortByDesc('total')->values();
         };
 
-        // ---------------------------------------------------------
-        // 1. STATISTIK DEPARTMENT (PENGIRIM)
-        // ---------------------------------------------------------
-        $deptGroup = $tickets->groupBy(fn($i) => $i->department ?? 'Unassigned');
-        $deptData  = $formatForTable($deptGroup);
+        // 1. STATISTIK KESELURUHAN (Pengganti Lokasi)
+        $totalValidOverall = $tickets->whereNotIn('status', ['cancelled', 'rejected'])->count();
+        $completedOverall  = $tickets->where('status', 'completed')->count();
+        $inProgressOverall = $tickets->where('status', 'in_progress')->count();
 
-        // ---------------------------------------------------------
-        // 2. STATISTIK LOKASI (PLANT) - FIX RELASI
-        // ---------------------------------------------------------
-        $locGroup = $tickets
-            ->filter(function ($ticket) {
-                return !empty($ticket->plant); // Filter yang plant-nya kosong
-            })
-            ->groupBy(function ($ticket) {
-                // Pastikan relasi di Model bernama 'plantInfo' atau 'plant_info'
-                // Gunakan Null Coalescing Operator (??) untuk fallback
-                $plantName = $ticket->plantInfo->name ?? $ticket->plant_info->name ?? ('Unknown Plant (' . $ticket->plant . ')');
-                return trim($plantName);
-            });
-        $locData = $formatForTable($locGroup);
+        // KITA PISAHKAN PENDING DAN WAITING APPROVAL DI SINI:
+        $pendingOverall    = $tickets->whereIn('status', ['pending', 'approved'])->count();
+        $waitingOverall    = $tickets->whereIn('status', ['waiting_approval', 'waiting_approval_ga'])->count();
 
-        // ---------------------------------------------------------
-        // 3. STATISTIK PARAMETER (JENIS PERMINTAAN)
-        // ---------------------------------------------------------
-        $paramGroup = $tickets->groupBy(fn($i) => $i->parameter_permintaan ?? 'Lainnya');
-        $paramData  = $formatForTable($paramGroup);
+        $overallStats = [
+            'totalValid' => $totalValidOverall,
+            'completed'  => $completedOverall,
+            'inProgress' => $inProgressOverall,
+            'pending'    => $pendingOverall,
+            'waiting'    => $waitingOverall, // <-- Tambahan Baru
 
-        // ---------------------------------------------------------
-        // 4. STATISTIK BOBOT (CATEGORY)
-        // ---------------------------------------------------------
-        $catGroup = $tickets->groupBy(fn($item) => strtoupper($item->category))->map->count();
-        $chartBobotValues = [
-            $catGroup['HIGH'] ?? $catGroup['BERAT'] ?? 0,
-            $catGroup['MEDIUM'] ?? $catGroup['SEDANG'] ?? 0,
-            $catGroup['LOW'] ?? $catGroup['RINGAN'] ?? 0
+            'completedPct'  => $totalValidOverall > 0 ? round(($completedOverall / $totalValidOverall) * 100) : 0,
+            'inProgressPct' => $totalValidOverall > 0 ? round(($inProgressOverall / $totalValidOverall) * 100) : 0,
+            'pendingPct'    => $totalValidOverall > 0 ? round(($pendingOverall / $totalValidOverall) * 100) : 0,
+            'waitingPct'    => $totalValidOverall > 0 ? round(($waitingOverall / $totalValidOverall) * 100) : 0, // <-- Tambahan Baru
         ];
 
-        return [
-            // Kirim Data Mentah untuk Tabel (Opsional)
-            'locData'          => $locData,
-            'deptData'         => $deptData,
-            'paramData'        => $paramData,
+        // 2. STATISTIK DEPARTMENT
+        $deptGroup = $tickets->groupBy(fn($i) => $i->department ?? 'Unassigned');
+        $deptData  = $calculatePerformanceDetail($deptGroup);
 
-            // Kirim Data Array untuk Chart.js
-            'chartLocLabels'   => $locData->pluck('label')->toArray(),
-            'chartLocValues'   => $locData->pluck('total')->toArray(),
+        // 3. STATISTIK PARAMETER
+        $paramGroup = $tickets->groupBy(fn($i) => $i->parameter_permintaan ?? 'Lainnya');
+        $paramData  = $calculatePerformanceDetail($paramGroup);
+
+        // 4. STATISTIK BOBOT
+        $catGroup = $tickets->groupBy(fn($item) => strtoupper($item->category))->map->count();
+
+        return [
+            // Kirim Status Keseluruhan (Ganti Lokasi)
+            'overallStats'     => $overallStats,
 
             'chartDeptLabels'  => $deptData->pluck('label')->toArray(),
             'chartDeptValues'  => $deptData->pluck('total')->toArray(),
 
+            // Kirim Data Parameter Lengkap
             'chartParamLabels' => $paramData->pluck('label')->toArray(),
-            'chartParamValues' => $paramData->pluck('total')->toArray(),
+            'chartParamRaw'    => $paramData->toArray(), // Penting untuk JS!
 
             'chartBobotLabels' => ['Berat (High)', 'Sedang (Medium)', 'Ringan (Low)'],
-            'chartBobotValues' => $chartBobotValues,
+            'chartBobotValues' => [
+                $catGroup['HIGH'] ?? $catGroup['BERAT'] ?? 0,
+                $catGroup['MEDIUM'] ?? $catGroup['SEDANG'] ?? 0,
+                $catGroup['LOW'] ?? $catGroup['RINGAN'] ?? 0
+            ],
         ];
     }
 

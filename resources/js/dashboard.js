@@ -121,127 +121,163 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     // ============================================================
-    // 2. CHART LOKASI
+    // 2. CHART KESELURUHAN (Overall Stats) - Doughnut Chart
     // ============================================================
-    if (config.loc) {
-        createStandardChart(
-            'locChart', 
-            'bar', 
-            config.loc.labels, 
-            config.loc.values, 
-            '#3b82f6'
-        );
-    }
+    const overallId = 'overallChart';
+    if (document.getElementById(overallId) && config.overall) {
+        destroyChartIfExists(overallId);
 
-    // ============================================================
-    // 3. CHART DEPARTMENT
-    // ============================================================
-    if (config.dept) {
-        createStandardChart(
-            'deptChart', 
-            'bar', 
-            config.dept.labels, 
-            config.dept.values, 
-            '#8b5cf6'
-        );
-    }
-
-    // ============================================================
-    // 4. CHART PARAMETER (Doughnut)
-    // ============================================================
-   const paramId = 'paramChart';
-if (document.getElementById(paramId) && config.param) {
-    destroyChartIfExists(paramId);
-    
-    // Generate dynamic colors based on number of data points
-    const generateColors = (count) => {
-        const colors = [
-            '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8',
-            '#F7DC6F', '#BB8FCE', '#85C1E2', '#F8B739', '#52B788',
-            '#E63946', '#A8DADC', '#457B9D', '#F1FAEE', '#E76F51',
-            '#2A9D8F', '#E9C46A', '#F4A261', '#E76F51', '#264653',
-            '#8338EC', '#FF006E', '#FB5607', '#FFBE0B', '#3A86FF'
+        // Kita tambahkan variabel waiting ke dalam array
+        const rawTotals = [
+            config.overall.completed, 
+            config.overall.inProgress, 
+            config.overall.pending,
+            config.overall.waiting // <-- Tambahan
         ];
-        return colors.slice(0, count);
-    };
 
-    // SOLUSI CHART KOSONG: Pastikan format data dibaca sebagai array dengan aman sebelum dimanipulasi
-    let rawLabels = Array.isArray(config.param.labels) ? config.param.labels : Object.values(config.param.labels || {});
-    let modifiedLabels = rawLabels.map(label => 
-        (!label || label === '-' || label.trim() === '') ? 'Belum Didefinisikan' : label
-    );
-    
-    new Chart(document.getElementById(paramId).getContext('2d'), {
-        type: 'bar',
-        data: {
-            labels: modifiedLabels, // Menggunakan label yang sudah diubah
-            datasets: [{
-                label: 'Jumlah Permintaan',
-                data: config.param.values,
-                backgroundColor: generateColors(config.param.values.length),
-                borderWidth: 1,
-                borderColor: 'transparent',
-                borderRadius: 4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            layout: {
-                padding: {
-                    top: 25 // SOLUSI ANGKA TERPOTONG: Tambahan bantalan di bagian atas kanvas
-                }
+        new Chart(document.getElementById(overallId).getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                // Tambah label 'Menunggu Approval'
+                labels: ['Selesai', 'Dalam Proses', 'Pending (Antrian)', 'Menunggu Approval'],
+                datasets: [{
+                    // Tambah persentase waiting
+                    data: [
+                        config.overall.completedPct, 
+                        config.overall.inProgressPct, 
+                        config.overall.pendingPct,
+                        config.overall.waitingPct // <-- Tambahan
+                    ],
+                    // Tambah warna baru (Ungu/Violet) untuk Menunggu Approval
+                    backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6'], 
+                    borderWidth: 1,
+                    hoverOffset: 4
+                }]
             },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grace: '15%', // SOLUSI ANGKA TERPOTONG: Menambah ruang kosong ekstra 15% di atas batang paling tinggi
-                    grid: {
-                        borderDash: [4, 4],
-                        color: '#f1f5f9'
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: { 
+                        display: true, 
+                        position: 'bottom',
+                        labels: { usePointStyle: true, boxWidth: 8, font: { size: 11 } }
                     },
-                    ticks: {
-                        stepSize: 1
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false
-                    },
-                    ticks: {
-                        maxRotation: 45,
-                        minRotation: 0,
-                        font: { size: 11 }
-                    }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return ' Total: ' + context.parsed.y + ' Permintaan';
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => {
+                                const count = rawTotals[ctx.dataIndex];
+                                return ` ${ctx.label}: ${count} Tiket (${ctx.raw}%)`;
+                            }
                         }
-                    }
-                },
-                datalabels: {
-                    color: '#334155',
-                    anchor: 'end',
-                    align: 'top',
-                    font: {
-                        weight: 'bold',
-                        size: 11
                     },
-                    formatter: (value) => {
-                        return value > 0 ? value : '';
+                    datalabels: {
+                        color: '#fff', 
+                        font: { weight: 'bold', size: 11 },
+                        textAlign: 'center',
+                        formatter: (val, ctx) => {
+                            if (val > 0) {
+                                const count = rawTotals[ctx.dataIndex];
+                                return [
+                                    count,
+                                    '(' + val + '%)'
+                                ];
+                            }
+                            return '';
+                        }
                     }
                 }
             }
-        }
-    });
-}
+        });
+    }
+
+   // ============================================================
+    // 3. CHART DEPARTMENT
+    // ============================================================
+    if (config.dept) {
+        createStandardChart('deptChart', 'bar', config.dept.labels, config.dept.values, '#8b5cf6');
+    }
+
+   // ============================================================
+    // 4. CHART PARAMETER (Stacked Bar dengan Persentase)
+    // ============================================================
+    const paramId = 'paramChart';
+    if (document.getElementById(paramId) && config.param && config.param.raw) {
+        destroyChartIfExists(paramId);
+        
+        let rawLabels = Array.isArray(config.param.labels) ? config.param.labels : Object.values(config.param.labels || {});
+        let modifiedLabels = rawLabels.map(label => (!label || label === '-' || label.trim() === '') ? 'Lainnya' : label);
+
+        // Ekstrak data dari raw
+        const dataSelesai = config.param.raw.map(item => item.completed);
+        const dataBelum = config.param.raw.map(item => item.uncompleted);
+        const percentages = config.param.raw.map(item => item.percentage);
+
+        new Chart(document.getElementById(paramId).getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: modifiedLabels,
+                datasets: [
+                    {
+                        label: 'Selesai',
+                        data: dataSelesai,
+                        backgroundColor: '#10b981', // Hijau Selesai
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Belum Selesai',
+                        data: dataBelum,
+                        backgroundColor: '#f59e0b', // Kuning/Orange Belum
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: { 
+                    padding: { top: 45 } // Tambah ruang atas agar dua baris teks tidak terpotong
+                },
+                scales: {
+                    x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 } } },
+                    y: { stacked: true, beginAtZero: true, grid: { borderDash: [4, 4] } }
+                },
+                plugins: {
+                    legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8 } },
+                    tooltip: {
+                        callbacks: {
+                            afterBody: function(context) {
+                                const idx = context[0].dataIndex;
+                                const raw = config.param.raw[idx];
+                                return `\nTotal Permintaan: ${raw.totalValid}\nPersentase Selesai: ${raw.percentage}%`;
+                            }
+                        }
+                    },
+                    datalabels: {
+                        display: function(context) {
+                            return context.datasetIndex === 1; // Hanya tampil di dataset teratas
+                        },
+                        color: '#1e293b',
+                        anchor: 'end',
+                        align: 'top',
+                        offset: 4,
+                        textAlign: 'center', // Membuat teks multi-line menjadi rata tengah
+                        font: { weight: 'bold', size: 11 }, 
+                        formatter: (val, ctx) => {
+                            const rawData = config.param.raw[ctx.dataIndex];
+                            
+                            // Mengembalikan Array akan membuat baris baru (Multi-line)
+                            return [
+                                rawData.total + ' Tiket',
+                                '(' + rawData.percentage + '% Selesai)'
+                            ];
+                        }
+                    }
+                }
+            }
+        });
+    }
 
     // ============================================================
     // 5. CHART BOBOT (Pie)

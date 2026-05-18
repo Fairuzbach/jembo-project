@@ -38,8 +38,9 @@
                     required>
             </div>
 
-            {{-- Tombol Actions --}}
-            <div class="flex gap-2 w-full md:w-auto">
+            {{-- Tombol Actions & Quick Filter --}}
+            <div class="flex flex-wrap md:flex-nowrap gap-2 w-full md:w-auto">
+
                 {{-- Tombol Filter --}}
                 <button type="submit"
                     class="flex-1 md:flex-initial bg-gradient-to-r from-slate-900 to-slate-700 text-white hover:from-slate-800 hover:to-slate-600 font-bold py-2.5 px-6 rounded-lg text-sm uppercase tracking-wide transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
@@ -62,20 +63,17 @@
                     </a>
                 @endif
 
-                {{-- Quick Filter Buttons --}}
-                <div class="hidden md:flex gap-2 ml-2">
-                    <button type="button" onclick="setThisMonth()"
-                        class="bg-white hover:bg-slate-50 border-2 border-slate-300 text-slate-700 font-semibold py-2 px-3 rounded-lg text-xs transition-all duration-200 shadow-sm hover:shadow">
-                        Bulan Ini
-                    </button>
-                    <button type="button" onclick="setThisWeek()"
-                        class="bg-white hover:bg-slate-50 border-2 border-slate-300 text-slate-700 font-semibold py-2 px-3 rounded-lg text-xs transition-all duration-200 shadow-sm hover:shadow">
-                        Minggu Ini
-                    </button>
-                    <button type="button" onclick="setToday()"
-                        class="bg-white hover:bg-slate-50 border-2 border-slate-300 text-slate-700 font-semibold py-2 px-3 rounded-lg text-xs transition-all duration-200 shadow-sm hover:shadow">
-                        Hari Ini
-                    </button>
+                {{-- Dropdown Quick Filter Pengganti Tombol --}}
+                <div class="w-full md:w-auto md:ml-2">
+                    <select id="quick_filter" onchange="applyQuickFilter(this.value)"
+                        class="w-full bg-white hover:bg-slate-50 border-2 border-slate-300 text-slate-700 font-semibold py-2.5 px-4 rounded-lg text-sm transition-all duration-200 shadow-sm hover:shadow focus:ring-yellow-400 focus:border-yellow-400 cursor-pointer">
+                        <option value="">⚡ Pilih Rentang Cepat...</option>
+                        <option value="this_month">Bulan Ini</option>
+                        <option value="last_3_months">3 Bulan Terakhir</option>
+                        <option value="this_quarter">Kuartal Ini (Q1-Q4)</option>
+                        <option value="this_semester">Semester Ini</option>
+                        <option value="this_year">Tahun Ini</option>
+                    </select>
                 </div>
             </div>
         </div>
@@ -89,11 +87,10 @@
                             d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <p class="text-sm text-blue-700 font-semibold">
-                        Menampilkan data dari
-                        <span
+                        Menampilkan data dari <span
                             class="font-bold">{{ \Carbon\Carbon::parse(request('start_date'))->format('d M Y') }}</span>
-                        sampai
-                        <span class="font-bold">{{ \Carbon\Carbon::parse(request('end_date'))->format('d M Y') }}</span>
+                        sampai <span
+                            class="font-bold">{{ \Carbon\Carbon::parse(request('end_date'))->format('d M Y') }}</span>
                         <span
                             class="text-blue-600">({{ \Carbon\Carbon::parse(request('start_date'))->diffInDays(request('end_date')) + 1 }}
                             hari)</span>
@@ -105,29 +102,47 @@
 </div>
 
 <script>
-    // Quick filter functions
-    function setThisMonth() {
-        const now = new Date();
-        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    // Fungsi Utama Eksekutor Filter
+    function applyQuickFilter(type) {
+        if (!type) return;
 
+        const now = new Date();
+        let firstDay, lastDay;
+
+        switch (type) {
+            case 'this_month':
+                firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+                lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                break;
+            case 'last_3_months':
+                // 3 bulan terakhir terhitung dari bulan ini
+                firstDay = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+                lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                break;
+            case 'this_quarter':
+                // Kuartal: Q1(Jan-Mar), Q2(Apr-Jun), Q3(Jul-Sep), Q4(Okt-Des)
+                const quarter = Math.floor(now.getMonth() / 3);
+                firstDay = new Date(now.getFullYear(), quarter * 3, 1);
+                lastDay = new Date(now.getFullYear(), quarter * 3 + 3, 0);
+                break;
+            case 'this_semester':
+                // Semester 1 (Jan-Jun) atau Semester 2 (Jul-Des)
+                const semester = Math.floor(now.getMonth() / 6);
+                firstDay = new Date(now.getFullYear(), semester * 6, 1);
+                lastDay = new Date(now.getFullYear(), semester * 6 + 6, 0);
+                break;
+            case 'this_year':
+                firstDay = new Date(now.getFullYear(), 0, 1);
+                lastDay = new Date(now.getFullYear(), 11, 31);
+                break;
+        }
+
+        // Set Input Tanggal
         document.getElementById('start_date').value = formatDate(firstDay);
         document.getElementById('end_date').value = formatDate(lastDay);
-    }
 
-    function setThisWeek() {
-        const now = new Date();
-        const firstDay = new Date(now.setDate(now.getDate() - now.getDay()));
-        const lastDay = new Date(now.setDate(now.getDate() - now.getDay() + 6));
-
-        document.getElementById('start_date').value = formatDate(firstDay);
-        document.getElementById('end_date').value = formatDate(lastDay);
-    }
-
-    function setToday() {
-        const now = new Date();
-        document.getElementById('start_date').value = formatDate(now);
-        document.getElementById('end_date').value = formatDate(now);
+        // Langsung otomatis submit/filter (opsional, bisa dihapus jika ingin diklik manual)
+        document.getElementById('start_date').closest('form').submit();
     }
 
     function formatDate(date) {
@@ -137,11 +152,10 @@
         return `${year}-${month}-${day}`;
     }
 
-    // Validasi tanggal
+    // Validasi Tanggal (Tetap sama)
     document.getElementById('end_date').addEventListener('change', function() {
         const startDate = new Date(document.getElementById('start_date').value);
         const endDate = new Date(this.value);
-
         if (endDate < startDate) {
             alert('⚠️ Tanggal akhir tidak boleh lebih kecil dari tanggal mulai!');
             this.value = document.getElementById('start_date').value;
@@ -151,7 +165,6 @@
     document.getElementById('start_date').addEventListener('change', function() {
         const startDate = new Date(this.value);
         const endDate = new Date(document.getElementById('end_date').value);
-
         if (endDate < startDate) {
             document.getElementById('end_date').value = this.value;
         }
