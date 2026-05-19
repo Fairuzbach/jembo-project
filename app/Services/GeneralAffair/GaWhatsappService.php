@@ -12,9 +12,17 @@ class GaWhatsappService
     {
         $url = 'http://192.168.10.40:3000/send/message';
         $phone = self::formatPhone($targetPhone);
+        $header = 'X-Device-Id: device01';
 
         try {
-            $response = Http::post($url, [
+            // $response = Http::post($url, [
+            //     'phone' => $phone,
+            //     'message' => $messageContent
+            // ]);
+
+            $response = Http::withHeaders([
+                'X-Device-Id' => 'device01'
+            ])->post($url, [
                 'phone' => $phone,
                 'message' => $messageContent
             ]);
